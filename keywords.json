@@ -1,0 +1,82 @@
+{
+  "_comment": "Suspicious keyword tokens. These fire the kw:* signal (+10 each, capped at +25 total) and are one half of the combo:brand+kw signal. They are also the vocabulary the affix decomposer uses to split undelimited tokens like 'dbsbank' into 'dbs'+'bank'.",
+  "version": 1,
+  "updated": "2026-08-10",
+
+  "scoring": {
+    "per_keyword": 10,
+    "cap": 25,
+    "combo_with_brand": 25,
+    "note": "The cap matters. Without it, 'secure-login-verify-account.sg' scores 40 on keywords alone and outranks an actual brand lookalike."
+  },
+
+  "affix_vocabulary_note": "Tokens marked affix:true are used by the affix decomposer to split undelimited strings. Keep this set SMALL and high-signal — every entry increases the chance of a spurious split. 'sg' is deliberately affix:false despite being common, because splitting on it would decompose enormous numbers of legitimate Singaporean domain names.",
+
+  "keywords": [
+    { "token": "login",        "category": "credential", "affix": true },
+    { "token": "signin",       "category": "credential", "affix": true },
+    { "token": "logon",        "category": "credential", "affix": true },
+    { "token": "auth",         "category": "credential", "affix": true },
+    { "token": "sso",          "category": "credential", "affix": false },
+    { "token": "portal",       "category": "credential", "affix": true },
+    { "token": "account",      "category": "credential", "affix": true },
+    { "token": "password",     "category": "credential", "affix": true },
+    { "token": "reset",        "category": "credential", "affix": true },
+    { "token": "unlock",       "category": "credential", "affix": true },
+    { "token": "recovery",     "category": "credential", "affix": true },
+
+    { "token": "verify",       "category": "verification", "affix": true },
+    { "token": "verification", "category": "verification", "affix": true },
+    { "token": "confirm",      "category": "verification", "affix": true },
+    { "token": "validate",     "category": "verification", "affix": true },
+    { "token": "update",       "category": "verification", "affix": true },
+    { "token": "secure",       "category": "verification", "affix": true },
+    { "token": "security",     "category": "verification", "affix": true },
+    { "token": "otp",          "category": "verification", "affix": true },
+    { "token": "2fa",          "category": "verification", "affix": false },
+    { "token": "token",        "category": "verification", "affix": false },
+
+    { "token": "bank",         "category": "finance", "affix": true },
+    { "token": "banking",      "category": "finance", "affix": true },
+    { "token": "ibanking",     "category": "finance", "affix": true },
+    { "token": "netbanking",   "category": "finance", "affix": true },
+    { "token": "ebanking",     "category": "finance", "affix": true },
+    { "token": "payment",      "category": "finance", "affix": true },
+    { "token": "wallet",       "category": "finance", "affix": true },
+    { "token": "transfer",     "category": "finance", "affix": true },
+    { "token": "refund",       "category": "finance", "affix": true },
+    { "token": "billing",      "category": "finance", "affix": true },
+
+    { "token": "parcel",       "category": "delivery", "affix": true },
+    { "token": "delivery",     "category": "delivery", "affix": true },
+    { "token": "redelivery",   "category": "delivery", "affix": true },
+    { "token": "tracking",     "category": "delivery", "affix": true },
+    { "token": "shipment",     "category": "delivery", "affix": true },
+    { "token": "customs",      "category": "delivery", "affix": true },
+    { "token": "courier",      "category": "delivery", "affix": true },
+
+    { "token": "suspend",      "category": "urgency", "affix": true },
+    { "token": "suspended",    "category": "urgency", "affix": true },
+    { "token": "expired",      "category": "urgency", "affix": true },
+    { "token": "blocked",      "category": "urgency", "affix": true },
+    { "token": "alert",        "category": "urgency", "affix": false },
+    { "token": "urgent",       "category": "urgency", "affix": true },
+    { "token": "notice",       "category": "urgency", "affix": false },
+
+    { "token": "official",     "category": "impersonation", "affix": true },
+    { "token": "support",      "category": "impersonation", "affix": true },
+    { "token": "helpdesk",     "category": "impersonation", "affix": true },
+    { "token": "service",      "category": "impersonation", "affix": false },
+    { "token": "customer",     "category": "impersonation", "affix": true }
+  ],
+
+  "excluded_deliberately": {
+    "_comment": "Tokens considered and rejected, recorded so they don't get re-added later.",
+    "sg": "Appears in a large share of legitimate Singaporean domains. As a keyword it would fire on almost everything; as an affix token it would mis-split constantly. It is still useful as a per-brand context_token, where it is scoped.",
+    "online": "Too common in legitimate business domains to carry signal.",
+    "app": "Same. Also collides with the .app TLD.",
+    "my": "Prefix of many legitimate product domains (myinfo, myrepublic) including watched brands.",
+    "web": "No signal.",
+    "new": "No signal, and collides with legitimate 'new-' product launches."
+  }
+}
