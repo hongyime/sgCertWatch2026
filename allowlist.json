@@ -1,0 +1,115 @@
+{
+  "_comment": "Registrables that are legitimately brand-owned. Anything matching here is DROPPED before scoring and never persisted to the certs table (it still counts in issuance_daily and registrables). Without this file, every legitimate renewal of dbs.com.sg scores 40 and buries the real signal.",
+  "version": 1,
+  "updated": "2026-08-10",
+  "status": "seed-unverified",
+
+  "READ_THIS_FIRST": {
+    "problem": "A WRONG allowlist entry silently suppresses a real threat. That is the most dangerous kind of error this project can make, and it fails closed with no visible symptom.",
+    "rule": "Every entry below was seeded from general knowledge and is marked verified:false. Unverified entries DO suppress (otherwise the seed is useless and the feed floods on day one), but P0 launch is BLOCKED until all of them are verified. See TASKS.md M2-02b.",
+    "verification": "Confirm the registrable is reachable and belongs to the named brand by navigating from the brand's official site or a published regulator listing. Do NOT verify by searching for the domain — that is how you confirm a typosquat as legitimate. Then set verified:true with the date and the source URL.",
+    "ci_gate": "CI fails the release workflow while any entry has verified:false.",
+    "coverage_expectation": "This seed is roughly 90 entries. Realistic full coverage is 200-600, because banks and telcos own large numbers of campaign and product domains. The list grows forever; budget for that."
+  },
+
+  "entries": [
+    { "registrable": "dbs.com", "brand": "dbs", "verified": false },
+    { "registrable": "dbs.com.sg", "brand": "dbs", "verified": false },
+    { "registrable": "posb.com.sg", "brand": "posb", "verified": false },
+    { "registrable": "paylah.com.sg", "brand": "paylah", "verified": false },
+    { "registrable": "ocbc.com", "brand": "ocbc", "verified": false },
+    { "registrable": "ocbc.com.sg", "brand": "ocbc", "verified": false },
+    { "registrable": "uob.com.sg", "brand": "uob", "verified": false },
+    { "registrable": "uobgroup.com", "brand": "uob", "verified": false },
+    { "registrable": "sc.com", "brand": "stanchart", "verified": false },
+    { "registrable": "maybank.com.sg", "brand": "maybank", "verified": false },
+    { "registrable": "maybank2u.com.sg", "brand": "maybank", "verified": false },
+    { "registrable": "hsbc.com.sg", "brand": "hsbc", "verified": false },
+    { "registrable": "citibank.com.sg", "brand": "citibank", "verified": false },
+    { "registrable": "trustbank.sg", "brand": "trustbank", "verified": false },
+    { "registrable": "gxs.com.sg", "brand": "gxs", "verified": false },
+    { "registrable": "maribank.sg", "brand": "maribank", "verified": false },
+    { "registrable": "cimb.com.sg", "brand": "cimb", "verified": false },
+
+    { "registrable": "singpass.gov.sg", "brand": "singpass", "verified": false },
+    { "registrable": "myinfo.gov.sg", "brand": "myinfo", "verified": false },
+    { "registrable": "go.gov.sg", "brand": "gogovsg", "verified": false },
+    { "registrable": "for.sg", "brand": "forsg", "verified": false },
+    { "registrable": "for.edu.sg", "brand": "forsg", "verified": false },
+    { "registrable": "iras.gov.sg", "brand": "iras", "verified": false },
+    { "registrable": "cpf.gov.sg", "brand": "cpf", "verified": false },
+    { "registrable": "ica.gov.sg", "brand": "ica", "verified": false },
+    { "registrable": "hdb.gov.sg", "brand": "hdb", "verified": false },
+    { "registrable": "mom.gov.sg", "brand": "mom", "verified": false },
+    { "registrable": "lta.gov.sg", "brand": "lta", "verified": false },
+    { "registrable": "healthhub.sg", "brand": "healthhub", "verified": false },
+
+    { "registrable": "nets.com.sg", "brand": "nets", "verified": false },
+    { "registrable": "grab.com", "brand": "grab", "verified": false },
+
+    { "registrable": "singtel.com", "brand": "singtel", "verified": false },
+    { "registrable": "singtel.com.sg", "brand": "singtel", "verified": false },
+    { "registrable": "starhub.com", "brand": "starhub", "verified": false },
+    { "registrable": "m1.com.sg", "brand": "m1", "verified": false },
+    { "registrable": "myrepublic.com.sg", "brand": "myrepublic", "verified": false },
+
+    { "registrable": "singpost.com.sg", "brand": "singpost", "verified": false },
+    { "registrable": "ninjavan.co", "brand": "ninjavan", "verified": false },
+    { "registrable": "lalamove.com", "brand": "lalamove", "verified": false },
+
+    { "registrable": "shopee.sg", "brand": "shopee", "verified": false },
+    { "registrable": "lazada.sg", "brand": "lazada", "verified": false },
+    { "registrable": "carousell.sg", "brand": "carousell", "verified": false },
+    { "registrable": "carousell.com", "brand": "carousell", "verified": false },
+    { "registrable": "qoo10.sg", "brand": "qoo10", "verified": false },
+    { "registrable": "fairprice.com.sg", "brand": "fairprice", "verified": false },
+
+    { "registrable": "singaporeair.com", "brand": "singaporeair", "verified": false },
+    { "registrable": "flyscoot.com", "brand": "scoot", "verified": false },
+    { "registrable": "simplygo.com.sg", "brand": "simplygo", "verified": false },
+    { "registrable": "comfortdelgro.com", "brand": "comfortdelgro", "verified": false },
+    { "registrable": "cdgtaxi.com.sg", "brand": "comfortdelgro", "verified": false },
+    { "registrable": "smrt.com.sg", "brand": "smrt", "verified": false },
+    { "registrable": "changiairport.com", "brand": "changi", "verified": false },
+
+    { "registrable": "spgroup.com.sg", "brand": "spgroup", "verified": false },
+    { "registrable": "cityenergy.com.sg", "brand": "cityenergy", "verified": false },
+    { "registrable": "greateasternlife.com", "brand": "greateastern", "verified": false },
+    { "registrable": "income.com.sg", "brand": "income", "verified": false },
+    { "registrable": "aia.com.sg", "brand": "aia", "verified": false },
+    { "registrable": "prudential.com.sg", "brand": "prudential", "verified": false },
+
+    { "registrable": "nus.edu.sg", "brand": "nus", "verified": false },
+    { "registrable": "ntu.edu.sg", "brand": "ntu", "verified": false },
+    { "registrable": "smu.edu.sg", "brand": "smu", "verified": false },
+    { "registrable": "sutd.edu.sg", "brand": "sutd", "verified": false },
+    { "registrable": "singaporetech.edu.sg", "brand": "sit", "verified": false },
+    { "registrable": "suss.edu.sg", "brand": "suss", "verified": false },
+
+    { "registrable": "singhealth.com.sg", "brand": "singhealth", "verified": false },
+    { "registrable": "nuhs.edu.sg", "brand": "nuhs", "verified": false },
+    { "registrable": "nhg.com.sg", "brand": "nhg", "verified": false },
+
+    { "registrable": "mediacorp.sg", "brand": "mediacorp", "verified": false },
+    { "registrable": "straitstimes.com", "brand": "straitstimes", "verified": false }
+  ],
+
+  "known_collisions": {
+    "_comment": "Non-brand-owned registrables that will repeatedly false-positive due to accepted scoring decisions. These are legitimate third parties, not brand domains. Keep them separate from 'entries' so the two lists can be audited differently.",
+    "carousell_distance_2": {
+      "cause": "carousell at max_edit_distance 2 reaches 'carousel', a common English word",
+      "policy": "Accepted deliberately. Add legitimate carousel-* domains here as they surface. Expect this to be the single largest ongoing maintenance item in the project.",
+      "registrables": []
+    },
+    "shopee_distance_2": {
+      "cause": "shopee at distance 2 reaches 'shoppe' and 'shope', both used by legitimate retailers",
+      "policy": "Monitor at calibration. If this dominates the false-positive set, drop shopee to distance 1.",
+      "registrables": []
+    }
+  },
+
+  "removal_requests": {
+    "_comment": "Entries added in response to a correction request via the repo issue template. Logged separately and visibly, per the transparency commitment in PRD.md §8.",
+    "entries": []
+  }
+}
