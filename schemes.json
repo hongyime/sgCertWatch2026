@@ -1,0 +1,134 @@
+{
+  "_comment": "Singapore government payout and voucher schemes. These are the highest precision-per-effort signal in the whole project: there is no innocent reason for an arbitrary registrable to contain 'cdcvoucher'. Unlike brands, there is no legitimate long tail to allowlist — each scheme has essentially one official gov.sg home.",
+  "version": 1,
+  "updated": "2026-08-10",
+  "status": "seed",
+
+  "why_this_file_exists": [
+    "SG payout schemes are phished hard around every disbursement cycle, and the lure is the scheme name rather than any brand.",
+    "Scheme tokens are long, compound, and have no dictionary collisions, so they can run at high weight with almost no false positives.",
+    "Nobody outside Singapore would think to include these, which is a genuine part of the local-focus value proposition."
+  ],
+
+  "scoring": {
+    "base_weight": 45,
+    "seasonal_boost": 15,
+    "note": "seasonal_boost applies when the hit falls inside an active disbursement window. A scheme lookalike appearing three weeks before a payout is more interesting than one appearing at a random time of year."
+  },
+
+  "maintenance": {
+    "review_cadence": "quarterly",
+    "why": "Schemes are time-bound. New ones are announced at Budget and around National Day; old ones stop being useful lures once disbursement ends. A stale schemes file quietly stops earning its weight.",
+    "sources": "Budget announcements, official scheme microsites under gov.sg, CSA and ScamShield advisories.",
+    "warning": "Scheme names and their exact spellings must be checked against the official site before being added. A misspelled scheme token in this file is a signal that never fires."
+  },
+
+  "schemes": [
+    {
+      "id": "cdc_vouchers",
+      "display": "CDC Vouchers",
+      "tokens": ["cdcvoucher", "cdcvouchers"],
+      "max_edit_distance": 1,
+      "official_registrable": "cdc.gov.sg",
+      "active_window": null,
+      "verified": false,
+      "notes": "Community Development Council vouchers. Recurring, widely distributed, heavily phished. Highest-value entry in this file."
+    },
+    {
+      "id": "gst_voucher",
+      "display": "GST Voucher",
+      "tokens": ["gstvoucher", "gstvouchers"],
+      "max_edit_distance": 1,
+      "official_registrable": "gov.sg",
+      "active_window": null,
+      "verified": false
+    },
+    {
+      "id": "assurance_package",
+      "display": "Assurance Package",
+      "tokens": ["assurancepackage"],
+      "max_edit_distance": 2,
+      "official_registrable": "gov.sg",
+      "active_window": null,
+      "verified": false
+    },
+    {
+      "id": "majulah_package",
+      "display": "Majulah Package",
+      "tokens": ["majulahpackage"],
+      "max_edit_distance": 2,
+      "official_registrable": "gov.sg",
+      "active_window": null,
+      "verified": false
+    },
+    {
+      "id": "climate_vouchers",
+      "display": "Climate Vouchers",
+      "tokens": ["climatevoucher", "climatevouchers"],
+      "max_edit_distance": 1,
+      "official_registrable": "gov.sg",
+      "active_window": null,
+      "verified": false
+    },
+    {
+      "id": "skillsfuture",
+      "display": "SkillsFuture",
+      "tokens": ["skillsfuture"],
+      "max_edit_distance": 2,
+      "official_registrable": "skillsfuture.gov.sg",
+      "active_window": null,
+      "verified": false,
+      "notes": "Credit top-ups are announced periodically and phished around each announcement."
+    },
+    {
+      "id": "workfare",
+      "display": "Workfare",
+      "tokens": ["workfare"],
+      "max_edit_distance": 1,
+      "official_registrable": "workfare.gov.sg",
+      "active_window": null,
+      "verified": false
+    },
+    {
+      "id": "silver_support",
+      "display": "Silver Support Scheme",
+      "tokens": ["silversupport"],
+      "max_edit_distance": 2,
+      "official_registrable": "cpf.gov.sg",
+      "active_window": null,
+      "verified": false
+    },
+    {
+      "id": "baby_bonus",
+      "display": "Baby Bonus",
+      "tokens": ["babybonus"],
+      "max_edit_distance": 1,
+      "official_registrable": "gov.sg",
+      "active_window": null,
+      "verified": false
+    },
+    {
+      "id": "edusave",
+      "display": "Edusave",
+      "tokens": ["edusave"],
+      "max_edit_distance": 1,
+      "official_registrable": "moe.gov.sg",
+      "active_window": null,
+      "verified": false
+    },
+    {
+      "id": "comcare",
+      "display": "ComCare",
+      "tokens": ["comcare"],
+      "max_edit_distance": 1,
+      "official_registrable": "msf.gov.sg",
+      "active_window": null,
+      "verified": false
+    }
+  ],
+
+  "candidates_pending_verification": {
+    "_comment": "Names heard but not confirmed against an official source. Do NOT move these into 'schemes' until the exact official spelling is verified — a wrong token is a dead signal that looks alive.",
+    "tokens": ["sg60voucher", "ns55", "housingsupport", "cost of living special payment"]
+  }
+}
