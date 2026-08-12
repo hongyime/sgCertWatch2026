@@ -1,0 +1,23 @@
+# .github/workflows/labeler.yml
+name: "Pull Request Labeler"
+on:
+  pull_request_target: # This trigger is generally safer for labeler actions
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions: read-all
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@v6
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labels.yml

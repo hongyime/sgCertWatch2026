@@ -1,0 +1,18 @@
+version: 2
+updates:
+  # Conservative shared default.
+  #
+  # Language package ecosystems are intentionally not synced from sourcerepo:
+  # Dependabot has no manifest-aware conditionals in this file, so a global
+  # all-ecosystems template creates duplicate PRs and false CI failures in
+  # repos that do not use those ecosystems. Add npm, bun, pip, etc. directly
+  # in a target repo only when that repo actually owns the matching manifest.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "15:00"
+    labels:
+      - "dependencies"
+      - "github-actions"

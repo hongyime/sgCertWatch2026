@@ -1,0 +1,35 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**/*'
+          - '*.md'
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/server/**/*'
+          - 'backend/**/*'
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/client/**/*'
+          - 'frontend/**/*'
+          - 'ui/**/*'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/__tests__/**/*'
+          - 'tests/**/*'
+          - 'spec/**/*'
+
+bug:
+  - head-branch:
+      - '^fix/'
+      - '^bug/'
+
+enhancement:
+  - head-branch:
+      - '^feat/'
+      - '^feature/'

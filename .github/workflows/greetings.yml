@@ -1,0 +1,32 @@
+# .github/workflows/greetings.yml
+name: Greet New Contributors
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+permissions: read-all
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/first-interaction@v3.1.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          issue_message: |
+            Welcome, @${{ github.actor }}.
+
+            Thanks for opening your first issue in this repository. A maintainer
+            will review it when available.
+          pr_message: |
+            Welcome, @${{ github.actor }}.
+
+            Thanks for opening your first pull request in this repository. A
+            maintainer will review it when available.

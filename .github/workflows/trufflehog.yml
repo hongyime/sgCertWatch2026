@@ -1,0 +1,68 @@
+# .github/workflows/trufflehog.yml
+name: TruffleHog Secret Scan
+
+# COST-OPTIMISED (2026-07-04, 2026-08-04):
+# - concurrency cancels superseded runs.
+# - paths-ignore skips scans on docs / markdown / license-only changes.
+# - PRs use shallow (fetch-depth: 2) checkout since we only diff base..head.
+# - Push: still uses fetch-depth: 0 for full-history scan on default branch.
+on:
+  push:
+    branches: ["main", "master"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - "**/LICENSE"
+      - ".gitignore"
+      - ".gitattributes"
+      - ".editorconfig"
+  pull_request:
+    branches: ["main", "master"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - "**/LICENSE"
+      - ".gitignore"
+      - ".gitattributes"
+      - ".editorconfig"
+
+concurrency:
+  group: trufflehog-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  trufflehog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Skip Dependabot pull requests
+        if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
+        run: echo "Skipping secret scan for Dependabot-only dependency updates."
+
+      - name: Checkout code
+        if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
+        uses: actions/checkout@v7
+        with:
+          # PR runs only need base..head diff, so a depth of 2 is enough.
+          # Push runs still need full history to scan the whole default branch.
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 0 }}
+
+      - name: TruffleHog OSS
+        if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
+        uses: trufflesecurity/trufflehog@v3.95.2
+        with:
+          path: ./
+          # Explicit base/head keeps PR runs limited to changed commits.
+          base: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
+          head: ${{ github.event.pull_request.head.sha || github.sha }}
+          extra_args: --only-verified
+          fail: true
+
+      - name: Check for secrets
+        if: failure() && (github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]')
+        run: echo "TruffleHog detected secrets or encountered a configuration error." && exit 1
