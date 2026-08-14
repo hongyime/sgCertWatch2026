@@ -93,6 +93,8 @@ Next steps:
 - User clarified the core product requirement is CT log polling, not just an auto-refreshing dashboard.
 - User rejected Cloudflare for ingestion; the Cloudflare Worker `sgcertwatch-ct-firehose` and KV namespace `099d42c7b20942caa982e8a9b67abead` were deleted.
 - Repository Cloudflare artifacts (`workers/ct-firehose.js`, `wrangler.jsonc`) are being removed.
-- Replacement architecture is Vercel Cron every 5 minutes calling `/api/cron/ct-poll`, with Supabase `findings` and `ingest_state` tables for persistence/status.
+- Replacement architecture is Supabase `pg_cron` every 5 minutes calling the protected Vercel function `/api/cron/ct-poll`, with Supabase `findings` and `ingest_state` tables for persistence/status.
 - Current CT source is rotating public `crt.sh` JSON searches across watched/scheme tokens, not a full Firehose stream; failures are recorded in `ct_poll_status` for the dashboard.
-- Removed the old push-style `/api/ingest` endpoint, CertStream bridge script, and related env examples because the production path is now Vercel Cron only.
+- Removed the old push-style `/api/ingest` endpoint, CertStream bridge script, and related env examples because the production path is now scheduled Supabase polling only.
+- Supabase cron job `sgcertwatch-ct-poll` is active with schedule `*/5 * * * *` and calls `https://sgcertwatch.vercel.app/api/cron/ct-poll` with `CRON_SECRET` from Supabase Vault.
+- Latest local verification after the scheduler switch: `npm run validate`, `npm test`, and Node syntax checks all passed.

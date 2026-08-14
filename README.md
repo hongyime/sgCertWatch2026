@@ -10,7 +10,7 @@ sgCertWatch2026 is a Singapore-focused Certificate Transparency monitoring dashb
 - `schemes.json` stores structured scheme metadata for downstream dashboard work.
 - `lib/scoring.js` scores CT certificate entries against the seed data.
 - `api/findings.js` exposes recent stored findings for the dashboard.
-- `api/cron/ct-poll.js` is the Vercel Cron job for periodic CT polling.
+- `api/cron/ct-poll.js` is the protected Vercel function used for periodic CT polling.
 
 ## Usage
 
@@ -23,7 +23,7 @@ npm test
 
 Persistence requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, with the schema in `supabase/schema.sql`.
 
-Production CT polling runs through Vercel Cron every 5 minutes. It uses small rotating `crt.sh` public JSON searches, scores the returned certificates, and stores findings in Supabase. This is not full CT firehose coverage, but it keeps the project on Vercel and Supabase only.
+Production CT polling is scheduled by Supabase `pg_cron` every 5 minutes and calls the protected Vercel function at `/api/cron/ct-poll`. It uses small rotating `crt.sh` public JSON searches, scores the returned certificates, and stores findings in Supabase. This is not full CT firehose coverage, but it keeps the project on Vercel and Supabase only.
 
 ## Licence
 
