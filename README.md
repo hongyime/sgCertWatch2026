@@ -9,10 +9,8 @@ sgCertWatch2026 is a Singapore-focused Certificate Transparency monitoring dashb
 - `allowlist.json` stores expected or intentionally ignored certificate patterns.
 - `schemes.json` stores structured scheme metadata for downstream dashboard work.
 - `lib/scoring.js` scores CT certificate entries against the seed data.
-- `api/ingest.js` accepts CT certificate events and stores matched findings when Supabase is configured.
 - `api/findings.js` exposes recent stored findings for the dashboard.
-- `scripts/poll_certstream.js` bridges the public CertStream feed into the ingest API.
-- `workers/ct-firehose.js` is the Cloudflare scheduled worker for CT Firehose ingestion.
+- `api/cron/ct-poll.js` is the Vercel Cron job for periodic CT polling.
 
 ## Usage
 
@@ -23,21 +21,9 @@ npm run validate
 npm test
 ```
 
-Run the CertStream bridge after setting `INGEST_URL` and `INGEST_TOKEN`:
+Persistence requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, with the schema in `supabase/schema.sql`.
 
-```bash
-npm run poll:certstream
-```
-
-Production ingest requires `INGEST_TOKEN`. Persistence requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, with the schema in `supabase/schema.sql`.
-
-For production CT ingestion, deploy the Cloudflare worker:
-
-```bash
-wrangler deploy
-```
-
-The worker stores its Cert Spotter Firehose cursor in Cloudflare KV and posts matches to the Vercel ingest API. SSLMate Firehose access requires a Cert Spotter plan that supports `/v1/issuances/firehose`; without that, the worker status endpoint reports `not_allowed_by_plan`.
+Production CT polling runs through Vercel Cron every 5 minutes. It uses small rotating `crt.sh` public JSON searches, scores the returned certificates, and stores findings in Supabase. This is not full CT firehose coverage, but it keeps the project on Vercel and Supabase only.
 
 ## Licence
 

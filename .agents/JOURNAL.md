@@ -16,4 +16,5 @@
 - 2026-08-14: Completed Supabase persistence setup for project `umixzwbsajyhiuaethxq`; Vercel env vars and GitHub scheduled ingest secret are configured, with synthetic ingest/readback verified.
 - 2026-08-14: Verified scheduled `CT Ingest` workflow connectivity and removed the synthetic smoke-test finding from Supabase after readback.
 - 2026-08-14: Updated dashboard UX so summary cards navigate datasets, live feed auto-refreshes, and pending verification details are collapsed by default for non-technical users.
-- 2026-08-14: Moved CT ingestion toward a Cloudflare scheduled Firehose worker; SSLMate Firehose currently blocks with `not_allowed_by_plan`, so real ingestion needs Firehose subscription/API access or another always-on CT source.
+- 2026-08-14: Removed Cloudflare ingestion after user rejected that architecture; deleted the Worker/KV resources and replaced the repo path with Vercel Cron plus Supabase state/persistence.
+- 2026-08-14: Removed the old push-style ingest endpoint and CertStream bridge docs/scripts so scheduled Vercel polling is the only active ingestion path.

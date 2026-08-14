@@ -49,21 +49,20 @@ Progress:
 - User explicitly chose not to do the Vercel-recommended DNS cleanup because DNS should remain managed through Cloudflare.
 - Started Phase 6 real monitor work.
 - Added reusable CT scoring engine in `lib/scoring.js`.
-- Added Vercel APIs: `api/ingest.js` for CT event ingestion and `api/findings.js` for dashboard feed reads.
+- Added Vercel API `api/findings.js` for dashboard feed reads.
 - Added optional Supabase REST adapter in `lib/supabase.js` and schema in `supabase/schema.sql`.
-- Added `scripts/poll_certstream.js` to bridge the public CertStream websocket feed into the ingest API.
+- The earlier push-style ingest endpoint and CertStream bridge were removed after the user clarified that 5-minute scheduled polling is acceptable.
 - Added scoring tests in `scripts/test_scoring.js` and wired them into package scripts/CI.
-- Set production `INGEST_TOKEN` in Vercel as a sensitive env var so production ingest is not open.
+- Production `INGEST_TOKEN` was removed from Vercel after deleting the old ingest endpoint.
 - Ran release validation and scoring tests; both passed.
 - Pushed Phase 6 commit `f671505`; Vercel Git deployment `dpl_Hyg3uown9USfDDWcSZx4YevEWrya` is `READY` and includes two Node serverless functions.
 - Completed Supabase wiring for project `umixzwbsajyhiuaethxq`.
 - Applied `supabase/schema.sql`; `public.findings` exists with RLS enabled and direct Data API grants revoked from `anon`/`authenticated`, leaving server-side `service_role` access.
-- Set Vercel production env vars `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and a rotated `INGEST_TOKEN`.
-- Wrote local ignored `.env.local` with bridge settings.
+- Set Vercel production env vars `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `CRON_SECRET`.
+- Wrote local ignored `.env.local` with Vercel Cron settings.
 - Fixed Vercel function packaging by statically importing seed JSON in `lib/data.js`.
-- Verified synthetic `/api/ingest` persisted one high-severity finding to Supabase and `/api/findings` read it back.
-- Added scheduled GitHub Actions bridge `.github/workflows/ct-ingest.yml` and set GitHub secret `INGEST_TOKEN`.
-- Manually triggered `CT Ingest` workflow run `31783158316`; it completed successfully and connected to CertStream, but posted 0 events because the upstream socket emitted no certificate updates during the run window.
+- Verified synthetic ingest/readback earlier, then removed the old endpoint when replacing ingestion with Vercel Cron.
+- Removed the scheduled GitHub Actions bridge; no GitHub secret is needed for polling now.
 - Removed the synthetic smoke-test finding; `public.findings` count returned to 0.
 - Started dashboard UX cleanup after user feedback.
 - Made summary cards and dataset tabs switch the data table directly across watched brands, suspicious keywords, allowlist, and schemes.
@@ -91,7 +90,9 @@ Next steps:
 - Do not apply Vercel's recommended Cloudflare DNS target change unless the user reverses the decision; keep DNS managed in Cloudflare.
 - Monitor the scheduled `CT Ingest` workflow and dashboard feed; rotate the Supabase keys because secrets were pasted into chat during setup.
 - Dashboard should stay simple for a normal Singaporean user; keep internal verification detail behind collapsed/manual-review UI.
-- User clarified the core product requirement is real CT log ingestion, not just an auto-refreshing dashboard.
-- Deployed Cloudflare Worker `sgcertwatch-ct-firehose` at `https://sgcertwatch-ct-firehose.hongyime.workers.dev` with 5-minute cron and KV namespace `099d42c7b20942caa982e8a9b67abead`.
-- Worker manual run reached SSLMate Cert Spotter Firehose but received `403 not_allowed_by_plan`; production Firehose requires SSLMate plan access or a different always-on CT source.
-- Removed the misleading GitHub Actions CT websocket bridge and added dashboard CT source status from the Cloudflare Worker.
+- User clarified the core product requirement is CT log polling, not just an auto-refreshing dashboard.
+- User rejected Cloudflare for ingestion; the Cloudflare Worker `sgcertwatch-ct-firehose` and KV namespace `099d42c7b20942caa982e8a9b67abead` were deleted.
+- Repository Cloudflare artifacts (`workers/ct-firehose.js`, `wrangler.jsonc`) are being removed.
+- Replacement architecture is Vercel Cron every 5 minutes calling `/api/cron/ct-poll`, with Supabase `findings` and `ingest_state` tables for persistence/status.
+- Current CT source is rotating public `crt.sh` JSON searches across watched/scheme tokens, not a full Firehose stream; failures are recorded in `ct_poll_status` for the dashboard.
+- Removed the old push-style `/api/ingest` endpoint, CertStream bridge script, and related env examples because the production path is now Vercel Cron only.

@@ -5,7 +5,7 @@ const files = {
   schemes: "/schemes.json"
 };
 
-const CT_SOURCE_STATUS_URL = "https://sgcertwatch-ct-firehose.hongyime.workers.dev/status";
+const CT_SOURCE_STATUS_URL = "/api/source-status";
 
 const state = {
   data: null,
@@ -230,17 +230,19 @@ async function renderSourceStatus() {
     if (!response.ok) throw new Error("source check failed");
     const status = await response.json();
 
-    if (status.ok) {
-      $("source-status").textContent = `${status.upstream_count || 0} checked`;
+    const source = status.status || status;
+
+    if (source.ok) {
+      $("source-status").textContent = `${source.scanned_entries || 0} checked`;
       return;
     }
 
-    if (status.upstream_status === 403 && String(status.error || "").includes("not_allowed_by_plan")) {
-      $("source-status").textContent = "Firehose plan needed";
+    if (source.errors?.length) {
+      $("source-status").textContent = "poll errors";
       return;
     }
 
-    $("source-status").textContent = "source blocked";
+    $("source-status").textContent = "waiting for first poll";
   } catch (_error) {
     $("source-status").textContent = "source unknown";
   }

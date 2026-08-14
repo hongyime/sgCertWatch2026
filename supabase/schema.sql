@@ -25,3 +25,14 @@ alter table public.findings enable row level security;
 
 revoke all on table public.findings from anon, authenticated;
 grant select, insert, update on table public.findings to service_role;
+
+create table if not exists public.ingest_state (
+  key text primary key,
+  value jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.ingest_state enable row level security;
+
+revoke all on table public.ingest_state from anon, authenticated;
+grant select, insert, update on table public.ingest_state to service_role;
