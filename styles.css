@@ -222,16 +222,61 @@ dd {
   text-align: right;
 }
 
-.pending h3 {
+.pending h3,
+.feed h3 {
   margin-bottom: 8px;
   font-size: 15px;
 }
 
-.pending ul {
+.pending ul,
+.feed ul {
   display: grid;
   gap: 8px;
   margin: 0;
   padding-left: 18px;
+}
+
+.feed {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #edf0f3;
+}
+
+#feed-status {
+  margin-bottom: 8px;
+  color: #637083;
+  font-size: 13px;
+}
+
+.finding {
+  color: #405064;
+  font-size: 13px;
+}
+
+.finding strong {
+  display: block;
+  color: #18202a;
+  font-size: 14px;
+}
+
+.severity {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  color: #ffffff;
+  background: #405064;
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.severity.high,
+.severity.critical {
+  background: #ad2f3b;
+}
+
+.severity.medium {
+  background: #9a6717;
 }
 
 @media (max-width: 900px) {

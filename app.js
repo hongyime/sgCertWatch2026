@@ -144,6 +144,32 @@ function renderSummary() {
   $("data-status").textContent = `Data loaded from JSON seed files`;
 }
 
+async function renderFindings() {
+  try {
+    const response = await fetch("/api/findings?limit=8");
+    if (!response.ok) throw new Error("Feed unavailable");
+    const payload = await response.json();
+    const findings = payload.findings || [];
+
+    $("feed-status").textContent = payload.storage_configured
+      ? `${findings.length} latest finding${findings.length === 1 ? "" : "s"}`
+      : "Persistence not configured";
+
+    $("finding-list").innerHTML = findings.length
+      ? findings.map((finding) => `
+        <li class="finding">
+          <strong>${escapeHtml(finding.registrable)}</strong>
+          ${escapeHtml((finding.domains || []).slice(0, 2).join(", "))}
+          <span class="severity ${escapeHtml(finding.severity)}">${escapeHtml(finding.severity)} ${escapeHtml(finding.score)}</span>
+        </li>
+      `).join("")
+      : '<li class="finding">No stored findings yet.</li>';
+  } catch (error) {
+    $("feed-status").textContent = error.message;
+    $("finding-list").innerHTML = '<li class="finding">No stored findings yet.</li>';
+  }
+}
+
 function render() {
   renderCategories();
   $("category-filter").value = state.category;
@@ -161,6 +187,7 @@ async function loadData() {
     state.data = Object.fromEntries(entries);
     renderSummary();
     render();
+    renderFindings();
   } catch (error) {
     $("data-status").textContent = error.message;
     $("data-status").classList.add("error");

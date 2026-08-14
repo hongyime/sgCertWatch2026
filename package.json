@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "python scripts/validate_data.py --release"
+    "validate": "python scripts/validate_data.py --release",
+    "test": "node scripts/test_scoring.js",
+    "poll:certstream": "node scripts/poll_certstream.js"
   }
 }

@@ -10,3 +10,5 @@
 - 2026-08-14: Added a static Vercel-ready dashboard over the committed JSON data; Supabase is deferred because the current product surface has no runtime data/auth requirement.
 - 2026-08-14: Created and deployed Vercel project `theprawnvercel/sgcertwatch`; `sgcertwatch.vercel.app` is live, and `sgcertwatch.hong-yi.me` is attached with a recommended Cloudflare CNAME update remaining.
 - 2026-08-14: Connected Vercel project `sgcertwatch` to GitHub repository `hongyime/sgCertWatch2026` for future Git deployments.
+- 2026-08-14: User chose to keep `sgcertwatch.hong-yi.me` DNS managed through Cloudflare and skip Vercel's recommended DNS target cleanup.
+- 2026-08-14: Started Phase 6 as real monitor implementation: scoring engine, ingest/feed APIs, optional Supabase persistence, and CertStream bridge.

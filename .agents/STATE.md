@@ -1,6 +1,6 @@
 # Agent State
 
-Current task: continue verification all the way.
+Current task: Phase 6 real monitor implementation.
 
 Progress:
 - No prior `.agents/STATE.md` existed at session start.
@@ -46,6 +46,15 @@ Progress:
 - Connected the Vercel project to GitHub repository `https://github.com/hongyime/sgCertWatch2026.git` using `vercel git connect`.
 - Deployed production: `https://sgcertwatch.vercel.app` is aliased to ready deployment `dpl_9NaFcTj24HT9Ykwf6kapDaB1fKjg`.
 - Added custom domain `sgcertwatch.hong-yi.me` to the Vercel project. Vercel reports it is attached and verified with a valid current CNAME, but recommends changing Cloudflare DNS to CNAME `sgcertwatch` -> `54c38f6ce13cfacb.vercel-dns-017.com.` with proxy disabled.
+- User explicitly chose not to do the Vercel-recommended DNS cleanup because DNS should remain managed through Cloudflare.
+- Started Phase 6 real monitor work.
+- Added reusable CT scoring engine in `lib/scoring.js`.
+- Added Vercel APIs: `api/ingest.js` for CT event ingestion and `api/findings.js` for dashboard feed reads.
+- Added optional Supabase REST adapter in `lib/supabase.js` and schema in `supabase/schema.sql`.
+- Added `scripts/poll_certstream.js` to bridge the public CertStream websocket feed into the ingest API.
+- Added scoring tests in `scripts/test_scoring.js` and wired them into package scripts/CI.
+- Set production `INGEST_TOKEN` in Vercel as a sensitive env var so production ingest is not open.
+- Ran release validation and scoring tests; both passed.
 
 Current understanding:
 - This is a data/configuration repository for a Singapore-focused Certificate Transparency monitoring dashboard.
@@ -56,7 +65,7 @@ Current understanding:
 - 67 active allowlist entries are verified; 0 active allowlist entries remain unverified; all 11 scheme entries are verified.
 - 2 non-suppressing pending candidates remain for future human/source review: `paylah.com.sg` and `qoo10.sg`.
 - Follow-up research confirms neither pending candidate should be restored to active suppression without stronger proof.
-- CI is mostly shared repository governance/security automation; the build check only runs for JS/TS/package changes and skips when no package build script exists.
+- CI includes seed-data validation and scoring-engine tests for data/scoring changes.
 
 Next steps:
 - Review and commit Phase 1-5 plus final verification changes if acceptable.
@@ -64,4 +73,6 @@ Next steps:
 - Future review can investigate `paylah.com.sg` and `qoo10.sg`; do not add them back to active allowlist without exact-domain proof.
 - No launch-blocking data decisions remain; pending candidates are intentionally non-suppressing.
 - Commit and push the static app/data validation work so a Vercel Git project named `sgcertwatch` can be created from the GitHub repository.
-- Optional DNS cleanup: apply Vercel's recommended Cloudflare Domain Connect change for `sgcertwatch.hong-yi.me`. Future pushes to `main` should deploy through Vercel Git integration.
+- Do not apply Vercel's recommended Cloudflare DNS target change unless the user reverses the decision; keep DNS managed in Cloudflare.
+- Configure Supabase project env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) and apply `supabase/schema.sql` when ready to persist live findings.
+- Run a CertStream bridge with `INGEST_URL=https://sgcertwatch.vercel.app/api/ingest` and the Vercel `INGEST_TOKEN` to start feeding live CT events.
