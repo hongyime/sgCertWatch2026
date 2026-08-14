@@ -91,3 +91,7 @@ Next steps:
 - Do not apply Vercel's recommended Cloudflare DNS target change unless the user reverses the decision; keep DNS managed in Cloudflare.
 - Monitor the scheduled `CT Ingest` workflow and dashboard feed; rotate the Supabase keys because secrets were pasted into chat during setup.
 - Dashboard should stay simple for a normal Singaporean user; keep internal verification detail behind collapsed/manual-review UI.
+- User clarified the core product requirement is real CT log ingestion, not just an auto-refreshing dashboard.
+- Deployed Cloudflare Worker `sgcertwatch-ct-firehose` at `https://sgcertwatch-ct-firehose.hongyime.workers.dev` with 5-minute cron and KV namespace `099d42c7b20942caa982e8a9b67abead`.
+- Worker manual run reached SSLMate Cert Spotter Firehose but received `403 not_allowed_by_plan`; production Firehose requires SSLMate plan access or a different always-on CT source.
+- Removed the misleading GitHub Actions CT websocket bridge and added dashboard CT source status from the Cloudflare Worker.

@@ -12,6 +12,7 @@ sgCertWatch2026 is a Singapore-focused Certificate Transparency monitoring dashb
 - `api/ingest.js` accepts CT certificate events and stores matched findings when Supabase is configured.
 - `api/findings.js` exposes recent stored findings for the dashboard.
 - `scripts/poll_certstream.js` bridges the public CertStream feed into the ingest API.
+- `workers/ct-firehose.js` is the Cloudflare scheduled worker for CT Firehose ingestion.
 
 ## Usage
 
@@ -29,6 +30,14 @@ npm run poll:certstream
 ```
 
 Production ingest requires `INGEST_TOKEN`. Persistence requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, with the schema in `supabase/schema.sql`.
+
+For production CT ingestion, deploy the Cloudflare worker:
+
+```bash
+wrangler deploy
+```
+
+The worker stores its Cert Spotter Firehose cursor in Cloudflare KV and posts matches to the Vercel ingest API. SSLMate Firehose access requires a Cert Spotter plan that supports `/v1/issuances/firehose`; without that, the worker status endpoint reports `not_allowed_by_plan`.
 
 ## Licence
 

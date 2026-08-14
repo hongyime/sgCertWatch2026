@@ -5,6 +5,8 @@ const files = {
   schemes: "/schemes.json"
 };
 
+const CT_SOURCE_STATUS_URL = "https://sgcertwatch-ct-firehose.hongyime.workers.dev/status";
+
 const state = {
   data: null,
   dataset: "brands",
@@ -222,6 +224,28 @@ async function renderFindings() {
   }
 }
 
+async function renderSourceStatus() {
+  try {
+    const response = await fetch(CT_SOURCE_STATUS_URL);
+    if (!response.ok) throw new Error("source check failed");
+    const status = await response.json();
+
+    if (status.ok) {
+      $("source-status").textContent = `${status.upstream_count || 0} checked`;
+      return;
+    }
+
+    if (status.upstream_status === 403 && String(status.error || "").includes("not_allowed_by_plan")) {
+      $("source-status").textContent = "Firehose plan needed";
+      return;
+    }
+
+    $("source-status").textContent = "source blocked";
+  } catch (_error) {
+    $("source-status").textContent = "source unknown";
+  }
+}
+
 function render() {
   renderCategories();
   $("category-filter").value = state.category;
@@ -240,6 +264,7 @@ async function loadData() {
     renderSummary();
     render();
     renderFindings();
+    renderSourceStatus();
   } catch (error) {
     $("data-status").textContent = error.message;
     $("data-status").classList.add("error");
@@ -268,3 +293,4 @@ document.querySelectorAll("[data-dataset]").forEach((element) => {
 
 loadData();
 setInterval(renderFindings, 60000);
+setInterval(renderSourceStatus, 60000);

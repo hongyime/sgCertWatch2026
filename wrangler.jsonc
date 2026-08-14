@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sgcertwatch-ct-firehose",
+  "main": "workers/ct-firehose.js",
+  "compatibility_date": "2026-08-14",
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "vars": {
+    "INGEST_URL": "https://sgcertwatch.vercel.app/api/ingest"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SG_CERTWATCH_STATE",
+      "id": "099d42c7b20942caa982e8a9b67abead"
+    }
+  ]
+}
