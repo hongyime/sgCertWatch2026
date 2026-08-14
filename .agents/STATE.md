@@ -63,6 +63,8 @@ Progress:
 - Fixed Vercel function packaging by statically importing seed JSON in `lib/data.js`.
 - Verified synthetic `/api/ingest` persisted one high-severity finding to Supabase and `/api/findings` read it back.
 - Added scheduled GitHub Actions bridge `.github/workflows/ct-ingest.yml` and set GitHub secret `INGEST_TOKEN`.
+- Manually triggered `CT Ingest` workflow run `31783158316`; it completed successfully and connected to CertStream, but posted 0 events because the upstream socket emitted no certificate updates during the run window.
+- Removed the synthetic smoke-test finding; `public.findings` count returned to 0.
 
 Current understanding:
 - This is a data/configuration repository for a Singapore-focused Certificate Transparency monitoring dashboard.

@@ -14,3 +14,4 @@
 - 2026-08-14: Started Phase 6 as real monitor implementation: scoring engine, ingest/feed APIs, optional Supabase persistence, and CertStream bridge.
 - 2026-08-14: Deployed Phase 6 commit `f671505` to Vercel; production deployment is ready with Node serverless ingest/feed functions.
 - 2026-08-14: Completed Supabase persistence setup for project `umixzwbsajyhiuaethxq`; Vercel env vars and GitHub scheduled ingest secret are configured, with synthetic ingest/readback verified.
+- 2026-08-14: Verified scheduled `CT Ingest` workflow connectivity and removed the synthetic smoke-test finding from Supabase after readback.
