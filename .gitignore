@@ -1,8 +1,20 @@
 
+
+.vercel
+.env*
+!.env.example
+!.env.template
+!.env.sample
+
 # AI / editor dot directories (managed via sourcerepo)
 .*
 !.github/
 !.agents/
+.agents/*
+!.agents/STATE.md
+!.agents/JOURNAL.md
+!.agents/handoffs/
+!.agents/handoffs/**
 !.gitignore
 !.gitattributes
 !.gitmodules
@@ -28,9 +40,4 @@
 skills/
 skills-lock.json
 docs/
-
-.vercel
-.env*
-!.env.example
-!.env.template
-!.env.sample
+# End AI / editor dot directories (managed via sourcerepo)
