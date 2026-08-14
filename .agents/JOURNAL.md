@@ -18,3 +18,4 @@
 - 2026-08-14: Updated dashboard UX so summary cards navigate datasets, live feed auto-refreshes, and pending verification details are collapsed by default for non-technical users.
 - 2026-08-14: Removed Cloudflare ingestion after user rejected that architecture; deleted the Worker/KV resources and replaced the repo path with Supabase-scheduled Vercel polling plus Supabase state/persistence.
 - 2026-08-14: Vercel Hobby blocked 5-minute Vercel Cron, so scheduling moved to Supabase `pg_cron`/`pg_net` calling the protected Vercel polling function.
+- 2026-08-14: Production deployment `dpl_55ohDvVnrtitd1RkhgjFignrhn7A` is ready on both requested aliases; current CT source health is degraded because public `crt.sh` searches are returning timeout/502 responses.

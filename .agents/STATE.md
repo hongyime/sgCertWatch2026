@@ -98,3 +98,5 @@ Next steps:
 - Removed the old push-style `/api/ingest` endpoint, CertStream bridge script, and related env examples because the production path is now scheduled Supabase polling only.
 - Supabase cron job `sgcertwatch-ct-poll` is active with schedule `*/5 * * * *` and calls `https://sgcertwatch.vercel.app/api/cron/ct-poll` with `CRON_SECRET` from Supabase Vault.
 - Latest local verification after the scheduler switch: `npm run validate`, `npm test`, and Node syntax checks all passed.
+- Final production deployment after removing Vercel Cron is `dpl_55ohDvVnrtitd1RkhgjFignrhn7A`, ready on `https://sgcertwatch.vercel.app` and `https://sgcertwatch.hong-yi.me`.
+- Manual protected poll invocation succeeded at the HTTP/function layer and wrote `ct_poll_status`; current upstream batch had `crt.sh` timeout/502 errors, so the dashboard reports `CT search retrying`.
