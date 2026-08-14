@@ -215,7 +215,7 @@ async function renderFindings() {
           <span class="severity ${escapeHtml(finding.severity)}">${escapeHtml(finding.severity)} ${escapeHtml(finding.score)}</span>
         </li>
       `).join("")
-      : '<li class="finding">No live alerts yet. The scheduled CT scan is running in GitHub Actions and will appear here after a match is stored.</li>';
+      : '<li class="finding">No live alerts yet. The 5-minute CT scan will show matches here after a suspicious certificate is found.</li>';
   } catch (error) {
     $("feed-status").textContent = error.message;
     $("feed-health").textContent = "Feed check failed";
@@ -233,18 +233,18 @@ async function renderSourceStatus() {
     const source = status.status || status;
 
     if (source.ok) {
-      $("source-status").textContent = `${source.scanned_entries || 0} checked`;
+      $("source-status").textContent = `${source.scanned_entries || 0} certs checked`;
       return;
     }
 
     if (source.errors?.length) {
-      $("source-status").textContent = "poll errors";
+      $("source-status").textContent = "CT search retrying";
       return;
     }
 
-    $("source-status").textContent = "waiting for first poll";
+    $("source-status").textContent = "waiting for scan";
   } catch (_error) {
-    $("source-status").textContent = "source unknown";
+    $("source-status").textContent = "scan status unknown";
   }
 }
 
