@@ -20,3 +20,8 @@ create index if not exists findings_severity_idx on public.findings (severity);
 create index if not exists findings_registrable_idx on public.findings (registrable);
 create index if not exists findings_matched_brands_idx on public.findings using gin (matched_brands);
 create index if not exists findings_matched_schemes_idx on public.findings using gin (matched_schemes);
+
+alter table public.findings enable row level security;
+
+revoke all on table public.findings from anon, authenticated;
+grant select, insert, update on table public.findings to service_role;
