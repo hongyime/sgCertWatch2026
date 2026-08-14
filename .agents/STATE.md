@@ -65,6 +65,11 @@ Progress:
 - Added scheduled GitHub Actions bridge `.github/workflows/ct-ingest.yml` and set GitHub secret `INGEST_TOKEN`.
 - Manually triggered `CT Ingest` workflow run `31783158316`; it completed successfully and connected to CertStream, but posted 0 events because the upstream socket emitted no certificate updates during the run window.
 - Removed the synthetic smoke-test finding; `public.findings` count returned to 0.
+- Started dashboard UX cleanup after user feedback.
+- Made summary cards and dataset tabs switch the data table directly across watched brands, suspicious keywords, allowlist, and schemes.
+- Collapsed `paylah.com.sg` and `qoo10.sg` pending-candidate details under manual review notes so normal users do not see long internal rationale by default.
+- Added plain-language first-screen context and a live-feed status area.
+- Added 60-second live feed refresh in the browser.
 
 Current understanding:
 - This is a data/configuration repository for a Singapore-focused Certificate Transparency monitoring dashboard.
@@ -85,3 +90,4 @@ Next steps:
 - Commit and push the static app/data validation work so a Vercel Git project named `sgcertwatch` can be created from the GitHub repository.
 - Do not apply Vercel's recommended Cloudflare DNS target change unless the user reverses the decision; keep DNS managed in Cloudflare.
 - Monitor the scheduled `CT Ingest` workflow and dashboard feed; rotate the Supabase keys because secrets were pasted into chat during setup.
+- Dashboard should stay simple for a normal Singaporean user; keep internal verification detail behind collapsed/manual-review UI.

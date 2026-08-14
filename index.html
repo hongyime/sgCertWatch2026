@@ -17,22 +17,41 @@
     </header>
 
     <main>
+      <section class="brief" aria-label="What this monitor does">
+        <div>
+          <h2>Singapore scam-domain early warning</h2>
+          <p>
+            We watch new certificate activity for names that look like local banks, government services,
+            delivery firms, shopping platforms, transport apps, schools, hospitals, and payout schemes.
+          </p>
+        </div>
+        <div class="brief-status">
+          <span id="feed-health">Checking live feed</span>
+          <strong id="feed-count">0</strong>
+          <span>stored alerts</span>
+        </div>
+      </section>
+
       <section class="summary" aria-label="Dataset summary">
-        <article>
+        <article class="summary-card active" data-dataset="brands" tabindex="0" role="button" aria-pressed="true">
           <span id="brand-count">-</span>
           <p>Watched brands</p>
+          <small>Names scammers may copy</small>
         </article>
-        <article>
+        <article class="summary-card" data-dataset="keywords" tabindex="0" role="button" aria-pressed="false">
           <span id="keyword-count">-</span>
           <p>Suspicious keywords</p>
+          <small>Words like login, refund, OTP</small>
         </article>
-        <article>
+        <article class="summary-card" data-dataset="allowlist" tabindex="0" role="button" aria-pressed="false">
           <span id="allowlist-count">-</span>
-          <p>Verified allowlist entries</p>
+          <p>Allowlist</p>
+          <small>Official domains we suppress</small>
         </article>
-        <article>
+        <article class="summary-card" data-dataset="schemes" tabindex="0" role="button" aria-pressed="false">
           <span id="scheme-count">-</span>
           <p>Government schemes</p>
+          <small>Vouchers and payouts</small>
         </article>
       </section>
 
@@ -47,14 +66,12 @@
             <option value="">All categories</option>
           </select>
         </label>
-        <label>
-          <span>Dataset</span>
-          <select id="dataset-filter">
-            <option value="brands">Brands</option>
-            <option value="allowlist">Allowlist</option>
-            <option value="schemes">Schemes</option>
-          </select>
-        </label>
+        <div class="mode-tabs" aria-label="Dataset">
+          <button type="button" data-dataset="brands" class="active">Brands</button>
+          <button type="button" data-dataset="keywords">Keywords</button>
+          <button type="button" data-dataset="allowlist">Allowlist</button>
+          <button type="button" data-dataset="schemes">Schemes</button>
+        </div>
       </section>
 
       <section class="split">
@@ -86,11 +103,15 @@
               <dt>Pending review</dt>
               <dd id="pending-status">-</dd>
             </div>
+            <div>
+              <dt>Last feed check</dt>
+              <dd id="last-feed-check">-</dd>
+            </div>
           </dl>
-          <div class="pending">
-            <h3>Pending Candidates</h3>
+          <details class="pending">
+            <summary>Manual review notes</summary>
             <ul id="pending-list"></ul>
-          </div>
+          </details>
           <div class="feed">
             <h3>Live Findings</h3>
             <div id="feed-status">Loading feed</div>

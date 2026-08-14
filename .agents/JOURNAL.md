@@ -15,3 +15,4 @@
 - 2026-08-14: Deployed Phase 6 commit `f671505` to Vercel; production deployment is ready with Node serverless ingest/feed functions.
 - 2026-08-14: Completed Supabase persistence setup for project `umixzwbsajyhiuaethxq`; Vercel env vars and GitHub scheduled ingest secret are configured, with synthetic ingest/readback verified.
 - 2026-08-14: Verified scheduled `CT Ingest` workflow connectivity and removed the synthetic smoke-test finding from Supabase after readback.
+- 2026-08-14: Updated dashboard UX so summary cards navigate datasets, live feed auto-refreshes, and pending verification details are collapsed by default for non-technical users.

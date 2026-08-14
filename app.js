@@ -9,7 +9,8 @@ const state = {
   data: null,
   dataset: "brands",
   query: "",
-  category: ""
+  category: "",
+  findings: []
 };
 
 const $ = (id) => document.getElementById(id);
@@ -39,6 +40,14 @@ function searchable(row) {
 function currentRows() {
   const { data } = state;
   if (!data) return [];
+
+  if (state.dataset === "keywords") {
+    return data.keywords.keywords.map((keyword) => ({
+      name: keyword.token,
+      category: keyword.category,
+      affix: keyword.affix ? "used in joined words" : "exact/label match"
+    }));
+  }
 
   if (state.dataset === "allowlist") {
     return data.allowlist.entries.map((entry) => ({
@@ -86,8 +95,26 @@ function renderCategories() {
 
 function renderTable() {
   const rows = filteredRows();
-  $("table-title").textContent = state.dataset[0].toUpperCase() + state.dataset.slice(1);
+  const titles = {
+    brands: "Watched Brands",
+    keywords: "Suspicious Keywords",
+    allowlist: "Allowlist",
+    schemes: "Government Schemes"
+  };
+  $("table-title").textContent = titles[state.dataset];
   $("result-count").textContent = `${rows.length} result${rows.length === 1 ? "" : "s"}`;
+
+  if (state.dataset === "keywords") {
+    $("table-head").innerHTML = "<tr><th>Keyword</th><th>Type</th><th>How it is used</th></tr>";
+    $("table-body").innerHTML = rows.map((row) => `
+      <tr>
+        <td><strong>${escapeHtml(row.name)}</strong></td>
+        <td>${escapeHtml(row.category)}</td>
+        <td>${escapeHtml(row.affix)}</td>
+      </tr>
+    `).join("");
+    return;
+  }
 
   if (state.dataset === "allowlist") {
     $("table-head").innerHTML = "<tr><th>Registrable</th><th>Brand</th><th>Status</th><th>Source</th></tr>";
@@ -127,6 +154,20 @@ function renderTable() {
   `).join("");
 }
 
+function setDataset(dataset) {
+  state.dataset = dataset;
+  state.category = "";
+  render();
+
+  document.querySelectorAll("[data-dataset]").forEach((element) => {
+    const active = element.dataset.dataset === dataset;
+    element.classList.toggle("active", active);
+    if (element.hasAttribute("aria-pressed")) {
+      element.setAttribute("aria-pressed", active ? "true" : "false");
+    }
+  });
+}
+
 function renderSummary() {
   const { watchlist, keywords, allowlist, schemes } = state.data;
   const pending = allowlist.pending_verification?.entries || [];
@@ -139,9 +180,14 @@ function renderSummary() {
   $("scheme-count").textContent = schemes.schemes.length;
   $("allowlist-status").textContent = unverifiedAllowlist === 0 ? "green" : `${unverifiedAllowlist} unverified`;
   $("scheme-status").textContent = unverifiedSchemes === 0 ? "green" : `${unverifiedSchemes} unverified`;
-  $("pending-status").textContent = `${pending.length} non-suppressing`;
-  $("pending-list").innerHTML = pending.map((entry) => `<li><strong>${escapeHtml(entry.registrable)}</strong>: ${escapeHtml(entry.reason)}</li>`).join("");
-  $("data-status").textContent = `Data loaded from JSON seed files`;
+  $("pending-status").textContent = pending.length === 0 ? "none" : `${pending.length} parked`;
+  $("pending-list").innerHTML = pending.map((entry) => `
+    <li>
+      <strong>${escapeHtml(entry.registrable)}</strong>
+      <span>${escapeHtml(entry.brand)} is not suppressing alerts because ownership/current status is not strong enough.</span>
+    </li>
+  `).join("");
+  $("data-status").textContent = `Live at ${new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 async function renderFindings() {
@@ -150,10 +196,14 @@ async function renderFindings() {
     if (!response.ok) throw new Error("Feed unavailable");
     const payload = await response.json();
     const findings = payload.findings || [];
+    state.findings = findings;
 
     $("feed-status").textContent = payload.storage_configured
-      ? `${findings.length} latest finding${findings.length === 1 ? "" : "s"}`
-      : "Persistence not configured";
+      ? (findings.length ? "Latest stored alerts from Supabase" : "No suspicious certificate alerts stored yet")
+      : "Database not connected";
+    $("feed-health").textContent = payload.storage_configured ? "Live database connected" : "Database not connected";
+    $("feed-count").textContent = findings.length;
+    $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
 
     $("finding-list").innerHTML = findings.length
       ? findings.map((finding) => `
@@ -163,10 +213,12 @@ async function renderFindings() {
           <span class="severity ${escapeHtml(finding.severity)}">${escapeHtml(finding.severity)} ${escapeHtml(finding.score)}</span>
         </li>
       `).join("")
-      : '<li class="finding">No stored findings yet.</li>';
+      : '<li class="finding">No live alerts yet. The scheduled CT scan is running in GitHub Actions and will appear here after a match is stored.</li>';
   } catch (error) {
     $("feed-status").textContent = error.message;
-    $("finding-list").innerHTML = '<li class="finding">No stored findings yet.</li>';
+    $("feed-health").textContent = "Feed check failed";
+    $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
+    $("finding-list").innerHTML = '<li class="finding">Could not load the live alert feed.</li>';
   }
 }
 
@@ -199,15 +251,20 @@ $("search").addEventListener("input", (event) => {
   renderTable();
 });
 
-$("dataset-filter").addEventListener("change", (event) => {
-  state.dataset = event.target.value;
-  state.category = "";
-  render();
-});
-
 $("category-filter").addEventListener("change", (event) => {
   state.category = event.target.value;
   renderTable();
 });
 
+document.querySelectorAll("[data-dataset]").forEach((element) => {
+  element.addEventListener("click", () => setDataset(element.dataset.dataset));
+  element.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setDataset(element.dataset.dataset);
+    }
+  });
+});
+
 loadData();
+setInterval(renderFindings, 60000);
