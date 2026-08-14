@@ -43,6 +43,7 @@ Progress:
 - Created Vercel project `theprawnvercel/sgcertwatch`.
 - Pushed commit `40475b9` to `origin/main`.
 - Linked the local checkout to Vercel project `sgcertwatch`.
+- Connected the Vercel project to GitHub repository `https://github.com/hongyime/sgCertWatch2026.git` using `vercel git connect`.
 - Deployed production: `https://sgcertwatch.vercel.app` is aliased to ready deployment `dpl_9NaFcTj24HT9Ykwf6kapDaB1fKjg`.
 - Added custom domain `sgcertwatch.hong-yi.me` to the Vercel project. Vercel reports it is attached and verified with a valid current CNAME, but recommends changing Cloudflare DNS to CNAME `sgcertwatch` -> `54c38f6ce13cfacb.vercel-dns-017.com.` with proxy disabled.
 
@@ -63,4 +64,4 @@ Next steps:
 - Future review can investigate `paylah.com.sg` and `qoo10.sg`; do not add them back to active allowlist without exact-domain proof.
 - No launch-blocking data decisions remain; pending candidates are intentionally non-suppressing.
 - Commit and push the static app/data validation work so a Vercel Git project named `sgcertwatch` can be created from the GitHub repository.
-- Optional DNS cleanup: apply Vercel's recommended Cloudflare Domain Connect change for `sgcertwatch.hong-yi.me`.
+- Optional DNS cleanup: apply Vercel's recommended Cloudflare Domain Connect change for `sgcertwatch.hong-yi.me`. Future pushes to `main` should deploy through Vercel Git integration.
