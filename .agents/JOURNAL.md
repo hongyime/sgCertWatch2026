@@ -8,3 +8,4 @@
 - 2026-08-14: Completed remaining active allowlist verification; strict release-readiness validation now passes after moving unproven `paylah.com.sg` and unresolved `qoo10.sg` to non-suppressing pending verification.
 - 2026-08-14: Completed follow-up research for `paylah.com.sg` and `qoo10.sg`; kept both non-suppressing because exact official ownership/current legitimacy remains unproven.
 - 2026-08-14: Added a static Vercel-ready dashboard over the committed JSON data; Supabase is deferred because the current product surface has no runtime data/auth requirement.
+- 2026-08-14: Created and deployed Vercel project `theprawnvercel/sgcertwatch`; `sgcertwatch.vercel.app` is live, and `sgcertwatch.hong-yi.me` is attached with a recommended Cloudflare CNAME update remaining.
