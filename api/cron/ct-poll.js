@@ -42,25 +42,42 @@ function crtRowToEntry(row, token) {
   };
 }
 
-async function queryCrtSh(token) {
-  const url = new URL("https://crt.sh/");
-  url.searchParams.set("q", `%${token}%`);
-  url.searchParams.set("output", "json");
-
+async function fetchCrtSh(url) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-  let response;
+  const timeout = setTimeout(() => controller.abort(), 20000);
   try {
-    response = await fetch(url, {
+    return await fetch(url, {
       headers: { "User-Agent": "sgCertWatch/0.1 (+https://sgcertwatch.vercel.app)" },
       signal: controller.signal
     });
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function queryCrtSh(token) {
+  const url = new URL("https://crt.sh/");
+  url.searchParams.set("q", `%${token}%`);
+  url.searchParams.set("output", "json");
+
+  let response;
+  try {
+    response = await fetchCrtSh(url);
+  } catch (_error) {
+    response = await fetchCrtSh(url);
+  }
+
+  if (response.status === 404) {
+    return [];
+  }
 
   if (!response.ok) {
-    throw new Error(`crt.sh ${response.status}`);
+    if ([502, 503, 504].includes(response.status)) {
+      response = await fetchCrtSh(url);
+    }
+    if (!response.ok) {
+      throw new Error(`crt.sh ${response.status}`);
+    }
   }
 
   const rows = await response.json();
