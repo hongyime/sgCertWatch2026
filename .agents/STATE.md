@@ -56,6 +56,13 @@ Progress:
 - Set production `INGEST_TOKEN` in Vercel as a sensitive env var so production ingest is not open.
 - Ran release validation and scoring tests; both passed.
 - Pushed Phase 6 commit `f671505`; Vercel Git deployment `dpl_Hyg3uown9USfDDWcSZx4YevEWrya` is `READY` and includes two Node serverless functions.
+- Completed Supabase wiring for project `umixzwbsajyhiuaethxq`.
+- Applied `supabase/schema.sql`; `public.findings` exists with RLS enabled and direct Data API grants revoked from `anon`/`authenticated`, leaving server-side `service_role` access.
+- Set Vercel production env vars `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and a rotated `INGEST_TOKEN`.
+- Wrote local ignored `.env.local` with bridge settings.
+- Fixed Vercel function packaging by statically importing seed JSON in `lib/data.js`.
+- Verified synthetic `/api/ingest` persisted one high-severity finding to Supabase and `/api/findings` read it back.
+- Added scheduled GitHub Actions bridge `.github/workflows/ct-ingest.yml` and set GitHub secret `INGEST_TOKEN`.
 
 Current understanding:
 - This is a data/configuration repository for a Singapore-focused Certificate Transparency monitoring dashboard.
@@ -75,5 +82,4 @@ Next steps:
 - No launch-blocking data decisions remain; pending candidates are intentionally non-suppressing.
 - Commit and push the static app/data validation work so a Vercel Git project named `sgcertwatch` can be created from the GitHub repository.
 - Do not apply Vercel's recommended Cloudflare DNS target change unless the user reverses the decision; keep DNS managed in Cloudflare.
-- Configure Supabase project env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) and apply `supabase/schema.sql` when ready to persist live findings.
-- Run a CertStream bridge with `INGEST_URL=https://sgcertwatch.vercel.app/api/ingest` and the Vercel `INGEST_TOKEN` to start feeding live CT events.
+- Monitor the scheduled `CT Ingest` workflow and dashboard feed; rotate the Supabase keys because secrets were pasted into chat during setup.

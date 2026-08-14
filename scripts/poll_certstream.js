@@ -34,6 +34,10 @@ async function postBatch() {
 function connect() {
   const socket = new WebSocket(CERTSTREAM_URL);
 
+  socket.addEventListener("open", () => {
+    console.log(JSON.stringify({ event: "connected", url: CERTSTREAM_URL, ingestUrl: INGEST_URL }));
+  });
+
   socket.addEventListener("message", async (event) => {
     const message = JSON.parse(event.data);
     if (message.message_type !== "certificate_update") return;
@@ -50,6 +54,7 @@ function connect() {
 
   socket.addEventListener("close", async () => {
     await postBatch().catch((error) => console.error(error.message));
+    console.log(JSON.stringify({ event: "closed", posted }));
     if (!RUN_SECONDS) setTimeout(connect, 2000);
   });
 
