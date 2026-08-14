@@ -100,3 +100,4 @@ Next steps:
 - Latest local verification after the scheduler switch: `npm run validate`, `npm test`, and Node syntax checks all passed.
 - Final production deployment after removing Vercel Cron is `dpl_FdGAckR1XnXuUy5r3YUBu8Z7kQCC`, ready on `https://sgcertwatch.vercel.app` and `https://sgcertwatch.hong-yi.me`.
 - Manual protected poll invocation succeeded at the HTTP/function layer and wrote `ct_poll_status`; current upstream batch had `crt.sh` timeout/502 errors, so the dashboard reports `CT search retrying`.
+- Added retry handling for transient `crt.sh` 502/503/504 and timeout failures, and treats `crt.sh` 404 as no results. Follow-up manual scan saw 5 certificate rows and one remaining upstream `crt.sh 503`.
