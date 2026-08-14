@@ -55,6 +55,7 @@ Progress:
 - Added scoring tests in `scripts/test_scoring.js` and wired them into package scripts/CI.
 - Set production `INGEST_TOKEN` in Vercel as a sensitive env var so production ingest is not open.
 - Ran release validation and scoring tests; both passed.
+- Pushed Phase 6 commit `f671505`; Vercel Git deployment `dpl_Hyg3uown9USfDDWcSZx4YevEWrya` is `READY` and includes two Node serverless functions.
 
 Current understanding:
 - This is a data/configuration repository for a Singapore-focused Certificate Transparency monitoring dashboard.

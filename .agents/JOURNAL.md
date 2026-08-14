@@ -12,3 +12,4 @@
 - 2026-08-14: Connected Vercel project `sgcertwatch` to GitHub repository `hongyime/sgCertWatch2026` for future Git deployments.
 - 2026-08-14: User chose to keep `sgcertwatch.hong-yi.me` DNS managed through Cloudflare and skip Vercel's recommended DNS target cleanup.
 - 2026-08-14: Started Phase 6 as real monitor implementation: scoring engine, ingest/feed APIs, optional Supabase persistence, and CertStream bridge.
+- 2026-08-14: Deployed Phase 6 commit `f671505` to Vercel; production deployment is ready with Node serverless ingest/feed functions.
