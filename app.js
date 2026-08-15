@@ -48,6 +48,66 @@ function searchable(row) {
   return JSON.stringify(row).toLowerCase();
 }
 
+function formatTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("en-SG", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function signalText(signal) {
+  if (signal.type?.startsWith("brand")) return `${signal.display || signal.brand} name`;
+  if (signal.type === "tld:mismatch") return `unusual .${signal.actual} ending`;
+  if (signal.type === "kw") return `${signal.token} keyword`;
+  if (signal.type === "scheme") return `${signal.display || signal.scheme} scheme`;
+  return signal.type || "matched rule";
+}
+
+function renderReasons(signals = []) {
+  const reasons = unique(signals.map(signalText)).slice(0, 4);
+  return reasons.length ? tokenList(reasons) : "";
+}
+
+function renderFindingCard(finding) {
+  const domains = (finding.domains || []).slice(0, 3).join(", ");
+  const sources = (finding.sources || []).map(sourceLabel).join(", ") || "unknown";
+  return `
+    <li class="watch-card finding-card">
+      <div class="watch-card-head">
+        <strong>${escapeHtml(finding.registrable)}</strong>
+        <span class="severity ${escapeHtml(finding.severity)}">${escapeHtml(finding.severity)} ${escapeHtml(finding.score)}</span>
+      </div>
+      <p>${escapeHtml(domains || "No domain names stored")}</p>
+      ${renderReasons(finding.signals)}
+      <div class="watch-meta">
+        <span>${escapeHtml(finding.source_count || 0)} source${finding.source_count === 1 ? "" : "s"}: ${escapeHtml(sources)}</span>
+        <span>Cert seen ${escapeHtml(formatTime(finding.observed_at))}</span>
+      </div>
+    </li>
+  `;
+}
+
+function renderReviewCard(entry) {
+  return `
+    <li class="watch-card review-card">
+      <div class="watch-card-head">
+        <strong>${escapeHtml(entry.registrable)}</strong>
+        <span class="review-badge">review</span>
+      </div>
+      <p>${escapeHtml(entry.brand)} is parked for human checking before it can suppress alerts.</p>
+      <div class="watch-meta">
+        <span>Not treated as official yet</span>
+        <span>Manual source proof needed</span>
+      </div>
+    </li>
+  `;
+}
+
 function currentRows() {
   const { data } = state;
   if (!data) return [];
@@ -189,15 +249,12 @@ function renderSummary() {
   $("keyword-count").textContent = keywords.keywords.length;
   $("allowlist-count").textContent = allowlist.entries.length;
   $("scheme-count").textContent = schemes.schemes.length;
-  $("allowlist-status").textContent = unverifiedAllowlist === 0 ? "green" : `${unverifiedAllowlist} unverified`;
-  $("scheme-status").textContent = unverifiedSchemes === 0 ? "green" : `${unverifiedSchemes} unverified`;
-  $("pending-status").textContent = pending.length === 0 ? "none" : `${pending.length} parked`;
-  $("pending-list").innerHTML = pending.map((entry) => `
-    <li>
-      <strong>${escapeHtml(entry.registrable)}</strong>
-      <span>${escapeHtml(entry.brand)} is not suppressing alerts because ownership/current status is not strong enough.</span>
-    </li>
-  `).join("");
+  $("allowlist-status").textContent = unverifiedAllowlist === 0 ? "Ready" : `${unverifiedAllowlist} unverified`;
+  $("scheme-status").textContent = unverifiedSchemes === 0 ? "Ready" : `${unverifiedSchemes} unverified`;
+  $("pending-status").textContent = pending.length === 0 ? "None" : `${pending.length} parked`;
+  $("pending-list").innerHTML = pending.length
+    ? pending.map(renderReviewCard).join("")
+    : '<li class="watch-card review-card"><div class="watch-card-head"><strong>No parked domains</strong><span class="review-badge ok">clear</span></div><p>Nothing is waiting for manual ownership review.</p></li>';
   $("data-status").textContent = `Live at ${new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
@@ -217,20 +274,13 @@ async function renderFindings() {
     $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
 
     $("finding-list").innerHTML = findings.length
-      ? findings.map((finding) => `
-        <li class="finding">
-          <strong>${escapeHtml(finding.registrable)}</strong>
-          ${escapeHtml((finding.domains || []).slice(0, 2).join(", "))}
-          <small>${escapeHtml(finding.source_count || 0)} source${finding.source_count === 1 ? "" : "s"}: ${escapeHtml((finding.sources || []).map(sourceLabel).join(", ") || "unknown")}</small>
-          <span class="severity ${escapeHtml(finding.severity)}">${escapeHtml(finding.severity)} ${escapeHtml(finding.score)}</span>
-        </li>
-      `).join("")
-      : '<li class="finding">No live alerts yet. The 5-minute CT scan will show matches here after a suspicious certificate is found.</li>';
+      ? findings.map(renderFindingCard).join("")
+      : '<li class="watch-card finding-card"><div class="watch-card-head"><strong>No live alerts yet</strong><span class="review-badge ok">clear</span></div><p>The 5-minute CT scan will show suspicious domains here after a match is found.</p></li>';
   } catch (error) {
     $("feed-status").textContent = error.message;
     $("feed-health").textContent = "Feed check failed";
     $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
-    $("finding-list").innerHTML = '<li class="finding">Could not load the live alert feed.</li>';
+    $("finding-list").innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>Could not load alerts</strong><span class="review-badge">retrying</span></div><p>The live findings API did not respond. The page will retry automatically.</p></li>';
   }
 }
 
@@ -262,7 +312,7 @@ async function renderSourceStatus() {
         <div class="source-row ${item.ok ? "ok" : "bad"}">
           <span>${escapeHtml(item.label || sourceLabel(item.source))}</span>
           <strong>${escapeHtml(item.ok ? "ok" : "retrying")}</strong>
-          <small>${escapeHtml(item.scanned_entries || 0)} checked · ${escapeHtml(item.matched || 0)} matches</small>
+          <small>${escapeHtml(item.scanned_entries || 0)} checked - ${escapeHtml(item.matched || 0)} matches</small>
         </div>
       `).join("")
       : '<div class="source-row"><span>Waiting for first scan</span><strong>pending</strong><small>Runs every 5 minutes</small></div>';
