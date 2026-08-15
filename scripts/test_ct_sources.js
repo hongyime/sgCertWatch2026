@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { certStreamMessageToEntries } from "../lib/ct/certstream.js";
+import { EventEmitter } from "node:events";
+import { certStreamMessageToEntries, runCertStreamSource } from "../lib/ct/certstream.js";
 import { crtRowToEntry } from "../lib/ct/crtsh.js";
 import { extractX509DerFromLeafInput, intervalIsCurrent, usableRfc6962Logs } from "../lib/ct/direct-logs.js";
 
@@ -29,6 +30,26 @@ const dnsOnlyEntry = certStreamMessageToEntries({
 })[0];
 assert.equal(dnsOnlyEntry.source, "certstream");
 assert.ok(dnsOnlyEntry.dns_names.includes("cdc-voucher-claim.example"));
+
+class QuietWebSocket extends EventEmitter {
+  constructor() {
+    super();
+    setImmediate(() => this.emit("open"));
+  }
+
+  close() {}
+}
+
+const quietSample = await runCertStreamSource({
+  WebSocketImpl: QuietWebSocket,
+  url: "ws://quiet-test",
+  sampleMs: 5,
+  openTimeoutMs: 50
+});
+assert.equal(quietSample.ok, true);
+assert.equal(quietSample.scanned_entries, 0);
+assert.equal(quietSample.errors.length, 0);
+assert.equal(quietSample.details.state, "standby");
 
 const crtEntry = crtRowToEntry({
   id: 123,

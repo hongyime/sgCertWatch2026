@@ -108,4 +108,4 @@ Next steps:
 - User requested a findings-first landing UI: release readiness and live suspicious domains should be the first screen; watched brands/keywords/allowlist/schemes should be grouped under "How sgCertWatch decides"; manual review notes should look like live finding cards.
 - Findings-first UI implemented and deployed in production deployment `dpl_6Gj4yUuUkrWfVeJ56TBCURYiQtxq`; live HTML verification confirmed Release readiness, Live findings, Manual review, and the "How sgCertWatch decides" section.
 - Current follow-up: make "How sgCertWatch decides" always expanded/non-collapsible and treat a quiet CertStream sample as standby instead of a degraded source.
-- Local follow-up validation passed: `npm test`, `npm run validate`, Node syntax checks, DOM ID binding check, and visible-text scan for stale `retrying`/accordion markup.
+- Local follow-up validation passed: `npm test`, `npm run validate`, Node syntax checks, DOM ID binding check, and visible-text scan for stale source-state/accordion markup.
