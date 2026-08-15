@@ -5,6 +5,7 @@
 !.env.example
 !.env.template
 !.env.sample
+node_modules/
 
 # AI / editor dot directories (managed via sourcerepo)
 .*

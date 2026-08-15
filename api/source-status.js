@@ -1,4 +1,4 @@
-import { configured, getState } from "../lib/supabase.js";
+import { configured, getState, listSourceRuns } from "../lib/supabase.js";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") {
@@ -9,9 +9,11 @@ export default async function handler(request, response) {
 
   try {
     const row = await getState("ct_poll_status");
+    const sourceRuns = await listSourceRuns(24);
     response.status(200).json({
       storage_configured: configured(),
       status: row?.value || { ok: false, message: "No CT poll has run yet." },
+      source_runs: sourceRuns,
       updated_at: row?.updated_at || null
     });
   } catch (error) {

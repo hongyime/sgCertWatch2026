@@ -336,6 +336,41 @@ dd {
   font-size: 13px;
 }
 
+.source-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.source-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 9px 10px;
+  border: 1px solid #edf0f3;
+  border-radius: 6px;
+  background: #fbfcfd;
+}
+
+.source-row span,
+.source-row strong {
+  font-size: 13px;
+}
+
+.source-row strong {
+  color: #0e7569;
+}
+
+.source-row.bad strong {
+  color: #9a6717;
+}
+
+.source-row small {
+  grid-column: 1 / -1;
+  color: #637083;
+  font-size: 12px;
+}
+
 .finding {
   color: #405064;
   font-size: 13px;
@@ -345,6 +380,13 @@ dd {
   display: block;
   color: #18202a;
   font-size: 14px;
+}
+
+.finding small {
+  display: block;
+  margin-top: 3px;
+  color: #637083;
+  font-size: 12px;
 }
 
 .severity {

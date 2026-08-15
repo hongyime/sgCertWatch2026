@@ -19,3 +19,4 @@
 - 2026-08-14: Removed Cloudflare ingestion after user rejected that architecture; deleted the Worker/KV resources and replaced the repo path with Supabase-scheduled Vercel polling plus Supabase state/persistence.
 - 2026-08-14: Vercel Hobby blocked 5-minute Vercel Cron, so scheduling moved to Supabase `pg_cron`/`pg_net` calling the protected Vercel polling function.
 - 2026-08-14: Production deployment `dpl_FdGAckR1XnXuUy5r3YUBu8Z7kQCC` is ready on both requested aliases; current CT source health is degraded because public `crt.sh` searches are returning timeout/502 responses.
+- 2026-08-15: User approved reliability upgrade using CertStream sampling plus direct CT log polling, with `crt.sh` retained only as fallback/comparison and no Cloudflare infrastructure.

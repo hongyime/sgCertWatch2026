@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "validate": "python scripts/validate_data.py --release",
-    "test": "node scripts/test_scoring.js"
+    "test": "node scripts/test_scoring.js && node scripts/test_ct_sources.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
   }
 }

@@ -35,6 +35,15 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function sourceLabel(source) {
+  const labels = {
+    certstream: "Live stream",
+    direct_ct: "Direct CT logs",
+    crtsh: "crt.sh backup"
+  };
+  return labels[source] || source;
+}
+
 function searchable(row) {
   return JSON.stringify(row).toLowerCase();
 }
@@ -212,6 +221,7 @@ async function renderFindings() {
         <li class="finding">
           <strong>${escapeHtml(finding.registrable)}</strong>
           ${escapeHtml((finding.domains || []).slice(0, 2).join(", "))}
+          <small>${escapeHtml(finding.source_count || 0)} source${finding.source_count === 1 ? "" : "s"}: ${escapeHtml((finding.sources || []).map(sourceLabel).join(", ") || "unknown")}</small>
           <span class="severity ${escapeHtml(finding.severity)}">${escapeHtml(finding.severity)} ${escapeHtml(finding.score)}</span>
         </li>
       `).join("")
@@ -231,20 +241,34 @@ async function renderSourceStatus() {
     const status = await response.json();
 
     const source = status.status || status;
+    const sources = source.sources || [];
+    const okCount = sources.filter((item) => item.ok).length;
 
-    if (source.ok) {
-      $("source-status").textContent = `${source.scanned_entries || 0} certs checked`;
-      return;
+    if (source.health === "healthy") {
+      $("source-status").textContent = "Monitoring active";
+      $("feed-health").textContent = "Monitoring active";
+    } else if (source.health === "partial" || okCount > 0) {
+      $("source-status").textContent = "Partial coverage";
+      $("feed-health").textContent = "Monitoring active, backup degraded";
+    } else if (source.errors?.length) {
+      $("source-status").textContent = "Source outage";
+      $("feed-health").textContent = "All CT sources retrying";
+    } else {
+      $("source-status").textContent = "waiting for scan";
     }
 
-    if (source.errors?.length) {
-      $("source-status").textContent = "CT search retrying";
-      return;
-    }
-
-    $("source-status").textContent = "waiting for scan";
+    $("source-list").innerHTML = sources.length
+      ? sources.map((item) => `
+        <div class="source-row ${item.ok ? "ok" : "bad"}">
+          <span>${escapeHtml(item.label || sourceLabel(item.source))}</span>
+          <strong>${escapeHtml(item.ok ? "ok" : "retrying")}</strong>
+          <small>${escapeHtml(item.scanned_entries || 0)} checked · ${escapeHtml(item.matched || 0)} matches</small>
+        </div>
+      `).join("")
+      : '<div class="source-row"><span>Waiting for first scan</span><strong>pending</strong><small>Runs every 5 minutes</small></div>';
   } catch (_error) {
     $("source-status").textContent = "scan status unknown";
+    $("source-list").innerHTML = '<div class="source-row bad"><span>Status API</span><strong>retrying</strong><small>Could not load source health</small></div>';
   }
 }
 

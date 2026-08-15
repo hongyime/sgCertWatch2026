@@ -1,10 +1,13 @@
 import { loadData } from "../../lib/data.js";
 import { scoreCertificate } from "../../lib/scoring.js";
-import { getState, setState, upsertFindings } from "../../lib/supabase.js";
-
-const BATCH_SIZE = 4;
-const RESULT_LIMIT = 25;
-const LOOKBACK_DAYS = 14;
+import { mergeSourceState, runSources } from "../../lib/ct/orchestrator.js";
+import {
+  getState,
+  insertSourceRuns,
+  setState,
+  upsertFindingSources,
+  upsertFindings
+} from "../../lib/supabase.js";
 
 function authorized(request) {
   const expected = process.env.CRON_SECRET;
@@ -12,83 +15,55 @@ function authorized(request) {
   return request.headers.authorization === `Bearer ${expected}`;
 }
 
-function compact(value) {
-  return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+function uniqueFindings(findings) {
+  return [...findings.reduce((map, finding) => map.set(finding.id, finding), new Map()).values()];
 }
 
-function pollTokens(data) {
-  const brandTokens = data.watchlist.brands
-    .flatMap((brand) => brand.tokens || [])
-    .filter((token) => compact(token).length >= 3);
-  const schemeTokens = data.schemes.schemes.flatMap((scheme) => scheme.tokens || []);
-  return [...new Set([...schemeTokens, ...brandTokens])].sort();
+function sourceRefFor(finding, entry, source) {
+  return finding.source?.source_ref
+    || finding.source?.fingerprint
+    || finding.source?.cert_link
+    || `${source}:${finding.id}`;
 }
 
-function crtRowToEntry(row, token) {
-  const domains = String(row.name_value || "")
-    .split(/\s+/)
-    .map((domain) => domain.trim().toLowerCase())
-    .filter(Boolean);
+function sourceRowsFor(scored) {
+  const rows = scored.map(({ finding, entry, source }) => ({
+    finding_id: finding.id,
+    source,
+    source_ref: sourceRefFor(finding, entry, source),
+    observed_at: finding.observed_at,
+    details: {
+      domains: finding.domains,
+      registrable: finding.registrable,
+      severity: finding.severity,
+      score: finding.score,
+      cert_index: finding.source?.cert_index || null,
+      cert_link: finding.source?.cert_link || null,
+      fingerprint: finding.source?.fingerprint || null,
+      log_name: finding.source?.log_name || null,
+      log_operator: finding.source?.log_operator || null
+    }
+  }));
 
+  return [...rows.reduce((map, row) => {
+    map.set(`${row.finding_id}|${row.source}|${row.source_ref}`, row);
+    return map;
+  }, new Map()).values()];
+}
+
+function summarizeRun(run, matched, persisted) {
   return {
-    dns_names: domains,
-    common_name: row.common_name || domains[0] || "",
-    not_before: row.not_before || row.entry_timestamp || null,
-    issuer: { aggregated: row.issuer_name || "" },
-    cert_index: row.id || row.min_cert_id || null,
-    cert_link: row.id ? `https://crt.sh/?id=${row.id}` : `crtsh:${token}`,
-    seen: row.entry_timestamp ? Date.parse(row.entry_timestamp) / 1000 : Date.now() / 1000,
-    source: "crtsh_token_search"
+    source: run.source,
+    label: run.label,
+    checked_at: new Date().toISOString(),
+    ok: run.ok,
+    scanned_entries: run.scanned_entries,
+    matched,
+    persisted,
+    duration_ms: run.duration_ms,
+    errors: run.errors,
+    details: run.details || {}
   };
-}
-
-async function fetchCrtSh(url) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
-  try {
-    return await fetch(url, {
-      headers: { "User-Agent": "sgCertWatch/0.1 (+https://sgcertwatch.vercel.app)" },
-      signal: controller.signal
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function queryCrtSh(token) {
-  const url = new URL("https://crt.sh/");
-  url.searchParams.set("q", `%${token}%`);
-  url.searchParams.set("output", "json");
-
-  let response;
-  try {
-    response = await fetchCrtSh(url);
-  } catch (_error) {
-    response = await fetchCrtSh(url);
-  }
-
-  if (response.status === 404) {
-    return [];
-  }
-
-  if (!response.ok) {
-    if ([502, 503, 504].includes(response.status)) {
-      response = await fetchCrtSh(url);
-    }
-    if (!response.ok) {
-      throw new Error(`crt.sh ${response.status}`);
-    }
-  }
-
-  const rows = await response.json();
-  const cutoff = Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
-  return rows
-    .filter((row) => {
-      const timestamp = Date.parse(row.entry_timestamp || row.not_before || "");
-      return Number.isNaN(timestamp) || timestamp >= cutoff;
-    })
-    .slice(0, RESULT_LIMIT)
-    .map((row) => crtRowToEntry(row, token));
 }
 
 export default async function handler(request, response) {
@@ -104,39 +79,55 @@ export default async function handler(request, response) {
   }
 
   const data = loadData();
-  const tokens = pollTokens(data);
-  const state = await getState("ct_poll_cursor");
-  const start = Number(state?.value?.index || 0) % tokens.length;
-  const batch = Array.from({ length: BATCH_SIZE }, (_, offset) => tokens[(start + offset) % tokens.length]);
+  const stateRow = await getState("ct_source_state");
+  const sourceState = stateRow?.value || {};
+  const runs = await runSources({ data, state: sourceState });
 
-  const errors = [];
-  const entries = [];
-  for (const token of batch) {
-    try {
-      entries.push(...await queryCrtSh(token));
-    } catch (error) {
-      errors.push({ token, message: error.message });
+  const scored = [];
+  const matchedBySource = new Map();
+  for (const run of runs) {
+    let matched = 0;
+    for (const entry of run.entries) {
+      const finding = scoreCertificate(entry, data);
+      if (!finding) continue;
+      matched += 1;
+      scored.push({ finding, entry, source: run.source });
     }
+    matchedBySource.set(run.source, matched);
   }
 
-  const findings = entries
-    .map((entry) => scoreCertificate(entry, data))
-    .filter(Boolean);
-  const persisted = await upsertFindings(findings);
-  const nextIndex = (start + BATCH_SIZE) % tokens.length;
+  const findings = uniqueFindings(scored.map((item) => item.finding));
+  const persistedFindings = await upsertFindings(findings);
+  const sourceRows = sourceRowsFor(scored);
+  const persistedSources = await upsertFindingSources(sourceRows);
 
-  await setState("ct_poll_cursor", { index: nextIndex });
+  const sourceSummaries = runs.map((run) => summarizeRun(
+    run,
+    matchedBySource.get(run.source) || 0,
+    sourceRows.filter((row) => row.source === run.source).length
+  ));
+  await insertSourceRuns(sourceSummaries);
+
+  const nextSourceState = mergeSourceState(sourceState, runs);
+  await setState("ct_source_state", nextSourceState);
+
+  const okSources = sourceSummaries.filter((run) => run.ok);
   const status = {
-    ok: errors.length === 0,
-    source: "crt.sh public JSON search",
+    ok: okSources.length > 0,
+    health: okSources.length === sourceSummaries.length ? "healthy" : (okSources.length ? "partial" : "down"),
+    source: "multi-source CT polling",
     checked_at: new Date().toISOString(),
-    batch,
-    scanned_entries: entries.length,
+    scanned_entries: sourceSummaries.reduce((total, run) => total + run.scanned_entries, 0),
     matched: findings.length,
-    persisted: persisted.length,
-    errors
+    persisted: persistedFindings.length,
+    persisted_source_sightings: persistedSources.length,
+    sources: sourceSummaries,
+    errors: sourceSummaries.flatMap((run) => run.errors.map((error) => ({
+      source: run.source,
+      ...error
+    })))
   };
-  await setState("ct_poll_status", status);
 
+  await setState("ct_poll_status", status);
   response.status(200).json(status);
 }
