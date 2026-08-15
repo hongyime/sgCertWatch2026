@@ -111,4 +111,4 @@ Next steps:
 - Local follow-up validation passed: `npm test`, `npm run validate`, Node syntax checks, DOM ID binding check, and visible-text scan for stale source-state/accordion markup.
 - Follow-up deployed through Vercel production aliases `https://sgcertwatch.vercel.app` and `https://sgcertwatch.hong-yi.me`; the repo is connected to Vercel, so docs-only pushes can create newer deployment IDs without changing app behavior.
 - Manual protected poll after deployment succeeded at 2026-08-15 23:46 SGT: CertStream stored `ok: true`/`standby`, direct CT logs scanned 64 entries and persisted 2 matches, and only the `crt.sh` backup was degraded by a timeout.
-- Production `/api/source-status` reports Supabase storage configured, multi-source health `partial`, CertStream standby, Direct CT logs ok, and `crt.sh` backup degraded.
+- Production `/api/source-status` check confirmed Supabase storage is configured and source health is reported per source; CertStream standby is distinguished from real source degradation.
