@@ -102,3 +102,6 @@ Next steps:
 - Manual protected poll invocation succeeded at the HTTP/function layer and wrote `ct_poll_status`; current upstream batch had `crt.sh` timeout/502 errors, so the dashboard reports `CT search retrying`.
 - Added retry handling for transient `crt.sh` 502/503/504 and timeout failures, and treats `crt.sh` 404 as no results. Follow-up manual scan saw 5 certificate rows and one remaining upstream `crt.sh 503`.
 - Implementing user-approved reliability upgrade: CertStream bounded sampling, direct RFC6962 CT log tail polling from Chrome log list, and `crt.sh` fallback/comparison. No Cloudflare resources or Cloudflare CT log endpoints are to be used.
+- Multi-source CT polling implemented and deployed in production deployment `dpl_2j4xamxYqjCzStF7JSbVscCSyCxr`, ready on `https://sgcertwatch.vercel.app` and `https://sgcertwatch.hong-yi.me`.
+- Supabase schema now includes `finding_sources` and `ct_source_runs` with RLS enabled and no anon/authenticated table grants; source health and source comparison are exposed only through Vercel APIs.
+- Manual production verification on 2026-08-15 succeeded: direct CT logs scanned entries and persisted findings, `crt.sh` fallback returned ok in the later automatic run, and CertStream is degraded because the public stream sent no messages during the sample window.
