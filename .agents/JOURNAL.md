@@ -23,3 +23,4 @@
 - 2026-08-15: Multi-source CT polling deployed to Vercel production; direct CT logs now keep monitoring active even when CertStream or `crt.sh` is degraded.
 - 2026-08-15: Reworked the dashboard landing page so release readiness and live findings come first, manual review uses matching alert cards, and config data sits behind one collapsed explainer control.
 - 2026-08-15: User clarified the decision-data section should stay expanded, and quiet CertStream samples should show standby rather than an error state.
+- 2026-08-15: Deployed the expanded decision section and CertStream standby handling to Vercel production; protected poll verified direct CT logging remains active while `crt.sh` can degrade independently.
