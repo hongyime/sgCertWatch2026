@@ -44,6 +44,23 @@ function sourceLabel(source) {
   return labels[source] || source;
 }
 
+function sourceState(item) {
+  if (item.ok && item.details?.state === "standby") {
+    return { label: "standby", className: "standby" };
+  }
+  if (item.ok) {
+    return { label: "ok", className: "ok" };
+  }
+  return { label: "degraded", className: "warn" };
+}
+
+function sourceDetail(item) {
+  const checked = `${item.scanned_entries || 0} checked`;
+  const matched = `${item.matched || 0} matches`;
+  const note = item.details?.note || item.errors?.[0]?.message || "";
+  return note ? `${checked} - ${matched} - ${note}` : `${checked} - ${matched}`;
+}
+
 function searchable(row) {
   return JSON.stringify(row).toLowerCase();
 }
@@ -280,7 +297,7 @@ async function renderFindings() {
     $("feed-status").textContent = error.message;
     $("feed-health").textContent = "Feed check failed";
     $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
-    $("finding-list").innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>Could not load alerts</strong><span class="review-badge">retrying</span></div><p>The live findings API did not respond. The page will retry automatically.</p></li>';
+    $("finding-list").innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>Could not load alerts</strong><span class="review-badge">unavailable</span></div><p>The findings API did not respond on this page load. The next automatic refresh will check again.</p></li>';
   }
 }
 
@@ -296,29 +313,29 @@ async function renderSourceStatus() {
 
     if (source.health === "healthy") {
       $("source-status").textContent = "Monitoring active";
-      $("feed-health").textContent = "Monitoring active";
     } else if (source.health === "partial" || okCount > 0) {
       $("source-status").textContent = "Partial coverage";
-      $("feed-health").textContent = "Monitoring active, backup degraded";
     } else if (source.errors?.length) {
-      $("source-status").textContent = "Source outage";
-      $("feed-health").textContent = "All CT sources retrying";
+      $("source-status").textContent = "Source degraded";
     } else {
       $("source-status").textContent = "waiting for scan";
     }
 
     $("source-list").innerHTML = sources.length
-      ? sources.map((item) => `
-        <div class="source-row ${item.ok ? "ok" : "bad"}">
+      ? sources.map((item) => {
+        const state = sourceState(item);
+        return `
+        <div class="source-row ${state.className}">
           <span>${escapeHtml(item.label || sourceLabel(item.source))}</span>
-          <strong>${escapeHtml(item.ok ? "ok" : "retrying")}</strong>
-          <small>${escapeHtml(item.scanned_entries || 0)} checked - ${escapeHtml(item.matched || 0)} matches</small>
+          <strong>${escapeHtml(state.label)}</strong>
+          <small>${escapeHtml(sourceDetail(item))}</small>
         </div>
-      `).join("")
+      `;
+      }).join("")
       : '<div class="source-row"><span>Waiting for first scan</span><strong>pending</strong><small>Runs every 5 minutes</small></div>';
   } catch (_error) {
     $("source-status").textContent = "scan status unknown";
-    $("source-list").innerHTML = '<div class="source-row bad"><span>Status API</span><strong>retrying</strong><small>Could not load source health</small></div>';
+    $("source-list").innerHTML = '<div class="source-row bad"><span>Status API</span><strong>unavailable</strong><small>Could not load source health</small></div>';
   }
 }
 

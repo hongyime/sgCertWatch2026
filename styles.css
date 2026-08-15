@@ -178,6 +178,8 @@ label span {
   color: var(--teal);
 }
 
+.source-row.standby strong,
+.source-row.warn strong,
 .source-row.bad strong {
   color: var(--amber);
 }
@@ -311,45 +313,34 @@ label span {
 
 .config-explorer {
   margin-top: 18px;
-  padding: 0;
+  padding: 18px;
   overflow: hidden;
 }
 
-.config-explorer summary {
+.config-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 18px;
+  margin-bottom: 14px;
   color: var(--ink);
-  cursor: pointer;
-  list-style: none;
 }
 
-.config-explorer summary::-webkit-details-marker {
-  display: none;
-}
-
-.config-explorer summary span {
+.config-heading span {
   font-size: 18px;
   font-weight: 800;
 }
 
-.config-explorer summary small {
+.config-heading small {
   color: var(--muted);
   font-size: 13px;
   text-align: right;
-}
-
-.config-explorer[open] {
-  padding-bottom: 18px;
 }
 
 .summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  padding: 0 18px;
 }
 
 .summary article {
@@ -396,7 +387,7 @@ label span {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) 220px auto;
   gap: 12px;
-  margin: 14px 18px 18px;
+  margin: 14px 0 18px;
   padding: 14px;
   border: 1px solid #e6ebef;
   border-radius: 7px;
@@ -445,7 +436,7 @@ select {
 }
 
 .config-explorer > section:last-child {
-  padding: 0 18px;
+  padding: 0;
 }
 
 .table-wrap {
@@ -494,7 +485,7 @@ tbody tr:hover {
 @media (max-width: 760px) {
   .topbar,
   .section-heading,
-  .config-explorer summary {
+  .config-heading {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -511,7 +502,7 @@ tbody tr:hover {
   }
 
   #feed-status,
-  .config-explorer summary small {
+  .config-heading small {
     text-align: left;
   }
 

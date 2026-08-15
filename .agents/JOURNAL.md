@@ -22,3 +22,4 @@
 - 2026-08-15: User approved reliability upgrade using CertStream sampling plus direct CT log polling, with `crt.sh` retained only as fallback/comparison and no Cloudflare infrastructure.
 - 2026-08-15: Multi-source CT polling deployed to Vercel production; direct CT logs now keep monitoring active even when CertStream or `crt.sh` is degraded.
 - 2026-08-15: Reworked the dashboard landing page so release readiness and live findings come first, manual review uses matching alert cards, and config data sits behind one collapsed explainer control.
+- 2026-08-15: User clarified the decision-data section should stay expanded, and quiet CertStream samples should show standby rather than an error state.
