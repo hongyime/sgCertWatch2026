@@ -1,3 +1,4 @@
+import { checkBearer } from "../../lib/auth.js";
 import { loadData } from "../../lib/data.js";
 import { scoreCertificate } from "../../lib/scoring.js";
 import { mergeSourceState, runSources } from "../../lib/ct/orchestrator.js";
@@ -8,12 +9,6 @@ import {
   upsertFindingSources,
   upsertFindings
 } from "../../lib/supabase.js";
-
-function authorized(request) {
-  const expected = process.env.CRON_SECRET;
-  if (!expected) return process.env.VERCEL_ENV !== "production";
-  return request.headers.authorization === `Bearer ${expected}`;
-}
 
 function uniqueFindings(findings) {
   return [...findings.reduce((map, finding) => map.set(finding.id, finding), new Map()).values()];
@@ -67,15 +62,15 @@ function summarizeRun(run, matched, persisted) {
 }
 
 export default async function handler(request, response) {
-  if (!["GET", "POST"].includes(request.method)) {
-    response.setHeader("Allow", "GET, POST");
-    response.status(405).json({ error: "method_not_allowed" });
-    return;
+  if (request.method !== "POST") {
+    response.setHeader("Allow", "POST");
+    return response.status(405).json({ error: "method_not_allowed" });
   }
 
-  if (!authorized(request)) {
-    response.status(401).json({ error: "unauthorized" });
-    return;
+  const auth = checkBearer(request, process.env.CRON_SECRET);
+  if (!auth.ok) {
+    return response.status(auth.reason === "server_misconfigured" ? 500 : 401)
+      .json({ error: "unauthorized" });
   }
 
   const data = loadData();

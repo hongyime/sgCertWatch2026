@@ -25,7 +25,29 @@ npm test
 
 Persistence requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, with the schema in `supabase/schema.sql`. The scheduler also requires `CRON_SECRET`.
 
-Production CT polling is scheduled by Supabase `pg_cron` every 5 minutes and calls the protected Vercel function at `/api/cron/ct-poll`. It samples CertStream, tails a rotating set of direct RFC6962 CT logs, and keeps `crt.sh` as a fallback comparison source. Findings and source health are stored in Supabase so the dashboard can show partial coverage instead of treating one source outage as a total outage.
+## Scheduling
+
+Production CT polling is scheduled by Supabase `pg_cron` / `pg_net` every 5 minutes and POSTs to the protected Vercel function at `/api/cron/ct-poll`:
+
+```sql
+select cron.schedule(
+  'sgcertwatch-ct-poll',
+  '*/5 * * * *',
+  $$
+  select
+    net.http_post(
+      url := 'https://sgcertwatch.vercel.app/api/cron/ct-poll',
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'CRON_SECRET' limit 1)
+      ),
+      body := '{}'::jsonb
+    ) as request_id;
+  $$
+);
+```
+
+The poller samples CertStream, tails a rotating set of direct RFC6962 CT logs, and keeps `crt.sh` as a fallback comparison source. Findings and source health are stored in Supabase so the dashboard can show partial coverage instead of treating one source outage as a total outage.
 
 ## Licence
 
