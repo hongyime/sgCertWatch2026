@@ -119,5 +119,6 @@ Next steps:
 - Commit 5 (Allowlist exact matching and subdomain-squat signal) complete (`197f6b9`).
 - Commit 6 (Extract scoring weights to scoring.json) complete (`9a5a7c3`).
 - Commit 7 (Evaluation harness and corpus) complete (`7fb0f4b`).
-- Commit 7B (Corpus rebuild: hard negatives and adversarial fixtures) complete: 751-item corpus across `corpus.json` and `fixtures/corpus/` (155 positives, 536 negatives [426 from 25–69 mined band], 60 adversarial fixtures). Re-baseline established: Precision 99.00%, Recall 44.24%, F1 61.09%, 17/60 adversarial passed (43 baseline failure fixtures recorded).
+- Commit 7B (Corpus rebuild: hard negatives and adversarial fixtures) complete (`d056ce4`).
+- Commit 8 (Dynamic CT log list) complete: implemented `lib/ct/loglist.js`, removed Cloudflare filter, updated interval overlap `[now - 1d, now + 400d]`, added `ct_logs` and `ct_log_cursors` tables in `supabase/schema.sql`.
 

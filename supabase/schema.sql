@@ -97,3 +97,39 @@ grant select, insert, update on table public.ingest_state to service_role;
 create policy ingest_state_public_read on public.ingest_state
   for select to anon
   using (key in ('ct_poll_status', 'ct_source_state'));
+
+create table if not exists public.ct_logs (
+  log_id            text primary key,          -- base64 SHA-256 of the log public key
+  operator          text not null,
+  description       text not null,
+  protocol          text not null check (protocol in ('rfc6962', 'static-ct-api')),
+  submission_url    text not null,
+  monitoring_url    text not null,             -- static-ct-api only; equals submission_url for rfc6962
+  public_key_der    text not null,             -- base64
+  state             text not null,             -- qualified | usable | readonly | retired | rejected
+  not_after_start   timestamptz,               -- temporal shard lower bound, null = unsharded
+  not_after_limit   timestamptz,               -- temporal shard upper bound, null = unsharded
+  refreshed_at      timestamptz not null default now()
+);
+
+create index if not exists ct_logs_protocol_state_idx on public.ct_logs (protocol, state);
+
+alter table public.ct_logs enable row level security;
+grant select on table public.ct_logs to anon;
+grant select, insert, update, delete on table public.ct_logs to service_role;
+create policy ct_logs_public_read on public.ct_logs for select to anon using (true);
+
+create table if not exists public.ct_log_cursors (
+  log_id            text primary key references public.ct_logs(log_id) on delete cascade,
+  next_index        bigint not null default 0,
+  tree_size         bigint not null default 0, -- from last checkpoint/STH
+  last_advanced_at  timestamptz,
+  last_error        text,
+  last_error_at     timestamptz
+);
+
+alter table public.ct_log_cursors enable row level security;
+grant select on table public.ct_log_cursors to anon;
+grant select, insert, update on table public.ct_log_cursors to service_role;
+create policy ct_log_cursors_public_read on public.ct_log_cursors for select to anon using (true);
+
