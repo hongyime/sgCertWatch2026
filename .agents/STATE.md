@@ -120,5 +120,6 @@ Next steps:
 - Commit 6 (Extract scoring weights to scoring.json) complete (`9a5a7c3`).
 - Commit 7 (Evaluation harness and corpus) complete (`7fb0f4b`).
 - Commit 7B (Corpus rebuild: hard negatives and adversarial fixtures) complete (`d056ce4`).
-- Commit 8 (Dynamic CT log list) complete: implemented `lib/ct/loglist.js`, removed Cloudflare filter, updated interval overlap `[now - 1d, now + 400d]`, added `ct_logs` and `ct_log_cursors` tables in `supabase/schema.sql`.
+- Commit 8 (Dynamic CT log list) complete (`b3a04e3`).
+- Commit 9 (Static CT API tile reader) complete: implemented `lib/ct/static/checkpoint.js`, `lib/ct/static/tiles.js`, `lib/ct/static/client.js`, wired into `lib/ct/orchestrator.js`.
 

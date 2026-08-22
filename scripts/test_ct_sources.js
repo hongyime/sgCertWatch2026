@@ -146,5 +146,43 @@ assert.equal(parsedV3[0].protocol, "static-ct-api");
 assert.equal(parsedV3[0].monitoring_url, "https://mon.sycamore.ct.letsencrypt.org/2026h2/");
 assert.equal(isLogSelected(parsedV3[0], nowTest), true);
 
+// Static CT tile index to path conversions
+import { tileIndexToPath, parseTileEntries } from "../lib/ct/static/tiles.js";
+import { parseCheckpoint, verifyCheckpoint } from "../lib/ct/static/checkpoint.js";
+import crypto from "node:crypto";
+
+assert.equal(tileIndexToPath(0), "000");
+assert.equal(tileIndexToPath(5), "005");
+assert.equal(tileIndexToPath(1234), "x001/234");
+assert.equal(tileIndexToPath(1234067), "x001/x234/067");
+assert.equal(tileIndexToPath(2282206), "x002/x282/206");
+
+// Checkpoint parsing and signature verification tests
+const { publicKey, privateKey } = crypto.generateKeyPairSync("ec", { namedCurve: "prime256v1" });
+const pubDer = publicKey.export({ format: "der", type: "spki" }).toString("base64");
+
+const checkpointOrigin = "test.ct.log/2026";
+const treeSize = 1000;
+const rootHash = "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=";
+const noteBody = `${checkpointOrigin}\n${treeSize}\n${rootHash}\n\n`;
+
+const sig = crypto.sign("sha256", Buffer.from(noteBody, "utf8"), privateKey);
+// In note format, 4-byte key hash prefix + raw signature
+const noteSig = Buffer.concat([Buffer.from([0x01, 0x02, 0x03, 0x04]), sig]).toString("base64");
+const validCheckpointText = `${noteBody}— ${checkpointOrigin} ${noteSig}\n`;
+
+const parsedCp = parseCheckpoint(validCheckpointText);
+assert.equal(parsedCp.origin, checkpointOrigin);
+assert.equal(parsedCp.treeSize, treeSize);
+assert.equal(parsedCp.rootHash, rootHash);
+
+const verifyResult = verifyCheckpoint(validCheckpointText, pubDer);
+assert.equal(verifyResult.ok, true);
+
+// Tampered checkpoint must FAIL signature verification
+const tamperedCheckpointText = `${checkpointOrigin}\n9999999\n${rootHash}\n\n— ${checkpointOrigin} ${noteSig}\n`;
+const tamperedResult = verifyCheckpoint(tamperedCheckpointText, pubDer);
+assert.equal(tamperedResult.ok, false);
 
 console.log("CT source tests passed.");
+
