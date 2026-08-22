@@ -51,6 +51,8 @@
 - 2026-08-22: Scoped Supabase keys in `lib/supabase.js` to `anonHeaders` (read-only for `findings`, `ct_source_runs`, `ingest_state`) and `serviceHeaders` (write/cron only, guarded by call-stack inspection). Added RLS select policies for anon in `supabase/schema.sql`. Added `SUPABASE_ANON_KEY` to `.env.example`.
 - 2026-08-22: Security finding: The previous `authorized()` check in `api/cron/ct-poll.js` failed open on preview deployments when `CRON_SECRET` was unset (`process.env.VERCEL_ENV !== 'production'`), accepted GET requests, and used non-constant-time string comparison (`===`). Live from 2026-08-14 to 2026-08-22. Replaced with `lib/auth.js` constant-time `checkBearer()` requiring POST, secret length >= 32, and returning uniform 401 errors. Documented `pg_cron` POST schedule SQL in `README.md`.
 - 2026-08-22: Added dependency `psl` pinned to exact version `1.9.0` for Public Suffix List-based registrable domain (eTLD+1) computation in `lib/domain/registrable.js`. Replaced hand-rolled `TWO_PART_SUFFIXES` in `lib/scoring.js`. Added unit tests in `scripts/test_registrable.js`.
+- 2026-08-22: Implemented exact allowlist matching on registrable domain, brand matching across all labels and decomposed affix forms, `subdomain_brand_squat` (+40), and `brand_in_path_position` (+15) in `lib/scoring.js`. Tested with five specified fixtures (`dbs.com.sg`, `internet-banking.dbs.com.sg`, `dbs.com.sg.evil.xyz`, `login.dbs.secure-verify.top`, `singpass.gov.sg.auth-portal.cfd`).
+
 
 
 

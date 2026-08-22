@@ -40,4 +40,31 @@ const clean = scoreCertificate({
 }, data);
 assert.equal(clean, null);
 
+// Commit 5 fixtures
+const dbsApex = scoreDomain("dbs.com.sg", data);
+assert.equal(dbsApex.suppressed, true);
+assert.equal(dbsApex.score, 0);
+
+const dbsSub = scoreDomain("internet-banking.dbs.com.sg", data);
+assert.equal(dbsSub.suppressed, true);
+assert.equal(dbsSub.score, 0);
+
+const dbsSquat = scoreDomain("dbs.com.sg.evil.xyz", data);
+assert.equal(dbsSquat.suppressed, false);
+assert.ok(dbsSquat.score >= 70, `Expected score >= 70, got ${dbsSquat.score}`);
+assert.ok(dbsSquat.signals.some((s) => s.type === "subdomain_brand_squat"));
+assert.ok(dbsSquat.signals.some((s) => s.type === "brand_in_path_position"));
+
+const dbsLoginSquat = scoreDomain("login.dbs.secure-verify.top", data);
+assert.equal(dbsLoginSquat.suppressed, false);
+assert.ok(dbsLoginSquat.score >= 70, `Expected score >= 70, got ${dbsLoginSquat.score}`);
+assert.ok(dbsLoginSquat.signals.some((s) => s.type === "subdomain_brand_squat"));
+
+const singpassSquat = scoreDomain("singpass.gov.sg.auth-portal.cfd", data);
+assert.equal(singpassSquat.suppressed, false);
+assert.ok(singpassSquat.score >= 70, `Expected score >= 70, got ${singpassSquat.score}`);
+assert.ok(singpassSquat.signals.some((s) => s.type === "subdomain_brand_squat"));
+assert.ok(singpassSquat.signals.some((s) => s.type === "brand_in_path_position"));
+
 console.log("Scoring tests passed.");
+

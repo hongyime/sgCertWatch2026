@@ -115,4 +115,5 @@ Next steps:
 - Commit 1 (Orientation audit) complete and committed (`e39ce15`).
 - Commit 2 (Supabase key scoping and RLS) complete (`ab03e4f`).
 - Commit 3 (Harden cron endpoint) complete (`823bee0`).
-- Commit 4 (Registrable domain via PSL) complete: pinned `psl@1.9.0`, implemented `lib/domain/registrable.js`, updated `lib/scoring.js` to use `registrableDomain()`, and added `scripts/test_registrable.js` covering all specified edge cases.
+- Commit 4 (Registrable domain via PSL) complete (`cca99f7`).
+- Commit 5 (Allowlist exact matching and subdomain-squat signal) complete: exact allowlist matching on registrable domain, brand matching across all labels and affix-decomposed forms, `subdomain_brand_squat` (+40), `brand_in_path_position` (+15), and 5 acceptance fixtures tested.
