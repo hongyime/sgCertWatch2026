@@ -48,4 +48,5 @@
     - q. `TASKS.md` and `PRD.md` are absent.
     - r. Schema is defined in `supabase/schema.sql` (findings, finding_sources, ct_source_runs, ingest_state).
     - s. `package.json` specifies `"type": "module"`, `"dependencies": { "ws": "^8.18.0" }`, and test/validate scripts.
+- 2026-08-22: Scoped Supabase keys in `lib/supabase.js` to `anonHeaders` (read-only for `findings`, `ct_source_runs`, `ingest_state`) and `serviceHeaders` (write/cron only, guarded by call-stack inspection). Added RLS select policies for anon in `supabase/schema.sql`. Added `SUPABASE_ANON_KEY` to `.env.example`.
 

@@ -112,3 +112,5 @@ Next steps:
 - Follow-up deployed through Vercel production aliases `https://sgcertwatch.vercel.app` and `https://sgcertwatch.hong-yi.me`; the repo is connected to Vercel, so docs-only pushes can create newer deployment IDs without changing app behavior.
 - Manual protected poll after deployment succeeded at 2026-08-15 23:46 SGT: CertStream stored `ok: true`/`standby`, direct CT logs scanned 64 entries and persisted 2 matches, and only the `crt.sh` backup was degraded by a timeout.
 - Production `/api/source-status` check confirmed Supabase storage is configured and source health is reported per source; CertStream standby is distinguished from real source degradation.
+- Commit 1 (Orientation audit) complete and committed (`e39ce15`).
+- Commit 2 (Supabase key scoping and RLS) complete: `lib/supabase.js` split into `anonHeaders()` and `serviceHeaders()`, public reads use anon key, service headers guarded with stack inspection, RLS policies updated in `supabase/schema.sql`, `SUPABASE_ANON_KEY` added to `.env.example`, and test suite extended.

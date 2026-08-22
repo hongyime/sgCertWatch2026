@@ -24,7 +24,12 @@ create index if not exists findings_matched_schemes_idx on public.findings using
 alter table public.findings enable row level security;
 
 revoke all on table public.findings from anon, authenticated;
+grant select on table public.findings to anon;
 grant select, insert, update on table public.findings to service_role;
+
+create policy findings_public_read on public.findings
+  for select to anon
+  using (suppressed = false);
 
 create table if not exists public.finding_sources (
   finding_id text not null references public.findings(id) on delete cascade,
@@ -66,8 +71,13 @@ create index if not exists ct_source_runs_source_checked_at_idx on public.ct_sou
 alter table public.ct_source_runs enable row level security;
 
 revoke all on table public.ct_source_runs from anon, authenticated;
+grant select on table public.ct_source_runs to anon;
 grant select, insert on table public.ct_source_runs to service_role;
 grant usage, select on sequence public.ct_source_runs_id_seq to service_role;
+
+create policy source_runs_public_read on public.ct_source_runs
+  for select to anon
+  using (true);
 
 create table if not exists public.ingest_state (
   key text primary key,
@@ -78,4 +88,9 @@ create table if not exists public.ingest_state (
 alter table public.ingest_state enable row level security;
 
 revoke all on table public.ingest_state from anon, authenticated;
+grant select on table public.ingest_state to anon;
 grant select, insert, update on table public.ingest_state to service_role;
+
+create policy ingest_state_public_read on public.ingest_state
+  for select to anon
+  using (key in ('ct_poll_status', 'ct_source_state'));

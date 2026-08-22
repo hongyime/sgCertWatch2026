@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "validate": "python scripts/validate_data.py --release",
-    "test": "node scripts/test_scoring.js && node scripts/test_ct_sources.js"
+    "test": "node scripts/test_scoring.js && node scripts/test_ct_sources.js && node scripts/test_supabase.js"
+  },
+  "engines": {
+    "node": "20.x"
   },
   "dependencies": {
     "ws": "^8.18.0"
