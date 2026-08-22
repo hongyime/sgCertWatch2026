@@ -17,7 +17,8 @@ const bankPhish = scoreCertificate({
 }, data);
 assert.ok(bankPhish);
 assert.ok(bankPhish.score >= 60);
-assert.equal(bankPhish.severity, "high");
+assert.equal(bankPhish.severity, "critical");
+assert.equal(bankPhish.scoring_version, 2);
 assert.ok(bankPhish.matched_brands.includes("dbs"));
 
 const schemePhish = scoreCertificate({

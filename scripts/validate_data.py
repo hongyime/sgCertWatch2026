@@ -218,6 +218,43 @@ def validate_schemes(data: dict[str, Any], errors: list[str], release: bool) -> 
     return unverified
 
 
+def validate_scoring(data: dict[str, Any], errors: list[str]) -> None:
+    path = "scoring.json"
+    version = data.get("version")
+    require(isinstance(version, int) and version >= 1, f"{path}: version must be a positive integer", errors)
+
+    weights = data.get("weights")
+    if not isinstance(weights, dict) or not weights:
+        errors.append(f"{path}: weights must be a non-empty object")
+    else:
+        for k, v in weights.items():
+            if not isinstance(v, int) or v < 0:
+                errors.append(f"{path}.weights.{k}: must be a non-negative integer")
+
+    thresholds = data.get("thresholds")
+    if not isinstance(thresholds, dict):
+        errors.append(f"{path}: thresholds must be an object")
+    else:
+        p_min = thresholds.get("persist_min")
+        d_min = thresholds.get("dashboard_min")
+        dig_min = thresholds.get("digest_min")
+        a_min = thresholds.get("alert_min")
+        for name, val in [("persist_min", p_min), ("dashboard_min", d_min), ("digest_min", dig_min), ("alert_min", a_min)]:
+            if not isinstance(val, int) or val < 0:
+                errors.append(f"{path}.thresholds.{name}: must be a non-negative integer")
+        if isinstance(p_min, int) and isinstance(d_min, int) and isinstance(dig_min, int) and isinstance(a_min, int):
+            require(p_min <= d_min < dig_min < a_min, f"{path}.thresholds: must be strictly increasing (persist_min <= dashboard_min < digest_min < alert_min)", errors)
+
+    caps = data.get("caps")
+    if not isinstance(caps, dict) or not isinstance(caps.get("total"), int):
+        errors.append(f"{path}: caps.total must be an integer")
+    elif isinstance(weights, dict):
+        num_weights = [v for v in weights.values() if isinstance(v, int)]
+        top3_sum = sum(sorted(num_weights, reverse=True)[:3])
+        if caps["total"] < top3_sum:
+            errors.append(f"{path}: caps.total ({caps['total']}) must be >= sum of 3 largest weights ({top3_sum})")
+
+
 def main() -> int:
     parser = ArgumentParser(description="Validate sgCertWatch2026 seed data files.")
     parser.add_argument("--release", action="store_true", help="fail if launch-readiness verification is incomplete")
@@ -229,6 +266,7 @@ def main() -> int:
         keywords = load_json("keywords.json")
         allowlist = load_json("allowlist.json")
         schemes = load_json("schemes.json")
+        scoring = load_json("scoring.json")
     except ValidationError as exc:
         print(exc, file=sys.stderr)
         return 1
@@ -237,6 +275,7 @@ def main() -> int:
     validate_keywords(keywords, errors)
     unverified_allowlist = validate_allowlist(allowlist, brand_ids, errors, args.release)
     unverified_schemes = validate_schemes(schemes, errors, args.release)
+    validate_scoring(scoring, errors)
 
     if errors:
         print("Data validation failed:", file=sys.stderr)
@@ -249,6 +288,7 @@ def main() -> int:
     print(f"Keywords: {len(keywords['keywords'])}")
     print(f"Allowlist entries: {len(allowlist['entries'])} ({unverified_allowlist} unverified)")
     print(f"Schemes: {len(schemes['schemes'])} ({unverified_schemes} unverified)")
+    print(f"Scoring version: {scoring.get('version')} ({len(scoring.get('weights', {}))} weights)")
     if unverified_allowlist or unverified_schemes:
         message = "Launch readiness: blocked until unverified allowlist and scheme entries are verified."
         if args.release:

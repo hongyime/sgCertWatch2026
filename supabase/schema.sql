@@ -1,5 +1,6 @@
 create table if not exists public.findings (
   id text primary key,
+  scoring_version integer not null default 1,
   observed_at timestamptz not null,
   certificate_not_before text,
   registrable text not null,
@@ -15,6 +16,8 @@ create table if not exists public.findings (
   created_at timestamptz not null default now()
 );
 
+alter table public.findings add column if not exists scoring_version integer not null default 1;
+create index if not exists findings_scoring_version_idx on public.findings (scoring_version);
 create index if not exists findings_observed_at_idx on public.findings (observed_at desc);
 create index if not exists findings_severity_idx on public.findings (severity);
 create index if not exists findings_registrable_idx on public.findings (registrable);

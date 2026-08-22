@@ -1,0 +1,48 @@
+{
+  "_comment": "Scoring weights as data. Every finding records scoring_version so historical scores stay interpretable. Changing any weight REQUIRES a passing eval run (npm run eval) — see .github/workflows.",
+  "version": 2,
+  "updated": "2026-08-22",
+  "thresholds": {
+    "_comment": "See DECISION-10. alert_min is recalibrated after each corpus refresh to the lowest score with precision >= 0.80.",
+    "persist_min": 30,
+    "dashboard_min": 30,
+    "digest_min": 50,
+    "alert_min": 70
+  },
+  "weights": {
+    "brand:exact": 35,
+    "brand:fuzzy": 25,
+    "brand:edit_distance_1": 30,
+    "brand:edit_distance_2": 20,
+    "brand:edit_distance_3": 12,
+    "brand:first_char_edit_bonus": 5,
+    "subdomain:brand_squat": 40,
+    "brand_in_path_position": 15,
+    "kw": 10,
+    "keyword_cap": 25,
+    "combo_brand_keyword": 25,
+    "scheme": 45,
+    "scheme_seasonal_boost": 15,
+    "homoglyph:ascii": 25,
+    "confusable_skeleton_match": 35,
+    "mixed_script_label": 30,
+    "punycode_brand_match": 35,
+    "issuer_free_dv": 8,
+    "cert_age_under_1h": 10,
+    "cert_age_under_24h": 5,
+    "tld:mismatch": 15,
+    "tld_high_risk": 12,
+    "tld_medium_risk": 6,
+    "domain_age_under_7d": 20,
+    "domain_age_under_30d": 10,
+    "san_count_over_20": 5
+  },
+  "tld_risk": {
+    "_comment": "Calibrate against the corpus after Commit 7. These are starting values, not measurements.",
+    "high": ["xyz", "top", "icu", "cfd", "sbs", "rest", "cyou", "bond", "click", "link"],
+    "medium": ["online", "site", "shop", "store", "info", "live", "world"]
+  },
+  "caps": {
+    "total": 150
+  }
+}

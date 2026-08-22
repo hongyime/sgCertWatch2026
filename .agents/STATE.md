@@ -116,4 +116,5 @@ Next steps:
 - Commit 2 (Supabase key scoping and RLS) complete (`ab03e4f`).
 - Commit 3 (Harden cron endpoint) complete (`823bee0`).
 - Commit 4 (Registrable domain via PSL) complete (`cca99f7`).
-- Commit 5 (Allowlist exact matching and subdomain-squat signal) complete: exact allowlist matching on registrable domain, brand matching across all labels and affix-decomposed forms, `subdomain_brand_squat` (+40), `brand_in_path_position` (+15), and 5 acceptance fixtures tested.
+- Commit 5 (Allowlist exact matching and subdomain-squat signal) complete (`197f6b9`).
+- Commit 6 (Extract scoring weights to scoring.json) complete: created `scoring.json` (v2), updated `lib/data.js` and `lib/scoring.js` to dynamic weights, added `scoring_version` column and index in `supabase/schema.sql`, extended `scripts/validate_data.py` to validate scoring configuration.
