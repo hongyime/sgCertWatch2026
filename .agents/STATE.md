@@ -124,5 +124,14 @@ Next steps:
 - Commit 9 (Static CT API tile reader) complete (`80018fc`).
 - Commit 10 (Ingestion correctness: precerts, cursors, locking) complete (`7acf4f1`).
 - Commit 11 (Source health and lag reporting) complete (`a3f86f4`).
-- Commit 11B (Repair dead scoring config and substring-window fuzzy brand matching) complete.
+- Commit 11B (Repair dead scoring config and substring-window fuzzy brand matching) complete (`ada9c09`).
+- Commit 11C (Re-mine eval corpus from real observed certificates and fix harness reporting) complete:
+  - Scanned 122,763 real certificates from 4 Let's Encrypt Static CT logs (`Sycamore2026h2`, `Willow2026h2`, `Sycamore2027h1`, `Willow2027h1`).
+  - Recorded 4-field provenance (`log_id`, `tree_index`, `cert_sha256`, `observed_at`) for every mined negative entry (2,606 observed negatives in 25–69 ambiguity band).
+  - Segregated legacy synthetic fixtures to `fixtures/corpus/constructed.jsonl` (`constructed: true`) and excluded from headline metrics.
+  - Reported adversarial fixtures (60 items) on a separate line, excluded from positives denominator.
+  - Fixed denominator reporting in `scripts/eval.js`: headline denominator $N = 2,876$ (160 positives, 2,716 negatives).
+  - Added mathematical self-consistency assertions (`TP+FN=positives`, `TN+FP=negatives`, `precision=TP/(TP+FP)`, `recall=TP/(TP+FN)`).
+  - Measured re-mined baseline at alert threshold 70: Precision 96.97% (TP=128, FP=4, TN=2,712, FN=32), Recall 80.00%, F1-Score 87.67%. Adversarial caught: 26/60 (43.3%).
+  - STOP after Commit 11C to report re-mined baseline and await user direction before starting Batch B.
 
