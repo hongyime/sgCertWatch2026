@@ -141,3 +141,25 @@ grant select on table public.ct_log_cursors to anon;
 grant select, insert, update on table public.ct_log_cursors to service_role;
 create policy ct_log_cursors_public_read on public.ct_log_cursors for select to anon using (true);
 
+create table if not exists public.source_health (
+  id          bigserial primary key,
+  source      text not null,             -- log_id, 'certstream', 'crtsh'
+  protocol    text not null,             -- 'rfc6962' | 'static-ct-api' | 'websocket' | 'http'
+  observed_at timestamptz not null default now(),
+  status      text not null check (status in ('ok', 'degraded', 'failed', 'stale')),
+  tree_size   bigint,
+  next_index  bigint,
+  lag_entries bigint,
+  detail      jsonb not null default '{}'::jsonb
+);
+
+create index if not exists source_health_source_observed_at_idx
+  on public.source_health (source, observed_at desc);
+
+alter table public.source_health enable row level security;
+revoke all on table public.source_health from anon, authenticated;
+grant select on table public.source_health to anon;
+grant select, insert on table public.source_health to service_role;
+create policy source_health_public_read on public.source_health for select to anon using (true);
+
+

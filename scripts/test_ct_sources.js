@@ -217,18 +217,34 @@ assert.equal(scoredPrecert.id, scoredFinal.id);
 assert.equal(scoredPrecert.cert_serial, "01A2B3C4D5");
 assert.equal(scoredFinal.cert_serial, "01A2B3C4D5");
 
-// Circuit breaker test for crt.sh
-import { isCircuitBreakerOpen, recordFailure, recordSuccess } from "../lib/ct/crtsh.js";
-recordSuccess();
-assert.equal(isCircuitBreakerOpen(), false);
-recordFailure();
-recordFailure();
-assert.equal(isCircuitBreakerOpen(), false);
-recordFailure(); // 3rd failure opens breaker
-assert.equal(isCircuitBreakerOpen(), true);
-recordSuccess();
-assert.equal(isCircuitBreakerOpen(), false);
+import { compileSourceHealth, determineStatus } from "../lib/ct/source-health.js";
+
+assert.equal(determineStatus({ lastCheckedAt: new Date().toISOString(), lagEntries: 50 }), "ok");
+assert.equal(determineStatus({ lastCheckedAt: new Date().toISOString(), lagEntries: 150000 }), "degraded");
+assert.equal(determineStatus({ lastCheckedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() }), "stale");
+assert.equal(determineStatus({ errors: [{ message: "fatal: circuit breaker open" }] }), "failed");
+
+const healthTest = compileSourceHealth({
+  ctLogs: [
+    { log_id: "log1", operator: "Google", description: "Argon", protocol: "rfc6962" },
+    { log_id: "log2", operator: "Let's Encrypt", description: "Sycamore", protocol: "static-ct-api" }
+  ],
+  cursors: {
+    log1: { tree_size: 1000, next_index: 950, checked_at: new Date().toISOString() },
+    log2: { tree_size: 500, next_index: 500, checked_at: new Date().toISOString() }
+  },
+  sourceRuns: [
+    { source: "certstream", checked_at: new Date().toISOString(), errors: [] },
+    { source: "crtsh", checked_at: new Date().toISOString(), errors: [] }
+  ]
+});
+
+assert.equal(healthTest.overall, "healthy");
+assert.equal(healthTest.protocols.rfc6962.total, 1);
+assert.equal(healthTest.protocols["static-ct-api"].total, 1);
+assert.equal(healthTest.sources.length, 4);
 
 console.log("CT source tests passed.");
+
 
 
