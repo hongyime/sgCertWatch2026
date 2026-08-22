@@ -24,3 +24,28 @@
 - 2026-08-15: Reworked the dashboard landing page so release readiness and live findings come first, manual review uses matching alert cards, and config data sits behind one collapsed explainer control.
 - 2026-08-15: User clarified the decision-data section should stay expanded, and quiet CertStream samples should show standby rather than an error state.
 - 2026-08-15: Deployed the expanded decision section and CertStream standby handling to Vercel production; protected poll verified direct CT logging remains active while `crt.sh` can degrade independently.
+- 2026-08-22: Orientation audit of CT ingestion, scoring, security posture, and documentation.
+  - CT ingestion:
+    - a. Endpoints contacted: `LOG_LIST_URL = "https://www.gstatic.com/ct/log_list/v3/log_list.json"`, `${log.url}ct/v1/get-sth`, `${log.url}ct/v1/get-entries?start=${start}&end=${end}` (`lib/ct/direct-logs.js`); `CERTSTREAM_URL = process.env.CERTSTREAM_URL || "wss://certstream.calidog.io/"` (`lib/ct/certstream.js`); `https://crt.sh/?q=%${token}%&output=json` (`lib/ct/crtsh.js`).
+    - b. Protocols: RFC6962 (`/ct/v1/get-sth`, `/ct/v1/get-entries`), WebSocket (`wss://`), HTTP search JSON (`crt.sh`). Static CT API (`/checkpoint`, `/tile/...`) is NOT implemented.
+    - c. Log list: Fetched at runtime in `lib/ct/direct-logs.js` from `https://www.gstatic.com/ct/log_list/v3/log_list.json` via `usableRfc6962Logs()`.
+    - d. Cursors: Stored in Supabase `public.ingest_state` under key `ct_source_state` via `getState()` / `setState()` in `lib/supabase.js`.
+    - e. Precerts vs leaves: Precertificates are discarded (`entryType !== 0` -> null). Findings deduplicated on `sha256(fingerprint + "|" + registrable)` or fallback string; no `sha256(TBSCertificate)` deduplication.
+    - f. `get-entries` advance: Advances by returned count (`start + rawEntries.length`).
+  - Scoring:
+    - g. Signals and weights: `brand:exact` (+35), `brand:fuzzy` (+25), `tld:mismatch` (+15), `kw` (+10 each, cap +25), `scheme` (+45), `allowlist` (0, suppressed).
+    - h. Registrable domain: Hand-rolled in `lib/scoring.js` using `TWO_PART_SUFFIXES` Set (`com.sg`, `net.sg`, `org.sg`, `gov.sg`, `edu.sg`, `per.sg`) and slicing `parts.slice(-3)` or `parts.slice(-2)`.
+    - i. Allowlist matching: Exact string equality `entry.verified && entry.registrable === registrable` in `lib/scoring.js`.
+    - j. `max_edit_distance`: Configured per brand in `watchlist.json` (0, 1, or 2) and per scheme in `schemes.json` (1 or 2). Not length-banded.
+    - k. Punycode & confusables: Not decoded or handled anywhere.
+  - Security:
+    - l. Supabase keys: `api/findings.js`, `api/source-status.js`, and `api/cron/ct-poll.js` all use `SUPABASE_SERVICE_ROLE_KEY` via `lib/supabase.js`. `SUPABASE_ANON_KEY` is unused.
+    - m. `CRON_SECRET` check: `request.headers.authorization === 'Bearer ' + expected` in `api/cron/ct-poll.js` (not constant-time).
+    - n. HTTP methods: `api/cron/ct-poll.js` accepts both `GET` and `POST`.
+    - o. `innerHTML`: `app.js` renders findings via `innerHTML` interpolated template strings with `escapeHtml()`.
+    - p. Links: Hostnames are rendered in `<strong>`, not `<a href>`. Allowlist/scheme sources render as `<a href>`.
+  - Docs:
+    - q. `TASKS.md` and `PRD.md` are absent.
+    - r. Schema is defined in `supabase/schema.sql` (findings, finding_sources, ct_source_runs, ingest_state).
+    - s. `package.json` specifies `"type": "module"`, `"dependencies": { "ws": "^8.18.0" }`, and test/validate scripts.
+
