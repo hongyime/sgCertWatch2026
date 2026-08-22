@@ -1,0 +1,966 @@
+{
+  "version": 1,
+  "description": "Ground truth corpus for sgCertWatch2026 scoring engine evaluation.",
+  "items": [
+    {
+      "id": "corpus-001",
+      "domain": "posb-banking-login.xyz",
+      "expected": "malicious",
+      "brand": "posb",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-002",
+      "domain": "dbs-verify-account.top",
+      "expected": "malicious",
+      "brand": "dbs",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-003",
+      "domain": "ocbc-secure-portal.icu",
+      "expected": "malicious",
+      "brand": "ocbc",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-004",
+      "domain": "uob-token-auth.cfd",
+      "expected": "malicious",
+      "brand": "uob",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-005",
+      "domain": "singpass-login-verify.sbs",
+      "expected": "malicious",
+      "brand": "singpass",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-006",
+      "domain": "cpf-withdrawal-login.rest",
+      "expected": "malicious",
+      "brand": "cpf",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-007",
+      "domain": "iras-tax-refund-claim.cyou",
+      "expected": "malicious",
+      "brand": "iras",
+      "category": "tax_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-008",
+      "domain": "sc-bank-sg-login.bond",
+      "expected": "malicious",
+      "brand": "sc",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-009",
+      "domain": "grabpay-wallet-verify.click",
+      "expected": "malicious",
+      "brand": "grab",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-010",
+      "domain": "shopeepay-otp-auth.link",
+      "expected": "malicious",
+      "brand": "shopee",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-011",
+      "domain": "trustbank-secure-access.xyz",
+      "expected": "malicious",
+      "brand": "trustbank",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-012",
+      "domain": "maribank-online-login.top",
+      "expected": "malicious",
+      "brand": "maribank",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-013",
+      "domain": "govtech-portal-login.icu",
+      "expected": "malicious",
+      "brand": "govtech",
+      "category": "credential_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-014",
+      "domain": "hdb-bto-flat-grant.cfd",
+      "expected": "malicious",
+      "brand": "hdb",
+      "category": "subsidy_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-015",
+      "domain": "moe-edusave-fund.sbs",
+      "expected": "malicious",
+      "brand": "moe",
+      "category": "fund_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-016",
+      "domain": "moh-health-grant-claim.rest",
+      "expected": "malicious",
+      "brand": "moh",
+      "category": "subsidy_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-017",
+      "domain": "ica-passport-express-renewal.cyou",
+      "expected": "malicious",
+      "brand": "ica",
+      "category": "document_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-018",
+      "domain": "singpost-parcel-redelivery-fee.bond",
+      "expected": "malicious",
+      "brand": "singpost",
+      "category": "delivery_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-019",
+      "domain": "lazada-sg-voucher-claim.click",
+      "expected": "malicious",
+      "brand": "lazada",
+      "category": "voucher_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-020",
+      "domain": "paynow-qr-transfer-verify.link",
+      "expected": "malicious",
+      "brand": "paynow",
+      "category": "payment_phish",
+      "notes": "Exact brand + phishing keyword on mismatched TLD"
+    },
+    {
+      "id": "corpus-021",
+      "domain": "dbs.com.sg.account-update.top",
+      "expected": "malicious",
+      "brand": "dbs",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting DBS"
+    },
+    {
+      "id": "corpus-022",
+      "domain": "singpass.gov.sg.auth.cfd",
+      "expected": "malicious",
+      "brand": "singpass",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting Singpass"
+    },
+    {
+      "id": "corpus-023",
+      "domain": "ocbc.com.login-portal.xyz",
+      "expected": "malicious",
+      "brand": "ocbc",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting OCBC"
+    },
+    {
+      "id": "corpus-024",
+      "domain": "uob.com.sg.verify-device.icu",
+      "expected": "malicious",
+      "brand": "uob",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting UOB"
+    },
+    {
+      "id": "corpus-025",
+      "domain": "posb.com.sg.security-alert.sbs",
+      "expected": "malicious",
+      "brand": "posb",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting POSB"
+    },
+    {
+      "id": "corpus-026",
+      "domain": "cpf.gov.sg.bonus-payout.rest",
+      "expected": "malicious",
+      "brand": "cpf",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting CPF"
+    },
+    {
+      "id": "corpus-027",
+      "domain": "iras.gov.sg.rebate-portal.cyou",
+      "expected": "malicious",
+      "brand": "iras",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting IRAS"
+    },
+    {
+      "id": "corpus-028",
+      "domain": "trustbank.sg.activate-card.bond",
+      "expected": "malicious",
+      "brand": "trustbank",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting Trust Bank"
+    },
+    {
+      "id": "corpus-029",
+      "domain": "maribank.sg.account-review.click",
+      "expected": "malicious",
+      "brand": "maribank",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting MariBank"
+    },
+    {
+      "id": "corpus-030",
+      "domain": "singpost.com.track-package.link",
+      "expected": "malicious",
+      "brand": "singpost",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting SingPost"
+    },
+    {
+      "id": "corpus-031",
+      "domain": "gov.sg.official-announcement.xyz",
+      "expected": "malicious",
+      "brand": "govsg",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting gov.sg"
+    },
+    {
+      "id": "corpus-032",
+      "domain": "moh.gov.sg.cdc-vouchers.top",
+      "expected": "malicious",
+      "brand": "moh",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting MOH"
+    },
+    {
+      "id": "corpus-033",
+      "domain": "ica.gov.sg.epass-service.icu",
+      "expected": "malicious",
+      "brand": "ica",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting ICA"
+    },
+    {
+      "id": "corpus-034",
+      "domain": "sc.com.sg.ebanking-secure.cfd",
+      "expected": "malicious",
+      "brand": "sc",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting Standard Chartered"
+    },
+    {
+      "id": "corpus-035",
+      "domain": "grab.com.reward-points.sbs",
+      "expected": "malicious",
+      "brand": "grab",
+      "category": "subdomain_squat",
+      "notes": "Subdomain squat targeting Grab"
+    },
+    {
+      "id": "corpus-036",
+      "domain": "dbss.com.sg",
+      "expected": "malicious",
+      "brand": "dbs",
+      "category": "typosquat",
+      "notes": "Typosquat edit distance 1 targeting DBS"
+    },
+    {
+      "id": "corpus-037",
+      "domain": "ocbcbankk.com",
+      "expected": "malicious",
+      "brand": "ocbc",
+      "category": "typosquat",
+      "notes": "Typosquat edit distance 1 targeting OCBC"
+    },
+    {
+      "id": "corpus-038",
+      "domain": "posbbank.com",
+      "expected": "malicious",
+      "brand": "posb",
+      "category": "typosquat",
+      "notes": "Typosquat edit distance 1 targeting POSB"
+    },
+    {
+      "id": "corpus-039",
+      "domain": "uobb.com.sg",
+      "expected": "malicious",
+      "brand": "uob",
+      "category": "typosquat",
+      "notes": "Typosquat edit distance 1 targeting UOB"
+    },
+    {
+      "id": "corpus-040",
+      "domain": "singpasss.com",
+      "expected": "malicious",
+      "brand": "singpass",
+      "category": "typosquat",
+      "notes": "Typosquat edit distance 1 targeting Singpass"
+    },
+    {
+      "id": "corpus-041",
+      "domain": "cpff-sg.com",
+      "expected": "malicious",
+      "brand": "cpf",
+      "category": "typosquat",
+      "notes": "Typosquat edit distance 1 targeting CPF"
+    },
+    {
+      "id": "corpus-042",
+      "domain": "irass-tax.com",
+      "expected": "malicious",
+      "brand": "iras",
+      "category": "typosquat",
+      "notes": "Typosquat edit distance 1 targeting IRAS"
+    },
+    {
+      "id": "corpus-043",
+      "domain": "trusttbank.com",
+      "expected": "malicious",
+      "brand": "trustbank",
+      "category": "typosquat",
+      "notes": "Typosquat edit distance 1 targeting Trust Bank"
+    },
+    {
+      "id": "corpus-044",
+      "domain": "mariibank.com",
+      "expected": "malicious",
+      "brand": "maribank",
+      "category": "typosquat",
+      "notes": "Typosquat edit distance 1 targeting MariBank"
+    },
+    {
+      "id": "corpus-045",
+      "domain": "singgpost.com",
+      "expected": "malicious",
+      "brand": "singpost",
+      "category": "typosquat",
+      "notes": "Typosquat edit distance 1 targeting SingPost"
+    },
+    {
+      "id": "corpus-046",
+      "domain": "xn--dbs-9ka.com",
+      "expected": "malicious",
+      "brand": "dbs",
+      "category": "homoglyph",
+      "notes": "Punycode/homoglyph targeting DBS"
+    },
+    {
+      "id": "corpus-047",
+      "domain": "0cbc.com",
+      "expected": "malicious",
+      "brand": "ocbc",
+      "category": "homoglyph",
+      "notes": "Digit substitution targeting OCBC"
+    },
+    {
+      "id": "corpus-048",
+      "domain": "xn--sngpass-wxa.com",
+      "expected": "malicious",
+      "brand": "singpass",
+      "category": "homoglyph",
+      "notes": "Punycode/homoglyph targeting Singpass"
+    },
+    {
+      "id": "corpus-049",
+      "domain": "xn--psb-tma.com.sg",
+      "expected": "malicious",
+      "brand": "posb",
+      "category": "homoglyph",
+      "notes": "Punycode/homoglyph targeting POSB"
+    },
+    {
+      "id": "corpus-050",
+      "domain": "u0b.com.sg",
+      "expected": "malicious",
+      "brand": "uob",
+      "category": "homoglyph",
+      "notes": "Digit substitution targeting UOB"
+    },
+    {
+      "id": "corpus-051",
+      "domain": "xn--ras-tma.gov.sg.phish.com",
+      "expected": "malicious",
+      "brand": "iras",
+      "category": "homoglyph",
+      "notes": "Punycode homoglyph subdomain squat targeting IRAS"
+    },
+    {
+      "id": "corpus-052",
+      "domain": "xn--grb-fua.com",
+      "expected": "malicious",
+      "brand": "grab",
+      "category": "homoglyph",
+      "notes": "Punycode/homoglyph targeting Grab"
+    },
+    {
+      "id": "corpus-053",
+      "domain": "xn--shpe-5qa.com",
+      "expected": "malicious",
+      "brand": "shopee",
+      "category": "homoglyph",
+      "notes": "Punycode/homoglyph targeting Shopee"
+    },
+    {
+      "id": "corpus-054",
+      "domain": "xn--trstbank-p1a.com",
+      "expected": "malicious",
+      "brand": "trustbank",
+      "category": "homoglyph",
+      "notes": "Punycode/homoglyph targeting Trust Bank"
+    },
+    {
+      "id": "corpus-055",
+      "domain": "s1ngpost.com",
+      "expected": "malicious",
+      "brand": "singpost",
+      "category": "homoglyph",
+      "notes": "Digit substitution targeting SingPost"
+    },
+    {
+      "id": "corpus-056",
+      "domain": "cdc-voucher-claim-2026.net",
+      "expected": "malicious",
+      "brand": "cdc_vouchers",
+      "category": "scheme_phish",
+      "notes": "CDC voucher scheme phishing"
+    },
+    {
+      "id": "corpus-057",
+      "domain": "cpf-topup-bonus.org",
+      "expected": "malicious",
+      "brand": "cpf_topup",
+      "category": "scheme_phish",
+      "notes": "CPF topup scheme phishing"
+    },
+    {
+      "id": "corpus-058",
+      "domain": "sg-budget-2026-rebate.com",
+      "expected": "malicious",
+      "brand": "sg_budget",
+      "category": "scheme_phish",
+      "notes": "SG budget scheme phishing"
+    },
+    {
+      "id": "corpus-059",
+      "domain": "climate-vouchers-sg-claim.xyz",
+      "expected": "malicious",
+      "brand": "climate_vouchers",
+      "category": "scheme_phish",
+      "notes": "Climate vouchers scheme phishing"
+    },
+    {
+      "id": "corpus-060",
+      "domain": "skillsfuture-credit-topup-claim.info",
+      "expected": "malicious",
+      "brand": "skillsfuture",
+      "category": "scheme_phish",
+      "notes": "SkillsFuture credit scheme phishing"
+    },
+    {
+      "id": "corpus-061",
+      "domain": "dbs.com.sg",
+      "expected": "benign",
+      "brand": "dbs",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-062",
+      "domain": "posb.com.sg",
+      "expected": "benign",
+      "brand": "posb",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-063",
+      "domain": "ocbc.com",
+      "expected": "benign",
+      "brand": "ocbc",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-064",
+      "domain": "uobgroup.com",
+      "expected": "benign",
+      "brand": "uob",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-065",
+      "domain": "singpass.gov.sg",
+      "expected": "benign",
+      "brand": "singpass",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-066",
+      "domain": "cpf.gov.sg",
+      "expected": "benign",
+      "brand": "cpf",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-067",
+      "domain": "iras.gov.sg",
+      "expected": "benign",
+      "brand": "iras",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-068",
+      "domain": "sc.com",
+      "expected": "benign",
+      "brand": "sc",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-069",
+      "domain": "trustbank.sg",
+      "expected": "benign",
+      "brand": "trustbank",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-070",
+      "domain": "maribank.sg",
+      "expected": "benign",
+      "brand": "maribank",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-071",
+      "domain": "grab.com",
+      "expected": "benign",
+      "brand": "grab",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-072",
+      "domain": "shopee.sg",
+      "expected": "benign",
+      "brand": "shopee",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-073",
+      "domain": "singpost.com.sg",
+      "expected": "benign",
+      "brand": "singpost",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-074",
+      "domain": "gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-075",
+      "domain": "tech.gov.sg",
+      "expected": "benign",
+      "brand": "govtech",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-076",
+      "domain": "hdb.gov.sg",
+      "expected": "benign",
+      "brand": "hdb",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-077",
+      "domain": "moe.gov.sg",
+      "expected": "benign",
+      "brand": "moe",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-078",
+      "domain": "moh.gov.sg",
+      "expected": "benign",
+      "brand": "moh",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-079",
+      "domain": "ica.gov.sg",
+      "expected": "benign",
+      "brand": "ica",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-080",
+      "domain": "vouchers.cdc.gov.sg",
+      "expected": "benign",
+      "brand": "cdc_vouchers",
+      "category": "allowlisted",
+      "notes": "Official allowlisted domain"
+    },
+    {
+      "id": "corpus-081",
+      "domain": "posbanker.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Unrelated domain with posb substring"
+    },
+    {
+      "id": "corpus-082",
+      "domain": "singpassing.org",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Unrelated domain with singpass substring"
+    },
+    {
+      "id": "corpus-083",
+      "domain": "dbschenker-logistics.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "DB Schenker logistics domain with dbs prefix"
+    },
+    {
+      "id": "corpus-084",
+      "domain": "dbs-group-holdings-annual-report.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Financial report archive domain"
+    },
+    {
+      "id": "corpus-085",
+      "domain": "grabcad.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "CAD engineering platform with grab prefix"
+    },
+    {
+      "id": "corpus-086",
+      "domain": "craftuob.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Craft website with uob substring"
+    },
+    {
+      "id": "corpus-087",
+      "domain": "ocbcoaching.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Coaching business with ocbc prefix"
+    },
+    {
+      "id": "corpus-088",
+      "domain": "maritime-bank.org",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Maritime organisation bank"
+    },
+    {
+      "id": "corpus-089",
+      "domain": "trustinme.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Phrase domain with trust substring"
+    },
+    {
+      "id": "corpus-090",
+      "domain": "scsc.edu.sg",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "School domain with sc prefix on .edu.sg"
+    },
+    {
+      "id": "corpus-091",
+      "domain": "shoepress.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Shoe retail domain with shoe prefix"
+    },
+    {
+      "id": "corpus-092",
+      "domain": "singaporepostgraduate.org",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Academic association with singpost prefix"
+    },
+    {
+      "id": "corpus-093",
+      "domain": "cpfire.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Fire safety equipment domain with cpf prefix"
+    },
+    {
+      "id": "corpus-094",
+      "domain": "iraselect.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Financial IRA product domain with iras prefix"
+    },
+    {
+      "id": "corpus-095",
+      "domain": "lazydays.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "false_positive_bait",
+      "notes": "Travel domain with lazy prefix"
+    },
+    {
+      "id": "corpus-096",
+      "domain": "cloudflare.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Internet infrastructure"
+    },
+    {
+      "id": "corpus-097",
+      "domain": "github.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Software development platform"
+    },
+    {
+      "id": "corpus-098",
+      "domain": "google.com.sg",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Search engine Singapore"
+    },
+    {
+      "id": "corpus-099",
+      "domain": "microsoft.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Technology enterprise"
+    },
+    {
+      "id": "corpus-100",
+      "domain": "amazon.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "E-commerce platform"
+    },
+    {
+      "id": "corpus-101",
+      "domain": "apple.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Technology enterprise"
+    },
+    {
+      "id": "corpus-102",
+      "domain": "wikipedia.org",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Online encyclopedia"
+    },
+    {
+      "id": "corpus-103",
+      "domain": "nytimes.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "News publication"
+    },
+    {
+      "id": "corpus-104",
+      "domain": "bbc.co.uk",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "News broadcast"
+    },
+    {
+      "id": "corpus-105",
+      "domain": "straitstimes.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Singapore news publication"
+    },
+    {
+      "id": "corpus-106",
+      "domain": "channelnewsasia.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Singapore news publication"
+    },
+    {
+      "id": "corpus-107",
+      "domain": "nus.edu.sg",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Singapore university"
+    },
+    {
+      "id": "corpus-108",
+      "domain": "ntu.edu.sg",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Singapore university"
+    },
+    {
+      "id": "corpus-109",
+      "domain": "smu.edu.sg",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Singapore university"
+    },
+    {
+      "id": "corpus-110",
+      "domain": "sgx.com",
+      "expected": "benign",
+      "brand": "none",
+      "category": "unrelated",
+      "notes": "Singapore stock exchange"
+    },
+    {
+      "id": "corpus-111",
+      "domain": "form.gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "legitimate_government",
+      "notes": "Singapore government form service"
+    },
+    {
+      "id": "corpus-112",
+      "domain": "go.gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "legitimate_government",
+      "notes": "Singapore government link shortener"
+    },
+    {
+      "id": "corpus-113",
+      "domain": "vaccine.gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "legitimate_government",
+      "notes": "Singapore government appointment booking"
+    },
+    {
+      "id": "corpus-114",
+      "domain": "checkfirst.gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "legitimate_government",
+      "notes": "Singapore government eligibility check"
+    },
+    {
+      "id": "corpus-115",
+      "domain": "supportgowhere.gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "legitimate_government",
+      "notes": "Singapore government support portal"
+    },
+    {
+      "id": "corpus-116",
+      "domain": "life.gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "legitimate_government",
+      "notes": "Singapore government citizen services"
+    },
+    {
+      "id": "corpus-117",
+      "domain": "postman.gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "legitimate_government",
+      "notes": "Singapore government messaging tool"
+    },
+    {
+      "id": "corpus-118",
+      "domain": "onemap.gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "legitimate_government",
+      "notes": "Singapore government geospatial portal"
+    },
+    {
+      "id": "corpus-119",
+      "domain": "police.gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "legitimate_government",
+      "notes": "Singapore Police Force portal"
+    },
+    {
+      "id": "corpus-120",
+      "domain": "smartnation.gov.sg",
+      "expected": "benign",
+      "brand": "govsg",
+      "category": "legitimate_government",
+      "notes": "Singapore Smart Nation initiative portal"
+    }
+  ]
+}

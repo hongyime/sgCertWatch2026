@@ -117,4 +117,5 @@ Next steps:
 - Commit 3 (Harden cron endpoint) complete (`823bee0`).
 - Commit 4 (Registrable domain via PSL) complete (`cca99f7`).
 - Commit 5 (Allowlist exact matching and subdomain-squat signal) complete (`197f6b9`).
-- Commit 6 (Extract scoring weights to scoring.json) complete: created `scoring.json` (v2), updated `lib/data.js` and `lib/scoring.js` to dynamic weights, added `scoring_version` column and index in `supabase/schema.sql`, extended `scripts/validate_data.py` to validate scoring configuration.
+- Commit 6 (Extract scoring weights to scoring.json) complete (`9a5a7c3`).
+- Commit 7 (Evaluation harness and corpus) complete: 120-item corpus in `corpus.json`, `scripts/eval.js` evaluation runner, `eval_baseline.json` saved, `.github/workflows/eval.yml` added. Baseline metrics established: Precision 100.00%, Recall 41.67%, F1 58.82%.

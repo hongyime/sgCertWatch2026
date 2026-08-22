@@ -1,0 +1,176 @@
+{
+  "version": 2,
+  "alert_min": 70,
+  "total_items": 120,
+  "tp": 25,
+  "fp": 0,
+  "tn": 60,
+  "fn": 35,
+  "precision": 1,
+  "recall": 0.4167,
+  "f1": 0.5882,
+  "per_brand": {
+    "posb": {
+      "tp": 2,
+      "fp": 0,
+      "tn": 1,
+      "fn": 2
+    },
+    "dbs": {
+      "tp": 2,
+      "fp": 0,
+      "tn": 1,
+      "fn": 2
+    },
+    "ocbc": {
+      "tp": 2,
+      "fp": 0,
+      "tn": 1,
+      "fn": 2
+    },
+    "uob": {
+      "tp": 1,
+      "fp": 0,
+      "tn": 1,
+      "fn": 3
+    },
+    "singpass": {
+      "tp": 2,
+      "fp": 0,
+      "tn": 1,
+      "fn": 2
+    },
+    "cpf": {
+      "tp": 1,
+      "fp": 0,
+      "tn": 1,
+      "fn": 2
+    },
+    "iras": {
+      "tp": 2,
+      "fp": 0,
+      "tn": 1,
+      "fn": 2
+    },
+    "sc": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 2
+    },
+    "grab": {
+      "tp": 1,
+      "fp": 0,
+      "tn": 1,
+      "fn": 2
+    },
+    "shopee": {
+      "tp": 1,
+      "fp": 0,
+      "tn": 1,
+      "fn": 1
+    },
+    "trustbank": {
+      "tp": 2,
+      "fp": 0,
+      "tn": 1,
+      "fn": 2
+    },
+    "maribank": {
+      "tp": 2,
+      "fp": 0,
+      "tn": 1,
+      "fn": 1
+    },
+    "govtech": {
+      "tp": 1,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0
+    },
+    "hdb": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 1
+    },
+    "moe": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 1
+    },
+    "moh": {
+      "tp": 1,
+      "fp": 0,
+      "tn": 1,
+      "fn": 1
+    },
+    "ica": {
+      "tp": 1,
+      "fp": 0,
+      "tn": 1,
+      "fn": 1
+    },
+    "singpost": {
+      "tp": 2,
+      "fp": 0,
+      "tn": 1,
+      "fn": 2
+    },
+    "lazada": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 1
+    },
+    "paynow": {
+      "tp": 1,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0
+    },
+    "govsg": {
+      "tp": 1,
+      "fp": 0,
+      "tn": 11,
+      "fn": 0
+    },
+    "cdc_vouchers": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 1
+    },
+    "cpf_topup": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 1
+    },
+    "sg_budget": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 1
+    },
+    "climate_vouchers": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 1
+    },
+    "skillsfuture": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 1
+    },
+    "none": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 30,
+      "fn": 0
+    }
+  }
+}

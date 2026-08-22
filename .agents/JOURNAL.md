@@ -53,6 +53,8 @@
 - 2026-08-22: Added dependency `psl` pinned to exact version `1.9.0` for Public Suffix List-based registrable domain (eTLD+1) computation in `lib/domain/registrable.js`. Replaced hand-rolled `TWO_PART_SUFFIXES` in `lib/scoring.js`. Added unit tests in `scripts/test_registrable.js`.
 - 2026-08-22: Implemented exact allowlist matching on registrable domain, brand matching across all labels and decomposed affix forms, `subdomain_brand_squat` (+40), and `brand_in_path_position` (+15) in `lib/scoring.js`. Tested with five specified fixtures (`dbs.com.sg`, `internet-banking.dbs.com.sg`, `dbs.com.sg.evil.xyz`, `login.dbs.secure-verify.top`, `singpass.gov.sg.auth-portal.cfd`).
 - 2026-08-22: Extracted all scoring weights, thresholds, and caps into versioned `scoring.json` (v2). Updated `lib/scoring.js` to dynamic configuration, added `scoring_version` to findings table in `supabase/schema.sql`, and added structural validation in `scripts/validate_data.py`.
+- 2026-08-22: Created 120-item labeled ground-truth evaluation corpus in `corpus.json` (60 malicious, 60 benign) and evaluation runner in `scripts/eval.js`. Measured baseline scoring performance before detection changes: Precision 100.00% (TP=25, FP=0), Recall 41.67% (FN=35, TN=60), F1 Score 58.82%. Added `.github/workflows/eval.yml` and wired regression gate into `package.json`.
+
 
 
 

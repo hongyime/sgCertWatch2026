@@ -1,0 +1,53 @@
+name: Scoring Evaluation
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "lib/scoring.js"
+      - "scoring.json"
+      - "keywords.json"
+      - "watchlist.json"
+      - "allowlist.json"
+      - "schemes.json"
+      - "corpus.json"
+      - "scripts/eval.js"
+      - ".github/workflows/eval.yml"
+  push:
+    branches: [main, master]
+    paths:
+      - "lib/scoring.js"
+      - "scoring.json"
+      - "keywords.json"
+      - "watchlist.json"
+      - "allowlist.json"
+      - "schemes.json"
+      - "corpus.json"
+      - "scripts/eval.js"
+      - ".github/workflows/eval.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: eval-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  eval:
+    name: Evaluate scoring performance and regression
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run scoring evaluation and regression check
+        run: npm run eval -- --check-regression
