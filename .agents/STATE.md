@@ -118,4 +118,6 @@ Next steps:
 - Commit 4 (Registrable domain via PSL) complete (`cca99f7`).
 - Commit 5 (Allowlist exact matching and subdomain-squat signal) complete (`197f6b9`).
 - Commit 6 (Extract scoring weights to scoring.json) complete (`9a5a7c3`).
-- Commit 7 (Evaluation harness and corpus) complete: 120-item corpus in `corpus.json`, `scripts/eval.js` evaluation runner, `eval_baseline.json` saved, `.github/workflows/eval.yml` added. Baseline metrics established: Precision 100.00%, Recall 41.67%, F1 58.82%.
+- Commit 7 (Evaluation harness and corpus) complete (`7fb0f4b`).
+- Commit 7B (Corpus rebuild: hard negatives and adversarial fixtures) complete: 751-item corpus across `corpus.json` and `fixtures/corpus/` (155 positives, 536 negatives [426 from 25–69 mined band], 60 adversarial fixtures). Re-baseline established: Precision 99.00%, Recall 44.24%, F1 61.09%, 17/60 adversarial passed (43 baseline failure fixtures recorded).
+

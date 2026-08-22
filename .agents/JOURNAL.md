@@ -54,6 +54,8 @@
 - 2026-08-22: Implemented exact allowlist matching on registrable domain, brand matching across all labels and decomposed affix forms, `subdomain_brand_squat` (+40), and `brand_in_path_position` (+15) in `lib/scoring.js`. Tested with five specified fixtures (`dbs.com.sg`, `internet-banking.dbs.com.sg`, `dbs.com.sg.evil.xyz`, `login.dbs.secure-verify.top`, `singpass.gov.sg.auth-portal.cfd`).
 - 2026-08-22: Extracted all scoring weights, thresholds, and caps into versioned `scoring.json` (v2). Updated `lib/scoring.js` to dynamic configuration, added `scoring_version` to findings table in `supabase/schema.sql`, and added structural validation in `scripts/validate_data.py`.
 - 2026-08-22: Created 120-item labeled ground-truth evaluation corpus in `corpus.json` (60 malicious, 60 benign) and evaluation runner in `scripts/eval.js`. Measured baseline scoring performance before detection changes: Precision 100.00% (TP=25, FP=0), Recall 41.67% (FN=35, TN=60), F1 Score 58.82%. Added `.github/workflows/eval.yml` and wired regression gate into `package.json`.
+- 2026-08-22: Commit 7B (Corpus rebuild): Rebuilt evaluation corpus with 751 labeled items (155 positives, 536 negatives [426 from 25–69 mined band], 60 adversarial fixtures) across `corpus.json` and `fixtures/corpus/{positives,negatives,adversarial}.jsonl`. Baseline metrics established at alert threshold 70: Precision 99.00%, Recall 44.24%, F1 61.09%. Adversarial pass rate: 17/60 passed, 43 missed (baseline target for Commits 12–14). Bias note: Public feeds report noisy/verified phishing, whereas fresh CT issuance has distinct characteristics. As the monitor operates, 100+ confirmed findings will supersede feed-derived positives.
+
 
 
 

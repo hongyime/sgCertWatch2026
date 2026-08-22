@@ -1,176 +1,839 @@
 {
   "version": 2,
   "alert_min": 70,
-  "total_items": 120,
-  "tp": 25,
-  "fp": 0,
-  "tn": 60,
-  "fn": 35,
-  "precision": 1,
-  "recall": 0.4167,
-  "f1": 0.5882,
-  "per_brand": {
-    "posb": {
-      "tp": 2,
-      "fp": 0,
-      "tn": 1,
-      "fn": 2
+  "total_items": 751,
+  "tp": 95,
+  "fp": 1,
+  "tn": 535,
+  "fn": 120,
+  "precision": 0.9896,
+  "recall": 0.4419,
+  "f1": 0.6109,
+  "adversarial_total": 60,
+  "adversarial_passed": 17,
+  "adversarial_missed": 43,
+  "sweep": [
+    {
+      "threshold": 30,
+      "tp": 139,
+      "fp": 98,
+      "tn": 438,
+      "fn": 76,
+      "precision": 0.5864978902953587,
+      "recall": 0.6465116279069767,
+      "f1": 0.6150442477876107
     },
-    "dbs": {
-      "tp": 2,
-      "fp": 0,
-      "tn": 1,
-      "fn": 2
+    {
+      "threshold": 40,
+      "tp": 138,
+      "fp": 86,
+      "tn": 450,
+      "fn": 77,
+      "precision": 0.6160714285714286,
+      "recall": 0.641860465116279,
+      "f1": 0.6287015945330297
     },
-    "ocbc": {
-      "tp": 2,
-      "fp": 0,
-      "tn": 1,
-      "fn": 2
+    {
+      "threshold": 50,
+      "tp": 132,
+      "fp": 85,
+      "tn": 451,
+      "fn": 83,
+      "precision": 0.6082949308755761,
+      "recall": 0.6139534883720931,
+      "f1": 0.6111111111111112
     },
-    "uob": {
-      "tp": 1,
-      "fp": 0,
-      "tn": 1,
-      "fn": 3
+    {
+      "threshold": 60,
+      "tp": 118,
+      "fp": 29,
+      "tn": 507,
+      "fn": 97,
+      "precision": 0.8027210884353742,
+      "recall": 0.5488372093023256,
+      "f1": 0.6519337016574586
     },
-    "singpass": {
-      "tp": 2,
-      "fp": 0,
-      "tn": 1,
-      "fn": 2
+    {
+      "threshold": 70,
+      "tp": 95,
+      "fp": 1,
+      "tn": 535,
+      "fn": 120,
+      "precision": 0.9895833333333334,
+      "recall": 0.4418604651162791,
+      "f1": 0.6109324758842444
     },
-    "cpf": {
-      "tp": 1,
+    {
+      "threshold": 80,
+      "tp": 43,
       "fp": 0,
-      "tn": 1,
-      "fn": 2
+      "tn": 536,
+      "fn": 172,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
     },
-    "iras": {
-      "tp": 2,
+    {
+      "threshold": 90,
+      "tp": 43,
       "fp": 0,
-      "tn": 1,
-      "fn": 2
-    },
-    "sc": {
-      "tp": 0,
-      "fp": 0,
-      "tn": 1,
-      "fn": 2
-    },
-    "grab": {
-      "tp": 1,
-      "fp": 0,
-      "tn": 1,
-      "fn": 2
-    },
-    "shopee": {
-      "tp": 1,
-      "fp": 0,
-      "tn": 1,
-      "fn": 1
-    },
-    "trustbank": {
-      "tp": 2,
-      "fp": 0,
-      "tn": 1,
-      "fn": 2
-    },
-    "maribank": {
-      "tp": 2,
-      "fp": 0,
-      "tn": 1,
-      "fn": 1
-    },
-    "govtech": {
-      "tp": 1,
-      "fp": 0,
-      "tn": 1,
-      "fn": 0
-    },
-    "hdb": {
-      "tp": 0,
-      "fp": 0,
-      "tn": 1,
-      "fn": 1
-    },
-    "moe": {
-      "tp": 0,
-      "fp": 0,
-      "tn": 1,
-      "fn": 1
-    },
-    "moh": {
-      "tp": 1,
-      "fp": 0,
-      "tn": 1,
-      "fn": 1
-    },
-    "ica": {
-      "tp": 1,
-      "fp": 0,
-      "tn": 1,
-      "fn": 1
-    },
-    "singpost": {
-      "tp": 2,
-      "fp": 0,
-      "tn": 1,
-      "fn": 2
-    },
-    "lazada": {
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 1
-    },
-    "paynow": {
-      "tp": 1,
-      "fp": 0,
-      "tn": 0,
-      "fn": 0
-    },
-    "govsg": {
-      "tp": 1,
-      "fp": 0,
-      "tn": 11,
-      "fn": 0
-    },
-    "cdc_vouchers": {
-      "tp": 0,
-      "fp": 0,
-      "tn": 1,
-      "fn": 1
-    },
-    "cpf_topup": {
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 1
-    },
-    "sg_budget": {
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 1
-    },
-    "climate_vouchers": {
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 1
-    },
-    "skillsfuture": {
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 1
-    },
-    "none": {
-      "tp": 0,
-      "fp": 0,
-      "tn": 30,
-      "fn": 0
+      "tn": 536,
+      "fn": 172,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
     }
-  }
+  ],
+  "per_brand": [
+    {
+      "brand": "posb",
+      "tp": 6,
+      "fp": 1,
+      "tn": 21,
+      "fn": 7,
+      "precision": 0.8571428571428571,
+      "recall": 0.46153846153846156,
+      "f1": 0.6
+    },
+    {
+      "brand": "sc",
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 7,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "cdc_vouchers",
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "gst_voucher",
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "assurance_package",
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "climate_vouchers",
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "skillsfuture",
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "edusave",
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "comcare",
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "majulah_package",
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "silver_support",
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "maybank",
+      "tp": 0,
+      "fp": 0,
+      "tn": 2,
+      "fn": 1,
+      "precision": 1,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "brand": "moe",
+      "tp": 1,
+      "fp": 0,
+      "tn": 0,
+      "fn": 5,
+      "precision": 1,
+      "recall": 0.16666666666666666,
+      "f1": 0.2857142857142857
+    },
+    {
+      "brand": "moh",
+      "tp": 1,
+      "fp": 0,
+      "tn": 0,
+      "fn": 5,
+      "precision": 1,
+      "recall": 0.16666666666666666,
+      "f1": 0.2857142857142857
+    },
+    {
+      "brand": "ica",
+      "tp": 1,
+      "fp": 0,
+      "tn": 1,
+      "fn": 5,
+      "precision": 1,
+      "recall": 0.16666666666666666,
+      "f1": 0.2857142857142857
+    },
+    {
+      "brand": "iras",
+      "tp": 4,
+      "fp": 0,
+      "tn": 22,
+      "fn": 9,
+      "precision": 1,
+      "recall": 0.3076923076923077,
+      "f1": 0.47058823529411764
+    },
+    {
+      "brand": "govtech",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
+      "fn": 4,
+      "precision": 1,
+      "recall": 0.3333333333333333,
+      "f1": 0.5
+    },
+    {
+      "brand": "uob",
+      "tp": 5,
+      "fp": 0,
+      "tn": 22,
+      "fn": 8,
+      "precision": 1,
+      "recall": 0.38461538461538464,
+      "f1": 0.5555555555555556
+    },
+    {
+      "brand": "dbs",
+      "tp": 6,
+      "fp": 0,
+      "tn": 23,
+      "fn": 7,
+      "precision": 1,
+      "recall": 0.46153846153846156,
+      "f1": 0.631578947368421
+    },
+    {
+      "brand": "singpass",
+      "tp": 6,
+      "fp": 0,
+      "tn": 21,
+      "fn": 7,
+      "precision": 1,
+      "recall": 0.46153846153846156,
+      "f1": 0.631578947368421
+    },
+    {
+      "brand": "singpost",
+      "tp": 6,
+      "fp": 0,
+      "tn": 22,
+      "fn": 7,
+      "precision": 1,
+      "recall": 0.46153846153846156,
+      "f1": 0.631578947368421
+    },
+    {
+      "brand": "grab",
+      "tp": 4,
+      "fp": 0,
+      "tn": 21,
+      "fn": 4,
+      "precision": 1,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    {
+      "brand": "hdb",
+      "tp": 3,
+      "fp": 0,
+      "tn": 1,
+      "fn": 3,
+      "precision": 1,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    {
+      "brand": "ocbc",
+      "tp": 7,
+      "fp": 0,
+      "tn": 22,
+      "fn": 6,
+      "precision": 1,
+      "recall": 0.5384615384615384,
+      "f1": 0.7000000000000001
+    },
+    {
+      "brand": "cpf",
+      "tp": 7,
+      "fp": 0,
+      "tn": 22,
+      "fn": 6,
+      "precision": 1,
+      "recall": 0.5384615384615384,
+      "f1": 0.7000000000000001
+    },
+    {
+      "brand": "shopee",
+      "tp": 5,
+      "fp": 0,
+      "tn": 36,
+      "fn": 3,
+      "precision": 1,
+      "recall": 0.625,
+      "f1": 0.7692307692307693
+    },
+    {
+      "brand": "lazada",
+      "tp": 5,
+      "fp": 0,
+      "tn": 21,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0.7142857142857143,
+      "f1": 0.8333333333333333
+    },
+    {
+      "brand": "paynow",
+      "tp": 5,
+      "fp": 0,
+      "tn": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0.7142857142857143,
+      "f1": 0.8333333333333333
+    },
+    {
+      "brand": "trustbank",
+      "tp": 9,
+      "fp": 0,
+      "tn": 21,
+      "fn": 3,
+      "precision": 1,
+      "recall": 0.75,
+      "f1": 0.8571428571428571
+    },
+    {
+      "brand": "maribank",
+      "tp": 10,
+      "fp": 0,
+      "tn": 22,
+      "fn": 1,
+      "precision": 1,
+      "recall": 0.9090909090909091,
+      "f1": 0.9523809523809523
+    },
+    {
+      "brand": "baby_bonus",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "stanchart",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "hsbc",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "citibank",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "gxs",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "cimb",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "myinfo",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "gogovsg",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "forsg",
+      "tp": 0,
+      "fp": 0,
+      "tn": 2,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "mom",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "lta",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "healthhub",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "nets",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "singtel",
+      "tp": 0,
+      "fp": 0,
+      "tn": 2,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "starhub",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "m1",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "myrepublic",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "ninjavan",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "lalamove",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "carousell",
+      "tp": 0,
+      "fp": 0,
+      "tn": 27,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "fairprice",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "singaporeair",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "scoot",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "simplygo",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "comfortdelgro",
+      "tp": 0,
+      "fp": 0,
+      "tn": 2,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "smrt",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "changi",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "spgroup",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "cityenergy",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "greateastern",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "income",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "aia",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "prudential",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "nus",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "ntu",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "smu",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "sutd",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "sit",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "suss",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "singhealth",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "nuhs",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "nhg",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "mediacorp",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "straitstimes",
+      "tp": 0,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "none",
+      "tp": 0,
+      "fp": 0,
+      "tn": 163,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    }
+  ]
 }
