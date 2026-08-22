@@ -17,12 +17,20 @@ create table if not exists public.findings (
 );
 
 alter table public.findings add column if not exists scoring_version integer not null default 1;
+alter table public.findings add column if not exists cert_serial text;
+alter table public.findings add column if not exists cert_issuer_dn_sha256 text;
+alter table public.findings add column if not exists entry_types text[] not null default '{}';
+alter table public.findings add column if not exists san_count integer default 0;
+alter table public.findings add column if not exists is_wildcard boolean not null default false;
+
 create index if not exists findings_scoring_version_idx on public.findings (scoring_version);
 create index if not exists findings_observed_at_idx on public.findings (observed_at desc);
 create index if not exists findings_severity_idx on public.findings (severity);
 create index if not exists findings_registrable_idx on public.findings (registrable);
 create index if not exists findings_matched_brands_idx on public.findings using gin (matched_brands);
 create index if not exists findings_matched_schemes_idx on public.findings using gin (matched_schemes);
+create index if not exists findings_cert_identity_idx on public.findings (cert_issuer_dn_sha256, cert_serial);
+
 
 alter table public.findings enable row level security;
 

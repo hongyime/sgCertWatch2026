@@ -184,5 +184,51 @@ const tamperedCheckpointText = `${checkpointOrigin}\n9999999\n${rootHash}\n\n—
 const tamperedResult = verifyCheckpoint(tamperedCheckpointText, pubDer);
 assert.equal(tamperedResult.ok, false);
 
+// Precert and leaf deduplication test
+import { scoreCertificate } from "../lib/scoring.js";
+import { loadData } from "../lib/data.js";
+
+const testData = loadData();
+const precertEntry = {
+  dns_names: ["dbs-secure-login.com"],
+  common_name: "dbs-secure-login.com",
+  cert_serial: "01A2B3C4D5",
+  cert_issuer_dn_sha256: "deadbeef1234",
+  entry_types: ["precert"],
+  seen: 1786678000,
+  source: "direct_ct"
+};
+
+const finalCertEntry = {
+  dns_names: ["dbs-secure-login.com", "www.dbs-secure-login.com"],
+  common_name: "dbs-secure-login.com",
+  cert_serial: "01A2B3C4D5",
+  cert_issuer_dn_sha256: "deadbeef1234",
+  entry_types: ["x509"],
+  seen: 1786678100,
+  source: "static_ct"
+};
+
+const scoredPrecert = scoreCertificate(precertEntry, testData);
+const scoredFinal = scoreCertificate(finalCertEntry, testData);
+
+// Stable identity match: both have identical ID despite different sources and timestamps!
+assert.equal(scoredPrecert.id, scoredFinal.id);
+assert.equal(scoredPrecert.cert_serial, "01A2B3C4D5");
+assert.equal(scoredFinal.cert_serial, "01A2B3C4D5");
+
+// Circuit breaker test for crt.sh
+import { isCircuitBreakerOpen, recordFailure, recordSuccess } from "../lib/ct/crtsh.js";
+recordSuccess();
+assert.equal(isCircuitBreakerOpen(), false);
+recordFailure();
+recordFailure();
+assert.equal(isCircuitBreakerOpen(), false);
+recordFailure(); // 3rd failure opens breaker
+assert.equal(isCircuitBreakerOpen(), true);
+recordSuccess();
+assert.equal(isCircuitBreakerOpen(), false);
+
 console.log("CT source tests passed.");
+
 

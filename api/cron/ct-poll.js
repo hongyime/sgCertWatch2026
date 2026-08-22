@@ -5,13 +5,38 @@ import { mergeSourceState, runSources } from "../../lib/ct/orchestrator.js";
 import {
   getState,
   insertSourceRuns,
+  releaseRunLock,
   setState,
+  tryAcquireRunLock,
   upsertFindingSources,
   upsertFindings
 } from "../../lib/supabase.js";
 
 function uniqueFindings(findings) {
-  return [...findings.reduce((map, finding) => map.set(finding.id, finding), new Map()).values()];
+  const map = new Map();
+  for (const finding of findings) {
+    if (!map.has(finding.id)) {
+      map.set(finding.id, { ...finding });
+    } else {
+      const existing = map.get(finding.id);
+      // Merge entry_types
+      existing.entry_types = [...new Set([...(existing.entry_types || []), ...(finding.entry_types || [])])];
+      // Keep earliest observed_at
+      if (Date.parse(finding.observed_at) < Date.parse(existing.observed_at)) {
+        existing.observed_at = finding.observed_at;
+      }
+      // Merge domains and update count
+      existing.domains = [...new Set([...(existing.domains || []), ...(finding.domains || [])])];
+      existing.san_count = existing.domains.length;
+      if (finding.cert_serial && !existing.cert_serial) {
+        existing.cert_serial = finding.cert_serial;
+      }
+      if (finding.cert_issuer_dn_sha256 && !existing.cert_issuer_dn_sha256) {
+        existing.cert_issuer_dn_sha256 = finding.cert_issuer_dn_sha256;
+      }
+    }
+  }
+  return [...map.values()];
 }
 
 function sourceRefFor(finding, entry, source) {
@@ -32,6 +57,9 @@ function sourceRowsFor(scored) {
       registrable: finding.registrable,
       severity: finding.severity,
       score: finding.score,
+      cert_serial: finding.cert_serial || null,
+      entry_types: finding.entry_types || [],
+      san_count: finding.san_count || finding.domains?.length || 0,
       cert_index: finding.source?.cert_index || null,
       cert_link: finding.source?.cert_link || null,
       fingerprint: finding.source?.fingerprint || null,
@@ -73,56 +101,65 @@ export default async function handler(request, response) {
       .json({ error: "unauthorized" });
   }
 
-  const data = loadData();
-  const stateRow = await getState("ct_source_state");
-  const sourceState = stateRow?.value || {};
-  const runs = await runSources({ data, state: sourceState });
-
-  const scored = [];
-  const matchedBySource = new Map();
-  for (const run of runs) {
-    let matched = 0;
-    for (const entry of run.entries) {
-      const finding = scoreCertificate(entry, data);
-      if (!finding) continue;
-      matched += 1;
-      scored.push({ finding, entry, source: run.source });
-    }
-    matchedBySource.set(run.source, matched);
+  const lockAcquired = await tryAcquireRunLock("ct_poll_run", 300);
+  if (!lockAcquired) {
+    return response.status(200).json({ skipped: "run_in_progress" });
   }
 
-  const findings = uniqueFindings(scored.map((item) => item.finding));
-  const persistedFindings = await upsertFindings(findings);
-  const sourceRows = sourceRowsFor(scored);
-  const persistedSources = await upsertFindingSources(sourceRows);
+  try {
+    const data = loadData();
+    const stateRow = await getState("ct_source_state");
+    const sourceState = stateRow?.value || {};
+    const runs = await runSources({ data, state: sourceState });
 
-  const sourceSummaries = runs.map((run) => summarizeRun(
-    run,
-    matchedBySource.get(run.source) || 0,
-    sourceRows.filter((row) => row.source === run.source).length
-  ));
-  await insertSourceRuns(sourceSummaries);
+    const scored = [];
+    const matchedBySource = new Map();
+    for (const run of runs) {
+      let matched = 0;
+      for (const entry of run.entries) {
+        const finding = scoreCertificate(entry, data);
+        if (!finding) continue;
+        matched += 1;
+        scored.push({ finding, entry, source: run.source });
+      }
+      matchedBySource.set(run.source, matched);
+    }
 
-  const nextSourceState = mergeSourceState(sourceState, runs);
-  await setState("ct_source_state", nextSourceState);
+    const findings = uniqueFindings(scored.map((item) => item.finding));
+    const persistedFindings = await upsertFindings(findings);
+    const sourceRows = sourceRowsFor(scored);
+    const persistedSources = await upsertFindingSources(sourceRows);
 
-  const okSources = sourceSummaries.filter((run) => run.ok);
-  const status = {
-    ok: okSources.length > 0,
-    health: okSources.length === sourceSummaries.length ? "healthy" : (okSources.length ? "partial" : "down"),
-    source: "multi-source CT polling",
-    checked_at: new Date().toISOString(),
-    scanned_entries: sourceSummaries.reduce((total, run) => total + run.scanned_entries, 0),
-    matched: findings.length,
-    persisted: persistedFindings.length,
-    persisted_source_sightings: persistedSources.length,
-    sources: sourceSummaries,
-    errors: sourceSummaries.flatMap((run) => run.errors.map((error) => ({
-      source: run.source,
-      ...error
-    })))
-  };
+    const sourceSummaries = runs.map((run) => summarizeRun(
+      run,
+      matchedBySource.get(run.source) || 0,
+      sourceRows.filter((row) => row.source === run.source).length
+    ));
+    await insertSourceRuns(sourceSummaries);
 
-  await setState("ct_poll_status", status);
-  response.status(200).json(status);
+    const nextSourceState = mergeSourceState(sourceState, runs);
+    await setState("ct_source_state", nextSourceState);
+
+    const okSources = sourceSummaries.filter((run) => run.ok);
+    const status = {
+      ok: okSources.length > 0,
+      health: okSources.length === sourceSummaries.length ? "healthy" : (okSources.length ? "partial" : "down"),
+      source: "multi-source CT polling",
+      checked_at: new Date().toISOString(),
+      scanned_entries: sourceSummaries.reduce((total, run) => total + run.scanned_entries, 0),
+      matched: findings.length,
+      persisted: persistedFindings.length,
+      persisted_source_sightings: persistedSources.length,
+      sources: sourceSummaries,
+      errors: sourceSummaries.flatMap((run) => run.errors.map((error) => ({
+        source: run.source,
+        ...error
+      })))
+    };
+
+    await setState("ct_poll_status", status);
+    return response.status(200).json(status);
+  } finally {
+    await releaseRunLock("ct_poll_run");
+  }
 }

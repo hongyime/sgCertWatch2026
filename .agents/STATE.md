@@ -121,5 +121,6 @@ Next steps:
 - Commit 7 (Evaluation harness and corpus) complete (`7fb0f4b`).
 - Commit 7B (Corpus rebuild: hard negatives and adversarial fixtures) complete (`d056ce4`).
 - Commit 8 (Dynamic CT log list) complete (`b3a04e3`).
-- Commit 9 (Static CT API tile reader) complete: implemented `lib/ct/static/checkpoint.js`, `lib/ct/static/tiles.js`, `lib/ct/static/client.js`, wired into `lib/ct/orchestrator.js`.
+- Commit 9 (Static CT API tile reader) complete (`80018fc`).
+- Commit 10 (Ingestion correctness: precerts, cursors, locking) complete: precert parsing via `wrapTbsDer`, stable identity join key `(cert_issuer_dn_sha256, cert_serial)`, run locking, right-anchored crt.sh query with circuit breaker.
 
