@@ -255,6 +255,28 @@ def validate_scoring(data: dict[str, Any], errors: list[str]) -> None:
             errors.append(f"{path}: caps.total ({caps['total']}) must be >= sum of 3 largest weights ({top3_sum})")
 
 
+def validate_scoring_keys_referenced(keywords: dict[str, Any], schemes: dict[str, Any], errors: list[str]) -> None:
+    lib_dir = ROOT / "lib"
+    js_files = list(lib_dir.glob("**/*.js"))
+    all_code = "\n".join(f.read_text(encoding="utf-8") for f in js_files)
+
+    kw_scoring = keywords.get("scoring", {})
+    if isinstance(kw_scoring, dict):
+        for key in kw_scoring.keys():
+            if key in ("note", "_comment"):
+                continue
+            if key not in all_code:
+                errors.append(f"keywords.json: scoring key '{key}' is never referenced in lib/")
+
+    scheme_scoring = schemes.get("scoring", {})
+    if isinstance(scheme_scoring, dict):
+        for key in scheme_scoring.keys():
+            if key in ("note", "_comment"):
+                continue
+            if key not in all_code:
+                errors.append(f"schemes.json: scoring key '{key}' is never referenced in lib/")
+
+
 def main() -> int:
     parser = ArgumentParser(description="Validate sgCertWatch2026 seed data files.")
     parser.add_argument("--release", action="store_true", help="fail if launch-readiness verification is incomplete")
@@ -276,6 +298,7 @@ def main() -> int:
     unverified_allowlist = validate_allowlist(allowlist, brand_ids, errors, args.release)
     unverified_schemes = validate_schemes(schemes, errors, args.release)
     validate_scoring(scoring, errors)
+    validate_scoring_keys_referenced(keywords, schemes, errors)
 
     if errors:
         print("Data validation failed:", file=sys.stderr)

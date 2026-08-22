@@ -1,255 +1,215 @@
 {
   "version": 2,
   "alert_min": 70,
-  "total_items": 751,
-  "tp": 95,
-  "fp": 1,
-  "tn": 535,
-  "fn": 120,
-  "precision": 0.9896,
-  "recall": 0.4419,
-  "f1": 0.6109,
+  "total_items": 761,
+  "tp": 157,
+  "fp": 107,
+  "tn": 429,
+  "fn": 68,
+  "precision": 0.5947,
+  "recall": 0.6978,
+  "f1": 0.6421,
   "adversarial_total": 60,
-  "adversarial_passed": 17,
-  "adversarial_missed": 43,
+  "adversarial_passed": 26,
+  "adversarial_missed": 34,
   "sweep": [
     {
       "threshold": 30,
-      "tp": 139,
-      "fp": 98,
-      "tn": 438,
-      "fn": 76,
-      "precision": 0.5864978902953587,
-      "recall": 0.6465116279069767,
-      "f1": 0.6150442477876107
+      "tp": 166,
+      "fp": 173,
+      "tn": 363,
+      "fn": 59,
+      "precision": 0.4896755162241888,
+      "recall": 0.7377777777777778,
+      "f1": 0.5886524822695036
     },
     {
       "threshold": 40,
-      "tp": 138,
-      "fp": 86,
-      "tn": 450,
-      "fn": 77,
-      "precision": 0.6160714285714286,
-      "recall": 0.641860465116279,
-      "f1": 0.6287015945330297
+      "tp": 166,
+      "fp": 171,
+      "tn": 365,
+      "fn": 59,
+      "precision": 0.49258160237388726,
+      "recall": 0.7377777777777778,
+      "f1": 0.5907473309608541
     },
     {
       "threshold": 50,
-      "tp": 132,
-      "fp": 85,
-      "tn": 451,
-      "fn": 83,
-      "precision": 0.6082949308755761,
-      "recall": 0.6139534883720931,
-      "f1": 0.6111111111111112
+      "tp": 158,
+      "fp": 135,
+      "tn": 401,
+      "fn": 67,
+      "precision": 0.5392491467576792,
+      "recall": 0.7022222222222222,
+      "f1": 0.6100386100386099
     },
     {
       "threshold": 60,
-      "tp": 118,
-      "fp": 29,
-      "tn": 507,
-      "fn": 97,
-      "precision": 0.8027210884353742,
-      "recall": 0.5488372093023256,
-      "f1": 0.6519337016574586
+      "tp": 158,
+      "fp": 126,
+      "tn": 410,
+      "fn": 67,
+      "precision": 0.5563380281690141,
+      "recall": 0.7022222222222222,
+      "f1": 0.6208251473477406
     },
     {
       "threshold": 70,
-      "tp": 95,
-      "fp": 1,
-      "tn": 535,
-      "fn": 120,
-      "precision": 0.9895833333333334,
-      "recall": 0.4418604651162791,
-      "f1": 0.6109324758842444
+      "tp": 157,
+      "fp": 107,
+      "tn": 429,
+      "fn": 68,
+      "precision": 0.5946969696969697,
+      "recall": 0.6977777777777778,
+      "f1": 0.6421267893660533
     },
     {
       "threshold": 80,
-      "tp": 43,
-      "fp": 0,
-      "tn": 536,
-      "fn": 172,
-      "precision": 1,
-      "recall": 0.2,
-      "f1": 0.33333333333333337
+      "tp": 153,
+      "fp": 86,
+      "tn": 450,
+      "fn": 72,
+      "precision": 0.6401673640167364,
+      "recall": 0.68,
+      "f1": 0.6594827586206897
     },
     {
       "threshold": 90,
-      "tp": 43,
-      "fp": 0,
-      "tn": 536,
-      "fn": 172,
-      "precision": 1,
-      "recall": 0.2,
-      "f1": 0.33333333333333337
+      "tp": 119,
+      "fp": 61,
+      "tn": 475,
+      "fn": 106,
+      "precision": 0.6611111111111111,
+      "recall": 0.5288888888888889,
+      "f1": 0.5876543209876544
     }
   ],
   "per_brand": [
     {
       "brand": "posb",
-      "tp": 6,
-      "fp": 1,
-      "tn": 21,
-      "fn": 7,
-      "precision": 0.8571428571428571,
-      "recall": 0.46153846153846156,
-      "f1": 0.6
-    },
-    {
-      "brand": "sc",
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 7,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "cdc_vouchers",
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 2,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "gst_voucher",
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 2,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "assurance_package",
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 2,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "climate_vouchers",
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 2,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "skillsfuture",
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 2,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "edusave",
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 2,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "comcare",
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 2,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "majulah_package",
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 2,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "silver_support",
-      "tp": 0,
-      "fp": 0,
-      "tn": 0,
-      "fn": 2,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "maybank",
-      "tp": 0,
-      "fp": 0,
-      "tn": 2,
-      "fn": 1,
-      "precision": 1,
-      "recall": 0,
-      "f1": 0
-    },
-    {
-      "brand": "moe",
-      "tp": 1,
-      "fp": 0,
-      "tn": 0,
-      "fn": 5,
-      "precision": 1,
-      "recall": 0.16666666666666666,
-      "f1": 0.2857142857142857
-    },
-    {
-      "brand": "moh",
-      "tp": 1,
-      "fp": 0,
-      "tn": 0,
-      "fn": 5,
-      "precision": 1,
-      "recall": 0.16666666666666666,
-      "f1": 0.2857142857142857
-    },
-    {
-      "brand": "ica",
-      "tp": 1,
-      "fp": 0,
+      "tp": 9,
+      "fp": 21,
       "tn": 1,
-      "fn": 5,
-      "precision": 1,
-      "recall": 0.16666666666666666,
-      "f1": 0.2857142857142857
+      "fn": 4,
+      "precision": 0.3,
+      "recall": 0.6923076923076923,
+      "f1": 0.41860465116279066
     },
     {
-      "brand": "iras",
-      "tp": 4,
-      "fp": 0,
+      "brand": "singpost",
+      "tp": 12,
+      "fp": 21,
+      "tn": 1,
+      "fn": 1,
+      "precision": 0.36363636363636365,
+      "recall": 0.9230769230769231,
+      "f1": 0.5217391304347827
+    },
+    {
+      "brand": "singpass",
+      "tp": 10,
+      "fp": 20,
+      "tn": 1,
+      "fn": 3,
+      "precision": 0.3333333333333333,
+      "recall": 0.7692307692307693,
+      "f1": 0.4651162790697674
+    },
+    {
+      "brand": "none",
+      "tp": 0,
+      "fp": 16,
+      "tn": 147,
+      "fn": 0,
+      "precision": 0,
+      "recall": 1,
+      "f1": 0
+    },
+    {
+      "brand": "maribank",
+      "tp": 11,
+      "fp": 13,
+      "tn": 9,
+      "fn": 0,
+      "precision": 0.4583333333333333,
+      "recall": 1,
+      "f1": 0.6285714285714286
+    },
+    {
+      "brand": "ocbc",
+      "tp": 9,
+      "fp": 10,
+      "tn": 12,
+      "fn": 4,
+      "precision": 0.47368421052631576,
+      "recall": 0.6923076923076923,
+      "f1": 0.5625
+    },
+    {
+      "brand": "shopee",
+      "tp": 7,
+      "fp": 3,
+      "tn": 33,
+      "fn": 1,
+      "precision": 0.7,
+      "recall": 0.875,
+      "f1": 0.7777777777777777
+    },
+    {
+      "brand": "carousell",
+      "tp": 0,
+      "fp": 2,
+      "tn": 25,
+      "fn": 0,
+      "precision": 0,
+      "recall": 1,
+      "f1": 0
+    },
+    {
+      "brand": "dbs",
+      "tp": 9,
+      "fp": 1,
       "tn": 22,
-      "fn": 9,
-      "precision": 1,
-      "recall": 0.3076923076923077,
-      "f1": 0.47058823529411764
+      "fn": 7,
+      "precision": 0.9,
+      "recall": 0.5625,
+      "f1": 0.6923076923076923
     },
     {
       "brand": "govtech",
       "tp": 2,
       "fp": 0,
       "tn": 0,
+      "fn": 4,
+      "precision": 1,
+      "recall": 0.3333333333333333,
+      "f1": 0.5
+    },
+    {
+      "brand": "moe",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
+      "fn": 4,
+      "precision": 1,
+      "recall": 0.3333333333333333,
+      "f1": 0.5
+    },
+    {
+      "brand": "moh",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
+      "fn": 4,
+      "precision": 1,
+      "recall": 0.3333333333333333,
+      "f1": 0.5
+    },
+    {
+      "brand": "ica",
+      "tp": 2,
+      "fp": 0,
+      "tn": 1,
       "fn": 4,
       "precision": 1,
       "recall": 0.3333333333333333,
@@ -266,27 +226,7 @@
       "f1": 0.5555555555555556
     },
     {
-      "brand": "dbs",
-      "tp": 6,
-      "fp": 0,
-      "tn": 23,
-      "fn": 7,
-      "precision": 1,
-      "recall": 0.46153846153846156,
-      "f1": 0.631578947368421
-    },
-    {
-      "brand": "singpass",
-      "tp": 6,
-      "fp": 0,
-      "tn": 21,
-      "fn": 7,
-      "precision": 1,
-      "recall": 0.46153846153846156,
-      "f1": 0.631578947368421
-    },
-    {
-      "brand": "singpost",
+      "brand": "iras",
       "tp": 6,
       "fp": 0,
       "tn": 22,
@@ -296,34 +236,14 @@
       "f1": 0.631578947368421
     },
     {
-      "brand": "grab",
-      "tp": 4,
+      "brand": "cdc_vouchers",
+      "tp": 2,
       "fp": 0,
-      "tn": 21,
-      "fn": 4,
+      "tn": 0,
+      "fn": 2,
       "precision": 1,
       "recall": 0.5,
       "f1": 0.6666666666666666
-    },
-    {
-      "brand": "hdb",
-      "tp": 3,
-      "fp": 0,
-      "tn": 1,
-      "fn": 3,
-      "precision": 1,
-      "recall": 0.5,
-      "f1": 0.6666666666666666
-    },
-    {
-      "brand": "ocbc",
-      "tp": 7,
-      "fp": 0,
-      "tn": 22,
-      "fn": 6,
-      "precision": 1,
-      "recall": 0.5384615384615384,
-      "f1": 0.7000000000000001
     },
     {
       "brand": "cpf",
@@ -336,34 +256,24 @@
       "f1": 0.7000000000000001
     },
     {
-      "brand": "shopee",
+      "brand": "grab",
       "tp": 5,
       "fp": 0,
-      "tn": 36,
+      "tn": 21,
       "fn": 3,
       "precision": 1,
       "recall": 0.625,
       "f1": 0.7692307692307693
     },
     {
-      "brand": "lazada",
-      "tp": 5,
+      "brand": "hdb",
+      "tp": 4,
       "fp": 0,
-      "tn": 21,
+      "tn": 1,
       "fn": 2,
       "precision": 1,
-      "recall": 0.7142857142857143,
-      "f1": 0.8333333333333333
-    },
-    {
-      "brand": "paynow",
-      "tp": 5,
-      "fp": 0,
-      "tn": 0,
-      "fn": 2,
-      "precision": 1,
-      "recall": 0.7142857142857143,
-      "f1": 0.8333333333333333
+      "recall": 0.6666666666666666,
+      "f1": 0.8
     },
     {
       "brand": "trustbank",
@@ -376,14 +286,84 @@
       "f1": 0.8571428571428571
     },
     {
-      "brand": "maribank",
-      "tp": 10,
+      "brand": "maybank",
+      "tp": 7,
       "fp": 0,
-      "tn": 22,
+      "tn": 2,
       "fn": 1,
       "precision": 1,
-      "recall": 0.9090909090909091,
-      "f1": 0.9523809523809523
+      "recall": 0.875,
+      "f1": 0.9333333333333333
+    },
+    {
+      "brand": "stanchart",
+      "tp": 7,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "lazada",
+      "tp": 6,
+      "fp": 0,
+      "tn": 21,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "paynow",
+      "tp": 6,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "gst_voucher",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "assurance_package",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "climate_vouchers",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "skillsfuture",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
     },
     {
       "brand": "baby_bonus",
@@ -396,10 +376,40 @@
       "f1": 1
     },
     {
-      "brand": "stanchart",
-      "tp": 0,
+      "brand": "edusave",
+      "tp": 2,
       "fp": 0,
-      "tn": 1,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "comcare",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "majulah_package",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "brand": "silver_support",
+      "tp": 2,
+      "fp": 0,
+      "tn": 0,
       "fn": 0,
       "precision": 1,
       "recall": 1,
@@ -570,16 +580,6 @@
       "tp": 0,
       "fp": 0,
       "tn": 1,
-      "fn": 0,
-      "precision": 1,
-      "recall": 1,
-      "f1": 1
-    },
-    {
-      "brand": "carousell",
-      "tp": 0,
-      "fp": 0,
-      "tn": 27,
       "fn": 0,
       "precision": 1,
       "recall": 1,
@@ -820,16 +820,6 @@
       "tp": 0,
       "fp": 0,
       "tn": 1,
-      "fn": 0,
-      "precision": 1,
-      "recall": 1,
-      "f1": 1
-    },
-    {
-      "brand": "none",
-      "tp": 0,
-      "fp": 0,
-      "tn": 163,
       "fn": 0,
       "precision": 1,
       "recall": 1,

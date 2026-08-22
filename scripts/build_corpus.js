@@ -14,8 +14,8 @@ if (!fs.existsSync(FIXTURES_DIR)) {
 const positives = [];
 
 const brands = [
-  "dbs", "posb", "ocbc", "uob", "singpass", "cpf", "iras", "trustbank", "maribank", "sc",
-  "grab", "shopee", "singpost", "lazada", "paynow", "govtech", "hdb", "moe", "moh", "ica"
+  "dbs", "posb", "ocbc", "uob", "singpass", "cpf", "iras", "trustbank", "maribank", "stanchart",
+  "maybank", "grab", "shopee", "singpost", "lazada", "paynow", "govtech", "hdb", "moe", "moh", "ica"
 ];
 
 const phishKeywords = [
@@ -32,7 +32,8 @@ for (const b of brands) {
     const kw1 = phishKeywords[(i * 3) % phishKeywords.length];
     const kw2 = phishKeywords[(i * 3 + 1) % phishKeywords.length];
     const tld = riskyTlds[(b.length + i) % riskyTlds.length];
-    const domain = `${b}-${kw1}-${kw2}.${tld}`;
+    const token = b === "stanchart" ? (i % 2 === 0 ? "sc" : "stanchart") : b;
+    const domain = `${token}-${kw1}-${kw2}.${tld}`;
     positives.push({
       id: `pos-${String(pIndex++).padStart(3, "0")}`,
       domain,
@@ -55,7 +56,7 @@ for (let i = 0; i < 35; i++) {
   const tld = riskyTlds[i % riskyTlds.length];
   const legDomain = ["singpass", "cpf", "iras", "govtech", "hdb", "moe", "moh", "ica"].includes(b)
     ? `${b}.gov.sg`
-    : (b === "ocbc" || b === "grab" || b === "singpost" ? `${b}.com` : `${b}.com.sg`);
+    : (b === "stanchart" ? "sc.com.sg" : (b === "ocbc" || b === "grab" || b === "singpost" ? `${b}.com` : `${b}.com.sg`));
   const domain = `${legDomain}.verify-login-portal-${i + 1}.${tld}`;
   positives.push({
     id: `pos-${String(pIndex++).padStart(3, "0")}`,
@@ -102,6 +103,30 @@ for (let i = 0; i < 20; i++) {
     category: "scheme_phish",
     adversarial: false,
     notes: `Seasonal government scheme phishing lure for ${s.id}`
+  });
+}
+
+// Commit 11B: Fuzzy brand with affixes and typosquatted schemes (5 items)
+const fuzzyAffixFixtures = [
+  { b: "dbs", d: "dsb-login.xyz", cat: "credential_phish", notes: "Fuzzy brand dsb with login suffix" },
+  { b: "dbs", d: "login-dsb.top", cat: "credential_phish", notes: "Fuzzy brand dsb with login prefix" },
+  { b: "dbs", d: "secure-dsb-sg.cfd", cat: "credential_phish", notes: "Fuzzy brand dsb with secure prefix and sg" },
+  { b: "cdc_vouchers", d: "cdcv0ucher.xyz", cat: "scheme_phish", notes: "Typo in scheme token cdcv0ucher" },
+  { b: "cdc_vouchers", d: "cdcvouchr.top", cat: "scheme_phish", notes: "Typo in scheme token cdcvouchr" }
+];
+for (const item of fuzzyAffixFixtures) {
+  positives.push({
+    id: `pos-${String(pIndex++).padStart(3, "0")}`,
+    domain: item.d,
+    expected: "malicious",
+    label: "positive",
+    source: "spec:commit-11b",
+    source_ref: `spec:commit-11b:${item.d}`,
+    labelled_at: "2026-08-22",
+    brand: item.b,
+    category: item.cat,
+    adversarial: false,
+    notes: item.notes
   });
 }
 

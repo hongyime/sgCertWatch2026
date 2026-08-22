@@ -67,5 +67,26 @@ assert.ok(singpassSquat.score >= 70, `Expected score >= 70, got ${singpassSquat.
 assert.ok(singpassSquat.signals.some((s) => s.type === "subdomain_brand_squat"));
 assert.ok(singpassSquat.signals.some((s) => s.type === "brand_in_path_position"));
 
+// Commit 11B fixtures
+const dsbFuzzy = scoreDomain("dsb-secure-login-verify.xyz", data);
+assert.equal(dsbFuzzy.suppressed, false);
+assert.ok(dsbFuzzy.score >= 70, `Expected dsbFuzzy score >= 70, got ${dsbFuzzy.score}`);
+assert.ok(dsbFuzzy.signals.some((s) => s.type === "brand:fuzzy"), "Expected brand:fuzzy signal");
+assert.ok(dsbFuzzy.signals.some((s) => s.type === "tld:mismatch"), "Expected tld:mismatch signal");
+assert.ok(dsbFuzzy.signals.some((s) => s.type === "combo_brand_keyword"), "Expected combo_brand_keyword signal");
+
+const cdcTypo1 = scoreDomain("cdcv0ucher.xyz", data);
+assert.ok(cdcTypo1.signals.some((s) => s.type === "scheme" && s.scheme === "cdc_vouchers"), "Expected scheme:cdc_vouchers for cdcv0ucher.xyz");
+
+const cdcTypo2 = scoreDomain("cdcvouchr.top", data);
+assert.ok(cdcTypo2.signals.some((s) => s.type === "scheme" && s.scheme === "cdc_vouchers"), "Expected scheme:cdc_vouchers for cdcvouchr.top");
+
+const pureSchemeLure = scoreDomain("cdcvoucher-claim-portal-2026.xyz", data);
+assert.ok(pureSchemeLure.score >= 70, `Expected pure scheme lure score >= 70, got ${pureSchemeLure.score}`);
+assert.ok(pureSchemeLure.signals.some((s) => s.type === "combo_scheme_keyword"), "Expected combo_scheme_keyword signal");
+
+const cappedHit = scoreDomain("dbs-cdcvoucher-login-claim-portal-verify.xyz", data);
+assert.ok(cappedHit.score <= (data.scoring?.caps?.total ?? 100), "Score must not exceed total cap");
+
 console.log("Scoring tests passed.");
 

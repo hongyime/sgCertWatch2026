@@ -35,7 +35,7 @@
   "brands": [
     {
       "id": "dbs", "display": "DBS Bank", "category": "bank",
-      "tokens": ["dbs"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
+      "tokens": ["dbs"], "max_edit_distance": 1, "require_context": true, "allow_affix": true,
       "context_tokens": ["bank", "banking", "ibanking", "digibank", "login", "secure", "verify", "account", "sg", "posb", "paylah"],
       "known_tlds": ["com.sg", "com", "sg"]
     },
@@ -59,8 +59,8 @@
     },
     {
       "id": "stanchart", "display": "Standard Chartered", "category": "bank",
-      "tokens": ["stanchart", "standardchartered"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["bank", "banking", "login", "secure", "account", "sg"],
+      "tokens": ["stanchart", "standardchartered", "sc"], "max_edit_distance": 2, "require_context": true, "allow_affix": true,
+      "context_tokens": ["bank", "banking", "login", "secure", "account", "verify", "token", "update", "claim", "wallet", "sg"],
       "known_tlds": ["com", "com.sg"]
     },
     {

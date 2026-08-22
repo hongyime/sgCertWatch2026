@@ -123,5 +123,6 @@ Next steps:
 - Commit 8 (Dynamic CT log list) complete (`b3a04e3`).
 - Commit 9 (Static CT API tile reader) complete (`80018fc`).
 - Commit 10 (Ingestion correctness: precerts, cursors, locking) complete (`7acf4f1`).
-- Commit 11 (Source health and lag reporting) complete: `lib/ct/source-health.js`, updated `api/source-status.js`, added `source_health` table in `supabase/schema.sql`.
+- Commit 11 (Source health and lag reporting) complete (`a3f86f4`).
+- Commit 11B (Repair dead scoring config and substring-window fuzzy brand matching) complete.
 

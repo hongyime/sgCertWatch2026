@@ -7,6 +7,7 @@
     "per_keyword": 10,
     "cap": 25,
     "combo_with_brand": 25,
+    "combo_with_scheme": 25,
     "note": "The cap matters. Without it, 'secure-login-verify-account.sg' scores 40 on keywords alone and outranks an actual brand lookalike."
   },
 

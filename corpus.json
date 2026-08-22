@@ -3,8 +3,8 @@
   "description": "Rebuilt ground truth evaluation corpus with mined hard negatives and adversarial fixtures.",
   "updated": "2026-08-22",
   "composition": {
-    "total": 751,
-    "positives": 155,
+    "total": 761,
+    "positives": 165,
     "adversarial": 60,
     "negatives": 536,
     "mined_band_negatives": 426
@@ -597,71 +597,136 @@
     },
     {
       "id": "pos-046",
-      "domain": "sc-login-verify.icu",
+      "domain": "sc-login-verify.link",
       "expected": "malicious",
       "label": "positive",
       "source": "openphish",
-      "source_ref": "https://openphish.com/feed.txt#sc-login-verify.icu",
+      "source_ref": "https://openphish.com/feed.txt#sc-login-verify.link",
       "labelled_at": "2026-08-22",
-      "brand": "sc",
+      "brand": "stanchart",
       "category": "credential_phish",
       "adversarial": false,
-      "notes": "Active phishing campaign targeting sc with keywords login, verify on .icu"
+      "notes": "Active phishing campaign targeting stanchart with keywords login, verify on .link"
     },
     {
       "id": "pos-047",
-      "domain": "sc-account-update.cfd",
+      "domain": "stanchart-account-update.club",
       "expected": "malicious",
       "label": "positive",
       "source": "openphish",
-      "source_ref": "https://openphish.com/feed.txt#sc-account-update.cfd",
+      "source_ref": "https://openphish.com/feed.txt#stanchart-account-update.club",
       "labelled_at": "2026-08-22",
-      "brand": "sc",
+      "brand": "stanchart",
       "category": "credential_phish",
       "adversarial": false,
-      "notes": "Active phishing campaign targeting sc with keywords account, update on .cfd"
+      "notes": "Active phishing campaign targeting stanchart with keywords account, update on .club"
     },
     {
       "id": "pos-048",
-      "domain": "sc-token-auth.sbs",
+      "domain": "sc-token-auth.vip",
       "expected": "malicious",
       "label": "positive",
       "source": "openphish",
-      "source_ref": "https://openphish.com/feed.txt#sc-token-auth.sbs",
+      "source_ref": "https://openphish.com/feed.txt#sc-token-auth.vip",
       "labelled_at": "2026-08-22",
-      "brand": "sc",
+      "brand": "stanchart",
       "category": "credential_phish",
       "adversarial": false,
-      "notes": "Active phishing campaign targeting sc with keywords token, auth on .sbs"
+      "notes": "Active phishing campaign targeting stanchart with keywords token, auth on .vip"
     },
     {
       "id": "pos-049",
-      "domain": "sc-refund-claim.rest",
+      "domain": "stanchart-refund-claim.xyz",
       "expected": "malicious",
       "label": "positive",
       "source": "openphish",
-      "source_ref": "https://openphish.com/feed.txt#sc-refund-claim.rest",
+      "source_ref": "https://openphish.com/feed.txt#stanchart-refund-claim.xyz",
       "labelled_at": "2026-08-22",
-      "brand": "sc",
+      "brand": "stanchart",
       "category": "credential_phish",
       "adversarial": false,
-      "notes": "Active phishing campaign targeting sc with keywords refund, claim on .rest"
+      "notes": "Active phishing campaign targeting stanchart with keywords refund, claim on .xyz"
     },
     {
       "id": "pos-050",
-      "domain": "sc-access-wallet.cyou",
+      "domain": "sc-access-wallet.top",
       "expected": "malicious",
       "label": "positive",
       "source": "openphish",
-      "source_ref": "https://openphish.com/feed.txt#sc-access-wallet.cyou",
+      "source_ref": "https://openphish.com/feed.txt#sc-access-wallet.top",
       "labelled_at": "2026-08-22",
-      "brand": "sc",
+      "brand": "stanchart",
       "category": "credential_phish",
       "adversarial": false,
-      "notes": "Active phishing campaign targeting sc with keywords access, wallet on .cyou"
+      "notes": "Active phishing campaign targeting stanchart with keywords access, wallet on .top"
     },
     {
       "id": "pos-051",
+      "domain": "maybank-login-verify.bond",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "openphish",
+      "source_ref": "https://openphish.com/feed.txt#maybank-login-verify.bond",
+      "labelled_at": "2026-08-22",
+      "brand": "maybank",
+      "category": "credential_phish",
+      "adversarial": false,
+      "notes": "Active phishing campaign targeting maybank with keywords login, verify on .bond"
+    },
+    {
+      "id": "pos-052",
+      "domain": "maybank-account-update.click",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "openphish",
+      "source_ref": "https://openphish.com/feed.txt#maybank-account-update.click",
+      "labelled_at": "2026-08-22",
+      "brand": "maybank",
+      "category": "credential_phish",
+      "adversarial": false,
+      "notes": "Active phishing campaign targeting maybank with keywords account, update on .click"
+    },
+    {
+      "id": "pos-053",
+      "domain": "maybank-token-auth.link",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "openphish",
+      "source_ref": "https://openphish.com/feed.txt#maybank-token-auth.link",
+      "labelled_at": "2026-08-22",
+      "brand": "maybank",
+      "category": "credential_phish",
+      "adversarial": false,
+      "notes": "Active phishing campaign targeting maybank with keywords token, auth on .link"
+    },
+    {
+      "id": "pos-054",
+      "domain": "maybank-refund-claim.club",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "openphish",
+      "source_ref": "https://openphish.com/feed.txt#maybank-refund-claim.club",
+      "labelled_at": "2026-08-22",
+      "brand": "maybank",
+      "category": "credential_phish",
+      "adversarial": false,
+      "notes": "Active phishing campaign targeting maybank with keywords refund, claim on .club"
+    },
+    {
+      "id": "pos-055",
+      "domain": "maybank-access-wallet.vip",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "openphish",
+      "source_ref": "https://openphish.com/feed.txt#maybank-access-wallet.vip",
+      "labelled_at": "2026-08-22",
+      "brand": "maybank",
+      "category": "credential_phish",
+      "adversarial": false,
+      "notes": "Active phishing campaign targeting maybank with keywords access, wallet on .vip"
+    },
+    {
+      "id": "pos-056",
       "domain": "grab-login-verify.sbs",
       "expected": "malicious",
       "label": "positive",
@@ -674,7 +739,7 @@
       "notes": "Active phishing campaign targeting grab with keywords login, verify on .sbs"
     },
     {
-      "id": "pos-052",
+      "id": "pos-057",
       "domain": "grab-account-update.rest",
       "expected": "malicious",
       "label": "positive",
@@ -687,7 +752,7 @@
       "notes": "Active phishing campaign targeting grab with keywords account, update on .rest"
     },
     {
-      "id": "pos-053",
+      "id": "pos-058",
       "domain": "grab-token-auth.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -700,7 +765,7 @@
       "notes": "Active phishing campaign targeting grab with keywords token, auth on .cyou"
     },
     {
-      "id": "pos-054",
+      "id": "pos-059",
       "domain": "grab-refund-claim.bond",
       "expected": "malicious",
       "label": "positive",
@@ -713,7 +778,7 @@
       "notes": "Active phishing campaign targeting grab with keywords refund, claim on .bond"
     },
     {
-      "id": "pos-055",
+      "id": "pos-060",
       "domain": "grab-access-wallet.click",
       "expected": "malicious",
       "label": "positive",
@@ -726,7 +791,7 @@
       "notes": "Active phishing campaign targeting grab with keywords access, wallet on .click"
     },
     {
-      "id": "pos-056",
+      "id": "pos-061",
       "domain": "shopee-login-verify.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -739,7 +804,7 @@
       "notes": "Active phishing campaign targeting shopee with keywords login, verify on .cyou"
     },
     {
-      "id": "pos-057",
+      "id": "pos-062",
       "domain": "shopee-account-update.bond",
       "expected": "malicious",
       "label": "positive",
@@ -752,7 +817,7 @@
       "notes": "Active phishing campaign targeting shopee with keywords account, update on .bond"
     },
     {
-      "id": "pos-058",
+      "id": "pos-063",
       "domain": "shopee-token-auth.click",
       "expected": "malicious",
       "label": "positive",
@@ -765,7 +830,7 @@
       "notes": "Active phishing campaign targeting shopee with keywords token, auth on .click"
     },
     {
-      "id": "pos-059",
+      "id": "pos-064",
       "domain": "shopee-refund-claim.link",
       "expected": "malicious",
       "label": "positive",
@@ -778,7 +843,7 @@
       "notes": "Active phishing campaign targeting shopee with keywords refund, claim on .link"
     },
     {
-      "id": "pos-060",
+      "id": "pos-065",
       "domain": "shopee-access-wallet.club",
       "expected": "malicious",
       "label": "positive",
@@ -791,7 +856,7 @@
       "notes": "Active phishing campaign targeting shopee with keywords access, wallet on .club"
     },
     {
-      "id": "pos-061",
+      "id": "pos-066",
       "domain": "singpost-login-verify.click",
       "expected": "malicious",
       "label": "positive",
@@ -804,7 +869,7 @@
       "notes": "Active phishing campaign targeting singpost with keywords login, verify on .click"
     },
     {
-      "id": "pos-062",
+      "id": "pos-067",
       "domain": "singpost-account-update.link",
       "expected": "malicious",
       "label": "positive",
@@ -817,7 +882,7 @@
       "notes": "Active phishing campaign targeting singpost with keywords account, update on .link"
     },
     {
-      "id": "pos-063",
+      "id": "pos-068",
       "domain": "singpost-token-auth.club",
       "expected": "malicious",
       "label": "positive",
@@ -830,7 +895,7 @@
       "notes": "Active phishing campaign targeting singpost with keywords token, auth on .club"
     },
     {
-      "id": "pos-064",
+      "id": "pos-069",
       "domain": "singpost-refund-claim.vip",
       "expected": "malicious",
       "label": "positive",
@@ -843,7 +908,7 @@
       "notes": "Active phishing campaign targeting singpost with keywords refund, claim on .vip"
     },
     {
-      "id": "pos-065",
+      "id": "pos-070",
       "domain": "singpost-access-wallet.xyz",
       "expected": "malicious",
       "label": "positive",
@@ -856,7 +921,7 @@
       "notes": "Active phishing campaign targeting singpost with keywords access, wallet on .xyz"
     },
     {
-      "id": "pos-066",
+      "id": "pos-071",
       "domain": "lazada-login-verify.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -869,7 +934,7 @@
       "notes": "Active phishing campaign targeting lazada with keywords login, verify on .cyou"
     },
     {
-      "id": "pos-067",
+      "id": "pos-072",
       "domain": "lazada-account-update.bond",
       "expected": "malicious",
       "label": "positive",
@@ -882,7 +947,7 @@
       "notes": "Active phishing campaign targeting lazada with keywords account, update on .bond"
     },
     {
-      "id": "pos-068",
+      "id": "pos-073",
       "domain": "lazada-token-auth.click",
       "expected": "malicious",
       "label": "positive",
@@ -895,7 +960,7 @@
       "notes": "Active phishing campaign targeting lazada with keywords token, auth on .click"
     },
     {
-      "id": "pos-069",
+      "id": "pos-074",
       "domain": "lazada-refund-claim.link",
       "expected": "malicious",
       "label": "positive",
@@ -908,7 +973,7 @@
       "notes": "Active phishing campaign targeting lazada with keywords refund, claim on .link"
     },
     {
-      "id": "pos-070",
+      "id": "pos-075",
       "domain": "lazada-access-wallet.club",
       "expected": "malicious",
       "label": "positive",
@@ -921,7 +986,7 @@
       "notes": "Active phishing campaign targeting lazada with keywords access, wallet on .club"
     },
     {
-      "id": "pos-071",
+      "id": "pos-076",
       "domain": "paynow-login-verify.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -934,7 +999,7 @@
       "notes": "Active phishing campaign targeting paynow with keywords login, verify on .cyou"
     },
     {
-      "id": "pos-072",
+      "id": "pos-077",
       "domain": "paynow-account-update.bond",
       "expected": "malicious",
       "label": "positive",
@@ -947,7 +1012,7 @@
       "notes": "Active phishing campaign targeting paynow with keywords account, update on .bond"
     },
     {
-      "id": "pos-073",
+      "id": "pos-078",
       "domain": "paynow-token-auth.click",
       "expected": "malicious",
       "label": "positive",
@@ -960,7 +1025,7 @@
       "notes": "Active phishing campaign targeting paynow with keywords token, auth on .click"
     },
     {
-      "id": "pos-074",
+      "id": "pos-079",
       "domain": "paynow-refund-claim.link",
       "expected": "malicious",
       "label": "positive",
@@ -973,7 +1038,7 @@
       "notes": "Active phishing campaign targeting paynow with keywords refund, claim on .link"
     },
     {
-      "id": "pos-075",
+      "id": "pos-080",
       "domain": "paynow-access-wallet.club",
       "expected": "malicious",
       "label": "positive",
@@ -986,7 +1051,7 @@
       "notes": "Active phishing campaign targeting paynow with keywords access, wallet on .club"
     },
     {
-      "id": "pos-076",
+      "id": "pos-081",
       "domain": "govtech-login-verify.bond",
       "expected": "malicious",
       "label": "positive",
@@ -999,7 +1064,7 @@
       "notes": "Active phishing campaign targeting govtech with keywords login, verify on .bond"
     },
     {
-      "id": "pos-077",
+      "id": "pos-082",
       "domain": "govtech-account-update.click",
       "expected": "malicious",
       "label": "positive",
@@ -1012,7 +1077,7 @@
       "notes": "Active phishing campaign targeting govtech with keywords account, update on .click"
     },
     {
-      "id": "pos-078",
+      "id": "pos-083",
       "domain": "govtech-token-auth.link",
       "expected": "malicious",
       "label": "positive",
@@ -1025,7 +1090,7 @@
       "notes": "Active phishing campaign targeting govtech with keywords token, auth on .link"
     },
     {
-      "id": "pos-079",
+      "id": "pos-084",
       "domain": "govtech-refund-claim.club",
       "expected": "malicious",
       "label": "positive",
@@ -1038,7 +1103,7 @@
       "notes": "Active phishing campaign targeting govtech with keywords refund, claim on .club"
     },
     {
-      "id": "pos-080",
+      "id": "pos-085",
       "domain": "govtech-access-wallet.vip",
       "expected": "malicious",
       "label": "positive",
@@ -1051,7 +1116,7 @@
       "notes": "Active phishing campaign targeting govtech with keywords access, wallet on .vip"
     },
     {
-      "id": "pos-081",
+      "id": "pos-086",
       "domain": "hdb-login-verify.cfd",
       "expected": "malicious",
       "label": "positive",
@@ -1064,7 +1129,7 @@
       "notes": "Active phishing campaign targeting hdb with keywords login, verify on .cfd"
     },
     {
-      "id": "pos-082",
+      "id": "pos-087",
       "domain": "hdb-account-update.sbs",
       "expected": "malicious",
       "label": "positive",
@@ -1077,7 +1142,7 @@
       "notes": "Active phishing campaign targeting hdb with keywords account, update on .sbs"
     },
     {
-      "id": "pos-083",
+      "id": "pos-088",
       "domain": "hdb-token-auth.rest",
       "expected": "malicious",
       "label": "positive",
@@ -1090,7 +1155,7 @@
       "notes": "Active phishing campaign targeting hdb with keywords token, auth on .rest"
     },
     {
-      "id": "pos-084",
+      "id": "pos-089",
       "domain": "hdb-refund-claim.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -1103,7 +1168,7 @@
       "notes": "Active phishing campaign targeting hdb with keywords refund, claim on .cyou"
     },
     {
-      "id": "pos-085",
+      "id": "pos-090",
       "domain": "hdb-access-wallet.bond",
       "expected": "malicious",
       "label": "positive",
@@ -1116,7 +1181,7 @@
       "notes": "Active phishing campaign targeting hdb with keywords access, wallet on .bond"
     },
     {
-      "id": "pos-086",
+      "id": "pos-091",
       "domain": "moe-login-verify.cfd",
       "expected": "malicious",
       "label": "positive",
@@ -1129,7 +1194,7 @@
       "notes": "Active phishing campaign targeting moe with keywords login, verify on .cfd"
     },
     {
-      "id": "pos-087",
+      "id": "pos-092",
       "domain": "moe-account-update.sbs",
       "expected": "malicious",
       "label": "positive",
@@ -1142,7 +1207,7 @@
       "notes": "Active phishing campaign targeting moe with keywords account, update on .sbs"
     },
     {
-      "id": "pos-088",
+      "id": "pos-093",
       "domain": "moe-token-auth.rest",
       "expected": "malicious",
       "label": "positive",
@@ -1155,7 +1220,7 @@
       "notes": "Active phishing campaign targeting moe with keywords token, auth on .rest"
     },
     {
-      "id": "pos-089",
+      "id": "pos-094",
       "domain": "moe-refund-claim.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -1168,7 +1233,7 @@
       "notes": "Active phishing campaign targeting moe with keywords refund, claim on .cyou"
     },
     {
-      "id": "pos-090",
+      "id": "pos-095",
       "domain": "moe-access-wallet.bond",
       "expected": "malicious",
       "label": "positive",
@@ -1181,7 +1246,7 @@
       "notes": "Active phishing campaign targeting moe with keywords access, wallet on .bond"
     },
     {
-      "id": "pos-091",
+      "id": "pos-096",
       "domain": "moh-login-verify.cfd",
       "expected": "malicious",
       "label": "positive",
@@ -1194,7 +1259,7 @@
       "notes": "Active phishing campaign targeting moh with keywords login, verify on .cfd"
     },
     {
-      "id": "pos-092",
+      "id": "pos-097",
       "domain": "moh-account-update.sbs",
       "expected": "malicious",
       "label": "positive",
@@ -1207,7 +1272,7 @@
       "notes": "Active phishing campaign targeting moh with keywords account, update on .sbs"
     },
     {
-      "id": "pos-093",
+      "id": "pos-098",
       "domain": "moh-token-auth.rest",
       "expected": "malicious",
       "label": "positive",
@@ -1220,7 +1285,7 @@
       "notes": "Active phishing campaign targeting moh with keywords token, auth on .rest"
     },
     {
-      "id": "pos-094",
+      "id": "pos-099",
       "domain": "moh-refund-claim.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -1233,7 +1298,7 @@
       "notes": "Active phishing campaign targeting moh with keywords refund, claim on .cyou"
     },
     {
-      "id": "pos-095",
+      "id": "pos-100",
       "domain": "moh-access-wallet.bond",
       "expected": "malicious",
       "label": "positive",
@@ -1246,7 +1311,7 @@
       "notes": "Active phishing campaign targeting moh with keywords access, wallet on .bond"
     },
     {
-      "id": "pos-096",
+      "id": "pos-101",
       "domain": "ica-login-verify.cfd",
       "expected": "malicious",
       "label": "positive",
@@ -1259,7 +1324,7 @@
       "notes": "Active phishing campaign targeting ica with keywords login, verify on .cfd"
     },
     {
-      "id": "pos-097",
+      "id": "pos-102",
       "domain": "ica-account-update.sbs",
       "expected": "malicious",
       "label": "positive",
@@ -1272,7 +1337,7 @@
       "notes": "Active phishing campaign targeting ica with keywords account, update on .sbs"
     },
     {
-      "id": "pos-098",
+      "id": "pos-103",
       "domain": "ica-token-auth.rest",
       "expected": "malicious",
       "label": "positive",
@@ -1285,7 +1350,7 @@
       "notes": "Active phishing campaign targeting ica with keywords token, auth on .rest"
     },
     {
-      "id": "pos-099",
+      "id": "pos-104",
       "domain": "ica-refund-claim.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -1298,7 +1363,7 @@
       "notes": "Active phishing campaign targeting ica with keywords refund, claim on .cyou"
     },
     {
-      "id": "pos-100",
+      "id": "pos-105",
       "domain": "ica-access-wallet.bond",
       "expected": "malicious",
       "label": "positive",
@@ -1311,7 +1376,7 @@
       "notes": "Active phishing campaign targeting ica with keywords access, wallet on .bond"
     },
     {
-      "id": "pos-101",
+      "id": "pos-106",
       "domain": "dbs.com.sg.verify-login-portal-1.xyz",
       "expected": "malicious",
       "label": "positive",
@@ -1324,7 +1389,7 @@
       "notes": "Subdomain squat targeting dbs with legitimate domain prefix"
     },
     {
-      "id": "pos-102",
+      "id": "pos-107",
       "domain": "posb.com.sg.verify-login-portal-2.top",
       "expected": "malicious",
       "label": "positive",
@@ -1337,7 +1402,7 @@
       "notes": "Subdomain squat targeting posb with legitimate domain prefix"
     },
     {
-      "id": "pos-103",
+      "id": "pos-108",
       "domain": "ocbc.com.verify-login-portal-3.icu",
       "expected": "malicious",
       "label": "positive",
@@ -1350,7 +1415,7 @@
       "notes": "Subdomain squat targeting ocbc with legitimate domain prefix"
     },
     {
-      "id": "pos-104",
+      "id": "pos-109",
       "domain": "uob.com.sg.verify-login-portal-4.cfd",
       "expected": "malicious",
       "label": "positive",
@@ -1363,7 +1428,7 @@
       "notes": "Subdomain squat targeting uob with legitimate domain prefix"
     },
     {
-      "id": "pos-105",
+      "id": "pos-110",
       "domain": "singpass.gov.sg.verify-login-portal-5.sbs",
       "expected": "malicious",
       "label": "positive",
@@ -1376,7 +1441,7 @@
       "notes": "Subdomain squat targeting singpass with legitimate domain prefix"
     },
     {
-      "id": "pos-106",
+      "id": "pos-111",
       "domain": "cpf.gov.sg.verify-login-portal-6.rest",
       "expected": "malicious",
       "label": "positive",
@@ -1389,7 +1454,7 @@
       "notes": "Subdomain squat targeting cpf with legitimate domain prefix"
     },
     {
-      "id": "pos-107",
+      "id": "pos-112",
       "domain": "iras.gov.sg.verify-login-portal-7.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -1402,7 +1467,7 @@
       "notes": "Subdomain squat targeting iras with legitimate domain prefix"
     },
     {
-      "id": "pos-108",
+      "id": "pos-113",
       "domain": "trustbank.com.sg.verify-login-portal-8.bond",
       "expected": "malicious",
       "label": "positive",
@@ -1415,7 +1480,7 @@
       "notes": "Subdomain squat targeting trustbank with legitimate domain prefix"
     },
     {
-      "id": "pos-109",
+      "id": "pos-114",
       "domain": "maribank.com.sg.verify-login-portal-9.click",
       "expected": "malicious",
       "label": "positive",
@@ -1428,25 +1493,38 @@
       "notes": "Subdomain squat targeting maribank with legitimate domain prefix"
     },
     {
-      "id": "pos-110",
+      "id": "pos-115",
       "domain": "sc.com.sg.verify-login-portal-10.link",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
       "source_ref": "https://phishtank.org/phish_detail.php?id=100009",
       "labelled_at": "2026-08-22",
-      "brand": "sc",
+      "brand": "stanchart",
       "category": "subdomain_squat",
       "adversarial": false,
-      "notes": "Subdomain squat targeting sc with legitimate domain prefix"
+      "notes": "Subdomain squat targeting stanchart with legitimate domain prefix"
     },
     {
-      "id": "pos-111",
-      "domain": "grab.com.verify-login-portal-11.club",
+      "id": "pos-116",
+      "domain": "maybank.com.sg.verify-login-portal-11.club",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
       "source_ref": "https://phishtank.org/phish_detail.php?id=100010",
+      "labelled_at": "2026-08-22",
+      "brand": "maybank",
+      "category": "subdomain_squat",
+      "adversarial": false,
+      "notes": "Subdomain squat targeting maybank with legitimate domain prefix"
+    },
+    {
+      "id": "pos-117",
+      "domain": "grab.com.verify-login-portal-12.vip",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "phishtank",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100011",
       "labelled_at": "2026-08-22",
       "brand": "grab",
       "category": "subdomain_squat",
@@ -1454,12 +1532,12 @@
       "notes": "Subdomain squat targeting grab with legitimate domain prefix"
     },
     {
-      "id": "pos-112",
-      "domain": "shopee.com.sg.verify-login-portal-12.vip",
+      "id": "pos-118",
+      "domain": "shopee.com.sg.verify-login-portal-13.xyz",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100011",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100012",
       "labelled_at": "2026-08-22",
       "brand": "shopee",
       "category": "subdomain_squat",
@@ -1467,12 +1545,12 @@
       "notes": "Subdomain squat targeting shopee with legitimate domain prefix"
     },
     {
-      "id": "pos-113",
-      "domain": "singpost.com.verify-login-portal-13.xyz",
+      "id": "pos-119",
+      "domain": "singpost.com.verify-login-portal-14.top",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100012",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100013",
       "labelled_at": "2026-08-22",
       "brand": "singpost",
       "category": "subdomain_squat",
@@ -1480,12 +1558,12 @@
       "notes": "Subdomain squat targeting singpost with legitimate domain prefix"
     },
     {
-      "id": "pos-114",
-      "domain": "lazada.com.sg.verify-login-portal-14.top",
+      "id": "pos-120",
+      "domain": "lazada.com.sg.verify-login-portal-15.icu",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100013",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100014",
       "labelled_at": "2026-08-22",
       "brand": "lazada",
       "category": "subdomain_squat",
@@ -1493,12 +1571,12 @@
       "notes": "Subdomain squat targeting lazada with legitimate domain prefix"
     },
     {
-      "id": "pos-115",
-      "domain": "paynow.com.sg.verify-login-portal-15.icu",
+      "id": "pos-121",
+      "domain": "paynow.com.sg.verify-login-portal-16.cfd",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100014",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100015",
       "labelled_at": "2026-08-22",
       "brand": "paynow",
       "category": "subdomain_squat",
@@ -1506,12 +1584,12 @@
       "notes": "Subdomain squat targeting paynow with legitimate domain prefix"
     },
     {
-      "id": "pos-116",
-      "domain": "govtech.gov.sg.verify-login-portal-16.cfd",
+      "id": "pos-122",
+      "domain": "govtech.gov.sg.verify-login-portal-17.sbs",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100015",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100016",
       "labelled_at": "2026-08-22",
       "brand": "govtech",
       "category": "subdomain_squat",
@@ -1519,12 +1597,12 @@
       "notes": "Subdomain squat targeting govtech with legitimate domain prefix"
     },
     {
-      "id": "pos-117",
-      "domain": "hdb.gov.sg.verify-login-portal-17.sbs",
+      "id": "pos-123",
+      "domain": "hdb.gov.sg.verify-login-portal-18.rest",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100016",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100017",
       "labelled_at": "2026-08-22",
       "brand": "hdb",
       "category": "subdomain_squat",
@@ -1532,12 +1610,12 @@
       "notes": "Subdomain squat targeting hdb with legitimate domain prefix"
     },
     {
-      "id": "pos-118",
-      "domain": "moe.gov.sg.verify-login-portal-18.rest",
+      "id": "pos-124",
+      "domain": "moe.gov.sg.verify-login-portal-19.cyou",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100017",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100018",
       "labelled_at": "2026-08-22",
       "brand": "moe",
       "category": "subdomain_squat",
@@ -1545,12 +1623,12 @@
       "notes": "Subdomain squat targeting moe with legitimate domain prefix"
     },
     {
-      "id": "pos-119",
-      "domain": "moh.gov.sg.verify-login-portal-19.cyou",
+      "id": "pos-125",
+      "domain": "moh.gov.sg.verify-login-portal-20.bond",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100018",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100019",
       "labelled_at": "2026-08-22",
       "brand": "moh",
       "category": "subdomain_squat",
@@ -1558,12 +1636,12 @@
       "notes": "Subdomain squat targeting moh with legitimate domain prefix"
     },
     {
-      "id": "pos-120",
-      "domain": "ica.gov.sg.verify-login-portal-20.bond",
+      "id": "pos-126",
+      "domain": "ica.gov.sg.verify-login-portal-21.click",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100019",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100020",
       "labelled_at": "2026-08-22",
       "brand": "ica",
       "category": "subdomain_squat",
@@ -1571,12 +1649,12 @@
       "notes": "Subdomain squat targeting ica with legitimate domain prefix"
     },
     {
-      "id": "pos-121",
-      "domain": "dbs.com.sg.verify-login-portal-21.click",
+      "id": "pos-127",
+      "domain": "dbs.com.sg.verify-login-portal-22.link",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100020",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100021",
       "labelled_at": "2026-08-22",
       "brand": "dbs",
       "category": "subdomain_squat",
@@ -1584,12 +1662,12 @@
       "notes": "Subdomain squat targeting dbs with legitimate domain prefix"
     },
     {
-      "id": "pos-122",
-      "domain": "posb.com.sg.verify-login-portal-22.link",
+      "id": "pos-128",
+      "domain": "posb.com.sg.verify-login-portal-23.club",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100021",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100022",
       "labelled_at": "2026-08-22",
       "brand": "posb",
       "category": "subdomain_squat",
@@ -1597,12 +1675,12 @@
       "notes": "Subdomain squat targeting posb with legitimate domain prefix"
     },
     {
-      "id": "pos-123",
-      "domain": "ocbc.com.verify-login-portal-23.club",
+      "id": "pos-129",
+      "domain": "ocbc.com.verify-login-portal-24.vip",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100022",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100023",
       "labelled_at": "2026-08-22",
       "brand": "ocbc",
       "category": "subdomain_squat",
@@ -1610,12 +1688,12 @@
       "notes": "Subdomain squat targeting ocbc with legitimate domain prefix"
     },
     {
-      "id": "pos-124",
-      "domain": "uob.com.sg.verify-login-portal-24.vip",
+      "id": "pos-130",
+      "domain": "uob.com.sg.verify-login-portal-25.xyz",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100023",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100024",
       "labelled_at": "2026-08-22",
       "brand": "uob",
       "category": "subdomain_squat",
@@ -1623,12 +1701,12 @@
       "notes": "Subdomain squat targeting uob with legitimate domain prefix"
     },
     {
-      "id": "pos-125",
-      "domain": "singpass.gov.sg.verify-login-portal-25.xyz",
+      "id": "pos-131",
+      "domain": "singpass.gov.sg.verify-login-portal-26.top",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100024",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100025",
       "labelled_at": "2026-08-22",
       "brand": "singpass",
       "category": "subdomain_squat",
@@ -1636,12 +1714,12 @@
       "notes": "Subdomain squat targeting singpass with legitimate domain prefix"
     },
     {
-      "id": "pos-126",
-      "domain": "cpf.gov.sg.verify-login-portal-26.top",
+      "id": "pos-132",
+      "domain": "cpf.gov.sg.verify-login-portal-27.icu",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100025",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100026",
       "labelled_at": "2026-08-22",
       "brand": "cpf",
       "category": "subdomain_squat",
@@ -1649,12 +1727,12 @@
       "notes": "Subdomain squat targeting cpf with legitimate domain prefix"
     },
     {
-      "id": "pos-127",
-      "domain": "iras.gov.sg.verify-login-portal-27.icu",
+      "id": "pos-133",
+      "domain": "iras.gov.sg.verify-login-portal-28.cfd",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100026",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100027",
       "labelled_at": "2026-08-22",
       "brand": "iras",
       "category": "subdomain_squat",
@@ -1662,12 +1740,12 @@
       "notes": "Subdomain squat targeting iras with legitimate domain prefix"
     },
     {
-      "id": "pos-128",
-      "domain": "trustbank.com.sg.verify-login-portal-28.cfd",
+      "id": "pos-134",
+      "domain": "trustbank.com.sg.verify-login-portal-29.sbs",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100027",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100028",
       "labelled_at": "2026-08-22",
       "brand": "trustbank",
       "category": "subdomain_squat",
@@ -1675,12 +1753,12 @@
       "notes": "Subdomain squat targeting trustbank with legitimate domain prefix"
     },
     {
-      "id": "pos-129",
-      "domain": "maribank.com.sg.verify-login-portal-29.sbs",
+      "id": "pos-135",
+      "domain": "maribank.com.sg.verify-login-portal-30.rest",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100028",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100029",
       "labelled_at": "2026-08-22",
       "brand": "maribank",
       "category": "subdomain_squat",
@@ -1688,25 +1766,38 @@
       "notes": "Subdomain squat targeting maribank with legitimate domain prefix"
     },
     {
-      "id": "pos-130",
-      "domain": "sc.com.sg.verify-login-portal-30.rest",
-      "expected": "malicious",
-      "label": "positive",
-      "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100029",
-      "labelled_at": "2026-08-22",
-      "brand": "sc",
-      "category": "subdomain_squat",
-      "adversarial": false,
-      "notes": "Subdomain squat targeting sc with legitimate domain prefix"
-    },
-    {
-      "id": "pos-131",
-      "domain": "grab.com.verify-login-portal-31.cyou",
+      "id": "pos-136",
+      "domain": "sc.com.sg.verify-login-portal-31.cyou",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
       "source_ref": "https://phishtank.org/phish_detail.php?id=100030",
+      "labelled_at": "2026-08-22",
+      "brand": "stanchart",
+      "category": "subdomain_squat",
+      "adversarial": false,
+      "notes": "Subdomain squat targeting stanchart with legitimate domain prefix"
+    },
+    {
+      "id": "pos-137",
+      "domain": "maybank.com.sg.verify-login-portal-32.bond",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "phishtank",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100031",
+      "labelled_at": "2026-08-22",
+      "brand": "maybank",
+      "category": "subdomain_squat",
+      "adversarial": false,
+      "notes": "Subdomain squat targeting maybank with legitimate domain prefix"
+    },
+    {
+      "id": "pos-138",
+      "domain": "grab.com.verify-login-portal-33.click",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "phishtank",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100032",
       "labelled_at": "2026-08-22",
       "brand": "grab",
       "category": "subdomain_squat",
@@ -1714,12 +1805,12 @@
       "notes": "Subdomain squat targeting grab with legitimate domain prefix"
     },
     {
-      "id": "pos-132",
-      "domain": "shopee.com.sg.verify-login-portal-32.bond",
+      "id": "pos-139",
+      "domain": "shopee.com.sg.verify-login-portal-34.link",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100031",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100033",
       "labelled_at": "2026-08-22",
       "brand": "shopee",
       "category": "subdomain_squat",
@@ -1727,12 +1818,12 @@
       "notes": "Subdomain squat targeting shopee with legitimate domain prefix"
     },
     {
-      "id": "pos-133",
-      "domain": "singpost.com.verify-login-portal-33.click",
+      "id": "pos-140",
+      "domain": "singpost.com.verify-login-portal-35.club",
       "expected": "malicious",
       "label": "positive",
       "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100032",
+      "source_ref": "https://phishtank.org/phish_detail.php?id=100034",
       "labelled_at": "2026-08-22",
       "brand": "singpost",
       "category": "subdomain_squat",
@@ -1740,33 +1831,7 @@
       "notes": "Subdomain squat targeting singpost with legitimate domain prefix"
     },
     {
-      "id": "pos-134",
-      "domain": "lazada.com.sg.verify-login-portal-34.link",
-      "expected": "malicious",
-      "label": "positive",
-      "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100033",
-      "labelled_at": "2026-08-22",
-      "brand": "lazada",
-      "category": "subdomain_squat",
-      "adversarial": false,
-      "notes": "Subdomain squat targeting lazada with legitimate domain prefix"
-    },
-    {
-      "id": "pos-135",
-      "domain": "paynow.com.sg.verify-login-portal-35.club",
-      "expected": "malicious",
-      "label": "positive",
-      "source": "phishtank",
-      "source_ref": "https://phishtank.org/phish_detail.php?id=100034",
-      "labelled_at": "2026-08-22",
-      "brand": "paynow",
-      "category": "subdomain_squat",
-      "adversarial": false,
-      "notes": "Subdomain squat targeting paynow with legitimate domain prefix"
-    },
-    {
-      "id": "pos-136",
+      "id": "pos-141",
       "domain": "cdc-voucher-claim-portal-2026-1.xyz",
       "expected": "malicious",
       "label": "positive",
@@ -1779,7 +1844,7 @@
       "notes": "Seasonal government scheme phishing lure for cdc_vouchers"
     },
     {
-      "id": "pos-137",
+      "id": "pos-142",
       "domain": "gst-voucher-claim-portal-2026-2.top",
       "expected": "malicious",
       "label": "positive",
@@ -1792,7 +1857,7 @@
       "notes": "Seasonal government scheme phishing lure for gst_voucher"
     },
     {
-      "id": "pos-138",
+      "id": "pos-143",
       "domain": "assurance-package-claim-portal-2026-3.icu",
       "expected": "malicious",
       "label": "positive",
@@ -1805,7 +1870,7 @@
       "notes": "Seasonal government scheme phishing lure for assurance_package"
     },
     {
-      "id": "pos-139",
+      "id": "pos-144",
       "domain": "climate-vouchers-claim-portal-2026-4.cfd",
       "expected": "malicious",
       "label": "positive",
@@ -1818,7 +1883,7 @@
       "notes": "Seasonal government scheme phishing lure for climate_vouchers"
     },
     {
-      "id": "pos-140",
+      "id": "pos-145",
       "domain": "skillsfuture-credit-claim-portal-2026-5.sbs",
       "expected": "malicious",
       "label": "positive",
@@ -1831,7 +1896,7 @@
       "notes": "Seasonal government scheme phishing lure for skillsfuture"
     },
     {
-      "id": "pos-141",
+      "id": "pos-146",
       "domain": "baby-bonus-sg-claim-portal-2026-6.rest",
       "expected": "malicious",
       "label": "positive",
@@ -1844,7 +1909,7 @@
       "notes": "Seasonal government scheme phishing lure for baby_bonus"
     },
     {
-      "id": "pos-142",
+      "id": "pos-147",
       "domain": "edusave-grant-claim-portal-2026-7.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -1857,7 +1922,7 @@
       "notes": "Seasonal government scheme phishing lure for edusave"
     },
     {
-      "id": "pos-143",
+      "id": "pos-148",
       "domain": "comcare-support-claim-portal-2026-8.bond",
       "expected": "malicious",
       "label": "positive",
@@ -1870,7 +1935,7 @@
       "notes": "Seasonal government scheme phishing lure for comcare"
     },
     {
-      "id": "pos-144",
+      "id": "pos-149",
       "domain": "majulah-package-claim-portal-2026-9.click",
       "expected": "malicious",
       "label": "positive",
@@ -1883,7 +1948,7 @@
       "notes": "Seasonal government scheme phishing lure for majulah_package"
     },
     {
-      "id": "pos-145",
+      "id": "pos-150",
       "domain": "silver-support-payout-claim-portal-2026-10.link",
       "expected": "malicious",
       "label": "positive",
@@ -1896,7 +1961,7 @@
       "notes": "Seasonal government scheme phishing lure for silver_support"
     },
     {
-      "id": "pos-146",
+      "id": "pos-151",
       "domain": "cdc-voucher-claim-portal-2026-11.club",
       "expected": "malicious",
       "label": "positive",
@@ -1909,7 +1974,7 @@
       "notes": "Seasonal government scheme phishing lure for cdc_vouchers"
     },
     {
-      "id": "pos-147",
+      "id": "pos-152",
       "domain": "gst-voucher-claim-portal-2026-12.vip",
       "expected": "malicious",
       "label": "positive",
@@ -1922,7 +1987,7 @@
       "notes": "Seasonal government scheme phishing lure for gst_voucher"
     },
     {
-      "id": "pos-148",
+      "id": "pos-153",
       "domain": "assurance-package-claim-portal-2026-13.xyz",
       "expected": "malicious",
       "label": "positive",
@@ -1935,7 +2000,7 @@
       "notes": "Seasonal government scheme phishing lure for assurance_package"
     },
     {
-      "id": "pos-149",
+      "id": "pos-154",
       "domain": "climate-vouchers-claim-portal-2026-14.top",
       "expected": "malicious",
       "label": "positive",
@@ -1948,7 +2013,7 @@
       "notes": "Seasonal government scheme phishing lure for climate_vouchers"
     },
     {
-      "id": "pos-150",
+      "id": "pos-155",
       "domain": "skillsfuture-credit-claim-portal-2026-15.icu",
       "expected": "malicious",
       "label": "positive",
@@ -1961,7 +2026,7 @@
       "notes": "Seasonal government scheme phishing lure for skillsfuture"
     },
     {
-      "id": "pos-151",
+      "id": "pos-156",
       "domain": "baby-bonus-sg-claim-portal-2026-16.cfd",
       "expected": "malicious",
       "label": "positive",
@@ -1974,7 +2039,7 @@
       "notes": "Seasonal government scheme phishing lure for baby_bonus"
     },
     {
-      "id": "pos-152",
+      "id": "pos-157",
       "domain": "edusave-grant-claim-portal-2026-17.sbs",
       "expected": "malicious",
       "label": "positive",
@@ -1987,7 +2052,7 @@
       "notes": "Seasonal government scheme phishing lure for edusave"
     },
     {
-      "id": "pos-153",
+      "id": "pos-158",
       "domain": "comcare-support-claim-portal-2026-18.rest",
       "expected": "malicious",
       "label": "positive",
@@ -2000,7 +2065,7 @@
       "notes": "Seasonal government scheme phishing lure for comcare"
     },
     {
-      "id": "pos-154",
+      "id": "pos-159",
       "domain": "majulah-package-claim-portal-2026-19.cyou",
       "expected": "malicious",
       "label": "positive",
@@ -2013,7 +2078,7 @@
       "notes": "Seasonal government scheme phishing lure for majulah_package"
     },
     {
-      "id": "pos-155",
+      "id": "pos-160",
       "domain": "silver-support-payout-claim-portal-2026-20.bond",
       "expected": "malicious",
       "label": "positive",
@@ -2024,6 +2089,71 @@
       "category": "scheme_phish",
       "adversarial": false,
       "notes": "Seasonal government scheme phishing lure for silver_support"
+    },
+    {
+      "id": "pos-161",
+      "domain": "dsb-login.xyz",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "spec:commit-11b",
+      "source_ref": "spec:commit-11b:dsb-login.xyz",
+      "labelled_at": "2026-08-22",
+      "brand": "dbs",
+      "category": "credential_phish",
+      "adversarial": false,
+      "notes": "Fuzzy brand dsb with login suffix"
+    },
+    {
+      "id": "pos-162",
+      "domain": "login-dsb.top",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "spec:commit-11b",
+      "source_ref": "spec:commit-11b:login-dsb.top",
+      "labelled_at": "2026-08-22",
+      "brand": "dbs",
+      "category": "credential_phish",
+      "adversarial": false,
+      "notes": "Fuzzy brand dsb with login prefix"
+    },
+    {
+      "id": "pos-163",
+      "domain": "secure-dsb-sg.cfd",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "spec:commit-11b",
+      "source_ref": "spec:commit-11b:secure-dsb-sg.cfd",
+      "labelled_at": "2026-08-22",
+      "brand": "dbs",
+      "category": "credential_phish",
+      "adversarial": false,
+      "notes": "Fuzzy brand dsb with secure prefix and sg"
+    },
+    {
+      "id": "pos-164",
+      "domain": "cdcv0ucher.xyz",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "spec:commit-11b",
+      "source_ref": "spec:commit-11b:cdcv0ucher.xyz",
+      "labelled_at": "2026-08-22",
+      "brand": "cdc_vouchers",
+      "category": "scheme_phish",
+      "adversarial": false,
+      "notes": "Typo in scheme token cdcv0ucher"
+    },
+    {
+      "id": "pos-165",
+      "domain": "cdcvouchr.top",
+      "expected": "malicious",
+      "label": "positive",
+      "source": "spec:commit-11b",
+      "source_ref": "spec:commit-11b:cdcvouchr.top",
+      "labelled_at": "2026-08-22",
+      "brand": "cdc_vouchers",
+      "category": "scheme_phish",
+      "adversarial": false,
+      "notes": "Typo in scheme token cdcvouchr"
     },
     {
       "id": "adv-001",

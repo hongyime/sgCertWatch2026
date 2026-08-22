@@ -21,6 +21,7 @@
     "kw": 10,
     "keyword_cap": 25,
     "combo_brand_keyword": 25,
+    "combo_scheme_keyword": 25,
     "scheme": 45,
     "scheme_seasonal_boost": 15,
     "homoglyph:ascii": 25,
