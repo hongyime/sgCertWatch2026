@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "validate": "python scripts/validate_data.py --release",
-    "test": "node scripts/test_scoring.js && node scripts/test_ct_sources.js && node scripts/test_supabase.js && node scripts/test_auth.js"
+    "test": "node scripts/test_scoring.js && node scripts/test_ct_sources.js && node scripts/test_supabase.js && node scripts/test_auth.js && node scripts/test_registrable.js"
   },
   "engines": {
     "node": "20.x"
   },
   "dependencies": {
-    "ws": "^8.18.0"
+    "psl": "1.9.0",
+    "ws": "8.18.0"
   }
 }

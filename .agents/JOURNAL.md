@@ -50,5 +50,7 @@
     - s. `package.json` specifies `"type": "module"`, `"dependencies": { "ws": "^8.18.0" }`, and test/validate scripts.
 - 2026-08-22: Scoped Supabase keys in `lib/supabase.js` to `anonHeaders` (read-only for `findings`, `ct_source_runs`, `ingest_state`) and `serviceHeaders` (write/cron only, guarded by call-stack inspection). Added RLS select policies for anon in `supabase/schema.sql`. Added `SUPABASE_ANON_KEY` to `.env.example`.
 - 2026-08-22: Security finding: The previous `authorized()` check in `api/cron/ct-poll.js` failed open on preview deployments when `CRON_SECRET` was unset (`process.env.VERCEL_ENV !== 'production'`), accepted GET requests, and used non-constant-time string comparison (`===`). Live from 2026-08-14 to 2026-08-22. Replaced with `lib/auth.js` constant-time `checkBearer()` requiring POST, secret length >= 32, and returning uniform 401 errors. Documented `pg_cron` POST schedule SQL in `README.md`.
+- 2026-08-22: Added dependency `psl` pinned to exact version `1.9.0` for Public Suffix List-based registrable domain (eTLD+1) computation in `lib/domain/registrable.js`. Replaced hand-rolled `TWO_PART_SUFFIXES` in `lib/scoring.js`. Added unit tests in `scripts/test_registrable.js`.
+
 
 

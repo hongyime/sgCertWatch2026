@@ -114,4 +114,5 @@ Next steps:
 - Production `/api/source-status` check confirmed Supabase storage is configured and source health is reported per source; CertStream standby is distinguished from real source degradation.
 - Commit 1 (Orientation audit) complete and committed (`e39ce15`).
 - Commit 2 (Supabase key scoping and RLS) complete (`ab03e4f`).
-- Commit 3 (Harden cron endpoint) complete: created `lib/auth.js` with `checkBearer()`, locked `/api/cron/ct-poll` to POST with constant-time auth, documented `pg_cron` schedule SQL in `README.md`, added `CRON_SECRET` min length requirement to `.env.example`, and added `scripts/test_auth.js`.
+- Commit 3 (Harden cron endpoint) complete (`823bee0`).
+- Commit 4 (Registrable domain via PSL) complete: pinned `psl@1.9.0`, implemented `lib/domain/registrable.js`, updated `lib/scoring.js` to use `registrableDomain()`, and added `scripts/test_registrable.js` covering all specified edge cases.
