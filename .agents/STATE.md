@@ -151,5 +151,9 @@ Next steps:
   - Implemented length-banded edit distance rules in `lib/scoring.js` (length <= 2: 0 distance; length 3: 1 distance if context required else 0; length 4-6: <= 1 distance; length >= 7: <= 2 distance).
   - Added Damerau-Levenshtein transposition distance computation (`damerauLevenshteinDistance`, `minSubstringEditDistance`, `maxEditDistanceForLength`).
   - Added dictionary word collision suppression for `carousell` vs English `carousel`.
-  - Added unit test suite `scripts/test_edit_distance.js` and wired it into `package.json`.
+- Commit 14 (Certificate, TLD, and domain-age signals) complete:
+  - Added TLD risk signals (`tld_high_risk` +12, `tld_medium_risk` +6) in `lib/scoring.js` predicated on threat gateway activation.
+  - Added domain age RDAP signals (`domain_age_under_7d` +20, `domain_age_under_30d` +10).
+  - Added certificate profile signals in `scoreCertificate` (`issuer_free_dv` +8, `cert_age_under_1h` +10, `cert_age_under_24h` +5, `san_count_over_20` +5).
+  - Added unit test suite `scripts/test_cert_signals.js` and wired it into `package.json`.
 
