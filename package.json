@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "validate": "python scripts/validate_data.py --release",
-    "test:unit": "node scripts/test_scoring.js && node scripts/test_ct_sources.js && node scripts/test_supabase.js && node scripts/test_auth.js && node scripts/test_registrable.js && node scripts/test_homoglyphs.js",
-    "test": "node scripts/test_scoring.js && node scripts/test_ct_sources.js && node scripts/test_supabase.js && node scripts/test_auth.js && node scripts/test_registrable.js && node scripts/test_homoglyphs.js && node scripts/eval.js --check-regression",
+    "test:unit": "node scripts/test_scoring.js && node scripts/test_ct_sources.js && node scripts/test_supabase.js && node scripts/test_auth.js && node scripts/test_registrable.js && node scripts/test_homoglyphs.js && node scripts/test_edit_distance.js",
+    "test": "node scripts/test_scoring.js && node scripts/test_ct_sources.js && node scripts/test_supabase.js && node scripts/test_auth.js && node scripts/test_registrable.js && node scripts/test_homoglyphs.js && node scripts/test_edit_distance.js && node scripts/eval.js --check-regression",
     "eval": "node scripts/eval.js"
   },
   "engines": {

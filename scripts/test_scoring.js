@@ -71,7 +71,7 @@ assert.ok(singpassSquat.signals.some((s) => s.type === "brand_in_path_position")
 const dsbFuzzy = scoreDomain("dsb-secure-login-verify.xyz", data);
 assert.equal(dsbFuzzy.suppressed, false);
 assert.ok(dsbFuzzy.score >= 70, `Expected dsbFuzzy score >= 70, got ${dsbFuzzy.score}`);
-assert.ok(dsbFuzzy.signals.some((s) => s.type === "brand:fuzzy"), "Expected brand:fuzzy signal");
+assert.ok(dsbFuzzy.signals.some((s) => s.type === "brand:fuzzy" || s.type === "brand:edit_distance_1"), "Expected brand fuzzy/edit distance signal");
 assert.ok(dsbFuzzy.signals.some((s) => s.type === "tld:mismatch"), "Expected tld:mismatch signal");
 assert.ok(dsbFuzzy.signals.some((s) => s.type === "combo_brand_keyword"), "Expected combo_brand_keyword signal");
 

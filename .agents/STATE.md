@@ -147,5 +147,9 @@ Next steps:
   - Created `lib/domain/confusables.js` implementing Unicode TR39 skeleton algorithm for Cyrillic, Greek, fullwidth, and Latin extended characters, Punycode IDN decoding (`decodeIdn`), mixed-script label detection (`isMixedScript`), and ASCII homoglyph transformation (`asciiHomoglyphs`).
   - Integrated homoglyph signals (`mixed_script_label` +30, `confusable_skeleton_match` +35, `punycode_brand_match` +35, `homoglyph:ascii` +25) and skeleton/ASCII leet candidate label generation into `lib/scoring.js`.
   - Added unit test suite `scripts/test_homoglyphs.js` and wired it into `package.json` test scripts.
-  - Verified unit test suite, validation checks, and adversarial fixture improvements.
+- Commit 13 (Length-banded edit distance and dictionary word suppression) complete:
+  - Implemented length-banded edit distance rules in `lib/scoring.js` (length <= 2: 0 distance; length 3: 1 distance if context required else 0; length 4-6: <= 1 distance; length >= 7: <= 2 distance).
+  - Added Damerau-Levenshtein transposition distance computation (`damerauLevenshteinDistance`, `minSubstringEditDistance`, `maxEditDistanceForLength`).
+  - Added dictionary word collision suppression for `carousell` vs English `carousel`.
+  - Added unit test suite `scripts/test_edit_distance.js` and wired it into `package.json`.
 
