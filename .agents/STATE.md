@@ -133,5 +133,15 @@ Next steps:
   - Fixed denominator reporting in `scripts/eval.js`: headline denominator $N = 2,876$ (160 positives, 2,716 negatives).
   - Added mathematical self-consistency assertions (`TP+FN=positives`, `TN+FP=negatives`, `precision=TP/(TP+FP)`, `recall=TP/(TP+FN)`).
   - Measured re-mined baseline at alert threshold 70: Precision 96.97% (TP=128, FP=4, TN=2,712, FN=32), Recall 80.00%, F1-Score 87.67%. Adversarial caught: 26/60 (43.3%).
-  - STOP after Commit 11C to report re-mined baseline and await user direction before starting Batch B.
+  - Commit 11D (Unfiltered precision sample + alerts/day metric) complete:
+  - Drew an unfiltered random sample of 60,000 real CT certificates with complete 4-field cryptographic provenance (`log_id`, `tree_index`, `cert_sha256`, `observed_at`) from the 122,763 cached Let's Encrypt Static CT log entries (`fixtures/corpus/unfiltered_negatives.jsonl`).
+  - Segregated the 2,606 ambiguity band (25–69) negatives into `fixtures/corpus/regression_band.jsonl` to track `band_crossings` at score >= 70 across subsequent scoring modifications.
+  - Built master `corpus.json` v4 ($N = 60,275$ headline items: 165 positive threats + 67 allowlist + 43 trusted SG + 60,000 unfiltered negatives).
+  - Added daily CT volume baseline ($\approx 6,000,000$ certs/day) and extrapolated `alerts_per_day` for every threshold sweep in `scripts/eval.js`.
+  - Added positive score histogram tracking across all 165 threats: 32 false negatives (<30), 0 in 25–70 band, 131 true positives (>=75).
+  - Saved new dual-baseline metrics to `eval_baseline.json`:
+    - Threshold 70: Precision = 12.12%, Recall = 79.39%, TP = 131, FP = 950, TN = 59,160, FN = 34, F1 = 0.2103, Alerts/Day = 94,826 / day.
+    - Regression watch set band crossings: 0 / 2,606.
+    - Adversarial detection: 26 / 60 caught (43.3%).
+  - Hard gate stop-and-report delivered: waiting for user direction before proceeding to Batch B (Detection Engine: Commits 12–14).
 

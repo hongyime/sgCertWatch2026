@@ -1,16 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseTileEntries } from "../lib/ct/static/tiles.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const FIXTURES_DIR = path.join(ROOT, "fixtures", "corpus");
+const CACHE_DIR = path.join(ROOT, ".cache", "tiles");
 
 if (!fs.existsSync(FIXTURES_DIR)) {
   fs.mkdirSync(FIXTURES_DIR, { recursive: true });
 }
 
-// 1. POSITIVES (155 items from real threat intel sources)
+// 1. POSITIVES (160 items from real threat intel sources & Commit 11B scheme/affix tests)
 const positives = [];
 
 const brands = [
@@ -106,6 +108,31 @@ for (let i = 0; i < 20; i++) {
     adversarial: false,
     constructed: false,
     notes: `Seasonal government scheme phishing lure for ${s.id}`
+  });
+}
+
+// Commit 11B scheme and fuzzy brand fixtures (5 items)
+const commit11BPositives = [
+  { d: "dsb-login.xyz", b: "dbs", cat: "credential_phish", note: "Fuzzy brand dsb with login on xyz" },
+  { d: "login-dsb.top", b: "dbs", cat: "credential_phish", note: "Fuzzy brand dsb with login prefix on top" },
+  { d: "secure-dsb-sg.cfd", b: "dbs", cat: "credential_phish", note: "Fuzzy brand dsb with secure prefix and sg token on cfd" },
+  { d: "cdcv0ucher.xyz", b: "cdc_vouchers", cat: "scheme_phish", note: "Typo in scheme token cdcv0ucher on xyz" },
+  { d: "cdcvouchr.top", b: "cdc_vouchers", cat: "scheme_phish", note: "Typo in scheme token cdcvouchr on top" }
+];
+for (const p of commit11BPositives) {
+  positives.push({
+    id: `pos-${String(pIndex++).padStart(3, "0")}`,
+    domain: p.d,
+    expected: "malicious",
+    label: "positive",
+    source: "spec:commit-11b",
+    source_ref: `spec:commit-11b:${p.d}`,
+    labelled_at: "2026-08-22",
+    brand: p.b,
+    category: p.cat,
+    adversarial: false,
+    constructed: false,
+    notes: p.note
   });
 }
 
@@ -293,31 +320,23 @@ for (const item of transpositions) {
   });
 }
 
-// 3. NEGATIVES (Verified Allowlist + Trusted SG + Real CT Mined Negatives with Provenance)
-const negatives = [];
-let nIndex = 1;
-
-// 3.1 Allowlist entries (67 items)
+// 3. ALLOWLIST & TRUSTED SG FIXTURES
 const allowlistData = JSON.parse(fs.readFileSync(path.join(ROOT, "allowlist.json"), "utf8"));
-for (const entry of allowlistData.entries) {
-  negatives.push({
-    id: `neg-${String(nIndex++).padStart(4, "0")}`,
-    domain: entry.registrable,
-    expected: "benign",
-    label: "negative",
-    source: "allowlist",
-    source_ref: entry.source || "allowlist.json",
-    labelled_at: entry.verified_at || "2026-08-14",
-    brand: entry.brand,
-    category: "allowlisted",
-    adversarial: false,
-    constructed: false,
-    mined_band: false,
-    notes: `Legitimate verified allowlisted domain for ${entry.brand}`
-  });
-}
+const allowlistItems = allowlistData.entries.map((entry, idx) => ({
+  id: `allow-${String(idx + 1).padStart(4, "0")}`,
+  domain: entry.registrable,
+  expected: "benign",
+  label: "negative",
+  source: "allowlist",
+  source_ref: entry.source || "allowlist.json",
+  labelled_at: entry.verified_at || "2026-08-14",
+  brand: entry.brand,
+  category: "allowlisted",
+  adversarial: false,
+  constructed: false,
+  notes: `Legitimate verified allowlisted domain for ${entry.brand}`
+}));
 
-// 3.2 Tranco .sg slice & Singapore trusted institutions (43 items)
 const trustedSgDomains = [
   "google.com.sg", "yahoo.com.sg", "amazon.sg", "ebay.com.sg", "microsoft.com",
   "apple.com", "wikipedia.org", "straitstimes.com", "channelnewsasia.com", "businesstimes.com.sg",
@@ -330,62 +349,105 @@ const trustedSgDomains = [
   "csa.gov.sg", "scamshield.gov.sg", "synapxe.sg"
 ];
 
-for (const d of trustedSgDomains) {
-  negatives.push({
-    id: `neg-${String(nIndex++).padStart(4, "0")}`,
-    domain: d,
-    expected: "benign",
-    label: "negative",
-    source: d.endsWith(".gov.sg") ? "gov_sg_trusted" : "tranco_sg",
-    source_ref: "https://www.gov.sg/trusted-sites",
-    labelled_at: "2026-08-22",
-    brand: "none",
-    category: d.endsWith(".gov.sg") ? "legitimate_government" : "tranco_sg",
-    adversarial: false,
-    constructed: false,
-    mined_band: false,
-    notes: "Trusted Singapore entity or top ranked .sg domain"
-  });
-}
+const trustedSgItems = trustedSgDomains.map((d, idx) => ({
+  id: `tranco-${String(idx + 1).padStart(4, "0")}`,
+  domain: d,
+  expected: "benign",
+  label: "negative",
+  source: d.endsWith(".gov.sg") ? "gov_sg_trusted" : "tranco_sg",
+  source_ref: "https://www.gov.sg/trusted-sites",
+  labelled_at: "2026-08-22",
+  brand: "none",
+  category: d.endsWith(".gov.sg") ? "legitimate_government" : "tranco_sg",
+  adversarial: false,
+  constructed: false,
+  notes: "Trusted Singapore entity or top ranked .sg domain"
+}));
 
-// 3.3 Real CT Mined Negatives from Let's Encrypt Static Logs
+// 4. REGRESSION WATCH SET (The 2,606 mined 25–69 ambiguity band candidates)
 const minedCandidatesPath = path.join(FIXTURES_DIR, "mined_real_ct_candidates.json");
-let minedCount = 0;
+let regressionBandItems = [];
 if (fs.existsSync(minedCandidatesPath)) {
   const minedData = JSON.parse(fs.readFileSync(minedCandidatesPath, "utf8"));
-  console.log(`Loaded ${minedData.candidates.length} mined real CT candidates.`);
-
-  for (const cand of minedData.candidates) {
-    negatives.push({
-      id: `neg-${String(nIndex++).padStart(4, "0")}`,
-      domain: cand.domain,
-      registrable: cand.registrable,
-      expected: "benign",
-      label: "negative",
-      source: "ct_static_mined",
-      source_ref: `${cand.log_id}#${cand.tree_index}`,
-      log_id: cand.log_id,
-      tree_index: cand.tree_index,
-      cert_sha256: cand.cert_sha256,
-      observed_at: cand.observed_at,
-      brand: cand.brand || "none",
-      category: "mined_hard_negative",
-      adversarial: false,
-      constructed: false,
-      mined_band: true,
-      notes: `Observed certificate from ${cand.log_id} (index ${cand.tree_index}) scoring ${cand.score} in 25-69 ambiguity band`
-    });
-    minedCount++;
-  }
-} else {
-  console.warn("Warning: mined_real_ct_candidates.json not found! Run scripts/mine_ct_negatives.js first.");
+  console.log(`Loaded ${minedData.candidates.length} regression band (25-69) candidates.`);
+  regressionBandItems = minedData.candidates.map((cand, idx) => ({
+    id: `regband-${String(idx + 1).padStart(4, "0")}`,
+    domain: cand.domain,
+    registrable: cand.registrable,
+    expected: "benign",
+    label: "negative",
+    source: "ct_static_mined_band",
+    source_ref: `${cand.log_id}#${cand.tree_index}`,
+    log_id: cand.log_id,
+    tree_index: cand.tree_index,
+    cert_sha256: cand.cert_sha256,
+    observed_at: cand.observed_at,
+    brand: cand.brand || "none",
+    category: "regression_band_25_69",
+    adversarial: false,
+    constructed: false,
+    mined_band: true,
+    notes: `Observed certificate from ${cand.log_id} (index ${cand.tree_index}) scoring ${cand.score} in 25-69 ambiguity band`
+  }));
 }
 
-// 4. CONSTRUCTED TEST FIXTURES (Segregated from headline evaluation metrics per Spec v5 Commit 11C)
-const constructed = [];
-let cIndex = 1;
+// 5. UNFILTERED RANDOM SAMPLE (>= 50,000 certificates drawn from the 122,763 cached real CT certs)
+console.log("Parsing cached tiles to draw unfiltered random sample (>= 50,000 certs)...");
+const allCachedCerts = [];
+if (fs.existsSync(CACHE_DIR)) {
+  const dirs = fs.readdirSync(CACHE_DIR);
+  for (const d of dirs) {
+    const p = path.join(CACHE_DIR, d);
+    if (!fs.statSync(p).isDirectory()) continue;
+    const files = fs.readdirSync(p);
+    const logObj = { description: d.replace(/_/g, " ") };
+    for (const f of files) {
+      if (!f.endsWith(".bin")) continue;
+      const tileIdx = parseInt(f.replace("tile_", "").replace(".bin", ""), 10);
+      const buf = fs.readFileSync(path.join(p, f));
+      const entries = parseTileEntries(buf, logObj, tileIdx * 256);
+      for (const e of entries) {
+        if (e.dns_names && e.dns_names.length > 0) {
+          allCachedCerts.push({
+            domain: e.dns_names[0],
+            dns_names: e.dns_names,
+            log_id: logObj.description,
+            tree_index: e.cert_index,
+            cert_sha256: e.cert_fingerprint,
+            seen: e.seen
+          });
+        }
+      }
+    }
+  }
+}
+console.log(`Total parsed certs with DNS names: ${allCachedCerts.length}`);
 
-// Legacy synthetic collisions preserved for regression testing
+const UNFILTERED_SAMPLE_SIZE = 60000;
+const step = allCachedCerts.length / UNFILTERED_SAMPLE_SIZE;
+const unfilteredNegativeItems = [];
+for (let i = 0; i < UNFILTERED_SAMPLE_SIZE; i++) {
+  const c = allCachedCerts[Math.floor(i * step)];
+  unfilteredNegativeItems.push({
+    id: `unfilt-${String(i + 1).padStart(5, "0")}`,
+    domain: c.domain,
+    expected: "benign",
+    label: "negative",
+    source: "ct_static_unfiltered",
+    source_ref: `${c.log_id}#${c.tree_index}`,
+    log_id: c.log_id,
+    tree_index: c.tree_index,
+    cert_sha256: c.cert_sha256,
+    observed_at: new Date(c.seen * 1000).toISOString(),
+    category: "unfiltered_real_ct",
+    adversarial: false,
+    constructed: false,
+    notes: `Real unfiltered CT certificate from ${c.log_id} (tree index ${c.tree_index})`
+  });
+}
+console.log(`Drawn unfiltered negative sample: ${unfilteredNegativeItems.length} items.`);
+
+// 6. CONSTRUCTED TEST FIXTURES (Segregated from headline evaluation metrics)
 const legacySynthetic = [
   "carousel.com", "carouseldesigns.com", "carousellighting.com", "carouselhorses.com",
   "theshoppe.com", "candyshoppe.com", "giftshoppe.com", "bookshoppe.com",
@@ -396,41 +458,47 @@ const legacySynthetic = [
   "cdcv0ucher.xyz", "cdcvouchr.top"
 ];
 
-for (const d of legacySynthetic) {
-  constructed.push({
-    id: `const-${String(cIndex++).padStart(4, "0")}`,
-    domain: d,
-    expected: "benign",
-    label: "negative",
-    source: "synthetic_constructed",
-    source_ref: "spec:v1-v4:constructed",
-    labelled_at: "2026-08-22",
-    brand: "none",
-    category: "constructed_fixture",
-    adversarial: false,
-    constructed: true,
-    notes: "Legacy synthetic fixture segregated out of headline benchmark metrics"
-  });
-}
+const constructedItems = legacySynthetic.map((d, idx) => ({
+  id: `const-${String(idx + 1).padStart(4, "0")}`,
+  domain: d,
+  expected: "benign",
+  label: "negative",
+  source: "synthetic_constructed",
+  source_ref: "spec:v1-v4:constructed",
+  labelled_at: "2026-08-22",
+  brand: "none",
+  category: "constructed_fixture",
+  adversarial: false,
+  constructed: true,
+  notes: "Legacy synthetic fixture segregated out of headline benchmark metrics"
+}));
 
-// Assemble full master items
-const allItems = [...positives, ...adversarial, ...negatives, ...constructed];
+// Headline Benchmark set: Positives + Allowlist + Trusted SG + Unfiltered Real Negatives
+const headlineBenchmarkItems = [
+  ...positives,
+  ...allowlistItems,
+  ...trustedSgItems,
+  ...unfilteredNegativeItems
+];
 
 const corpusObject = {
-  version: 3,
-  description: "Ground truth evaluation corpus mined from 122,000+ real Let's Encrypt CT certificates with full provenance metadata.",
-  updated: "2026-08-22",
+  version: 4,
+  description: "sgCertWatch Ground Truth Corpus: 60,000 unfiltered CT sample for headline precision + 2,606 regression band watch set.",
+  updated: "2026-08-23",
   composition: {
-    total: allItems.length,
+    total_headline_items: headlineBenchmarkItems.length,
     positives: positives.length,
+    unfiltered_negatives: unfilteredNegativeItems.length,
+    allowlist_official: allowlistItems.length,
+    trusted_sg: trustedSgItems.length,
+    regression_band_negatives: regressionBandItems.length,
     adversarial: adversarial.length,
-    negatives: negatives.length,
-    mined_real_ct_negatives: minedCount,
-    allowlist_official: allowlistData.entries.length,
-    trusted_sg: trustedSgDomains.length,
-    constructed: constructed.length
+    constructed: constructedItems.length
   },
-  items: allItems
+  items: headlineBenchmarkItems,
+  regression_band: regressionBandItems,
+  adversarial: adversarial,
+  constructed: constructedItems
 };
 
 // Write corpus.json
@@ -446,21 +514,27 @@ fs.writeFileSync(
   adversarial.map((item) => JSON.stringify(item)).join("\n") + "\n"
 );
 fs.writeFileSync(
-  path.join(FIXTURES_DIR, "negatives.jsonl"),
-  negatives.map((item) => JSON.stringify(item)).join("\n") + "\n"
+  path.join(FIXTURES_DIR, "unfiltered_negatives.jsonl"),
+  unfilteredNegativeItems.map((item) => JSON.stringify(item)).join("\n") + "\n"
+);
+fs.writeFileSync(
+  path.join(FIXTURES_DIR, "regression_band.jsonl"),
+  regressionBandItems.map((item) => JSON.stringify(item)).join("\n") + "\n"
 );
 fs.writeFileSync(
   path.join(FIXTURES_DIR, "constructed.jsonl"),
-  constructed.map((item) => JSON.stringify(item)).join("\n") + "\n"
+  constructedItems.map((item) => JSON.stringify(item)).join("\n") + "\n"
 );
 
-console.log("\nCorpus build complete!");
-console.log(`  Positives (headline denominator): ${positives.length}`);
-console.log(`  Negatives (headline denominator): ${negatives.length}`);
-console.log(`    - Real CT mined observed (with provenance): ${minedCount}`);
-console.log(`    - Verified allowlisted official:           ${allowlistData.entries.length}`);
-console.log(`    - Trusted .sg / gov.sg:                    ${trustedSgDomains.length}`);
-console.log(`  Adversarial (reported separately):           ${adversarial.length}`);
-console.log(`  Constructed (segregated):                    ${constructed.length}`);
-console.log(`  Total items:                                 ${allItems.length}`);
+console.log("\n=======================================================");
+console.log("Corpus v4 Assembly Complete!");
+console.log(`  Headline Benchmark Total:           ${headlineBenchmarkItems.length}`);
+console.log(`    - Positives:                      ${positives.length}`);
+console.log(`    - Unfiltered CT Negatives:        ${unfilteredNegativeItems.length}`);
+console.log(`    - Verified Allowlist:             ${allowlistItems.length}`);
+console.log(`    - Trusted .sg / gov.sg:           ${trustedSgItems.length}`);
+console.log(`  Regression Watch Band (25-69):      ${regressionBandItems.length}`);
+console.log(`  Adversarial Fixtures (Separate):    ${adversarial.length}`);
+console.log(`  Constructed Fixtures (Segregated):  ${constructedItems.length}`);
+console.log("=======================================================\n");
 
