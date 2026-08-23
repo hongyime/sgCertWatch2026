@@ -143,5 +143,9 @@ Next steps:
     - Threshold 70: Precision = 12.12%, Recall = 79.39%, TP = 131, FP = 950, TN = 59,160, FN = 34, F1 = 0.2103, Alerts/Day = 94,826 / day.
     - Regression watch set band crossings: 0 / 2,606.
     - Adversarial detection: 26 / 60 caught (43.3%).
-  - Hard gate stop-and-report delivered: waiting for user direction before proceeding to Batch B (Detection Engine: Commits 12–14).
+- Commit 12 (Homoglyph, punycode, and confusable detection) complete:
+  - Created `lib/domain/confusables.js` implementing Unicode TR39 skeleton algorithm for Cyrillic, Greek, fullwidth, and Latin extended characters, Punycode IDN decoding (`decodeIdn`), mixed-script label detection (`isMixedScript`), and ASCII homoglyph transformation (`asciiHomoglyphs`).
+  - Integrated homoglyph signals (`mixed_script_label` +30, `confusable_skeleton_match` +35, `punycode_brand_match` +35, `homoglyph:ascii` +25) and skeleton/ASCII leet candidate label generation into `lib/scoring.js`.
+  - Added unit test suite `scripts/test_homoglyphs.js` and wired it into `package.json` test scripts.
+  - Verified unit test suite, validation checks, and adversarial fixture improvements.
 
