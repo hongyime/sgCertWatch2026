@@ -22,7 +22,14 @@ const alertMin = data.scoring?.thresholds?.alert_min ?? 70;
 const DAILY_CT_VOLUME = 6000000;
 
 // 1. Evaluate headline items
-const scoredHeadlineItems = corpus.items.map((item) => {
+console.log(`Evaluating ${corpus.items.length} headline items...`);
+const tStart = Date.now();
+const scoredHeadlineItems = corpus.items.map((item, idx) => {
+  if (idx > 0 && idx % 5000 === 0) {
+    const elapsedSec = ((Date.now() - tStart) / 1000).toFixed(1);
+    const pct = ((idx / corpus.items.length) * 100).toFixed(1);
+    process.stdout.write(`[Progress] Evaluated ${idx} / ${corpus.items.length} items (${pct}%) in ${elapsedSec}s\n`);
+  }
   const result = scoreDomain(item.domain, data);
   const score = result.score;
   const isSuppressed = result.suppressed;
@@ -35,6 +42,7 @@ const scoredHeadlineItems = corpus.items.map((item) => {
     isMalicious
   };
 });
+console.log(`Finished scoring headline items in ${Date.now() - tStart} ms.`);
 
 const headlinePositives = scoredHeadlineItems.filter((i) => !i.adversarial && !i.constructed && i.isMalicious);
 const headlineNegatives = scoredHeadlineItems.filter((i) => !i.adversarial && !i.constructed && !i.isMalicious);
