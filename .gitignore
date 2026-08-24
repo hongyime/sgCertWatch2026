@@ -18,6 +18,7 @@ node_modules/
 !.agents/JOURNAL.md
 !.agents/handoffs/
 !.agents/handoffs/**
+!.vercelignore
 !.gitignore
 !.gitattributes
 !.gitmodules
