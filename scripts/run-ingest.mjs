@@ -113,9 +113,14 @@ async function runIngest() {
       matchedBySource.set(run.source, matched);
     }
 
-    const findings = uniqueFindings(scored.map((item) => item.finding));
+    const scorable = scored.filter(({ finding }) => Boolean(finding.registrable));
+    if (scorable.length < scored.length) {
+      console.error(`skipped ${scored.length - scorable.length} matches without a resolvable registrable domain`);
+    }
+
+    const findings = uniqueFindings(scorable.map((item) => item.finding));
     const persistedFindings = await upsertFindings(findings);
-    const sourceRows = sourceRowsFor(scored);
+    const sourceRows = sourceRowsFor(scorable);
     const persistedSources = await upsertFindingSources(sourceRows);
 
     let notifySummary = { candidates: 0, telegram: 0, discord: 0, webhook: 0, errors: [] };
