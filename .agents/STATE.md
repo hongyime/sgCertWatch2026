@@ -165,4 +165,8 @@ Next steps:
   - Added finding search and severity filtering (`critical`, `high`, `medium`, `low`) to `index.html` and `app.js`.
   - Added JSON and CSV export functionality for investigated finding sets.
   - Added interactive triage details modal dialog with signal-by-signal scoring breakdown, certificate identity info, and live "Probe Domain" active capture trigger.
+- Commit 17 (Notification dispatcher & webhook routing) complete:
+  - Created `lib/notify.js` supporting multi-channel alert dispatch to Telegram (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`), Discord rich embeds (`DISCORD_WEBHOOK_URL`), and generic HTTP webhooks with HMAC-SHA256 signature (`ALERT_WEBHOOK_URL`, `ALERT_WEBHOOK_SECRET`).
+  - Integrated notification dispatch into `api/cron/ct-poll.js` for newly discovered findings scoring >= 70 (`ALERT_MIN_SCORE`).
+  - Created unit test suite `scripts/test_notify.js` and wired it into `package.json`.
 

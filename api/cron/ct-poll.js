@@ -2,6 +2,7 @@ import { checkBearer } from "../../lib/auth.js";
 import { loadData } from "../../lib/data.js";
 import { scoreCertificate } from "../../lib/scoring.js";
 import { mergeSourceState, runSources } from "../../lib/ct/orchestrator.js";
+import { dispatchNotifications } from "../../lib/notify.js";
 import {
   getState,
   insertSourceRuns,
@@ -130,6 +131,13 @@ export default async function handler(request, response) {
     const sourceRows = sourceRowsFor(scored);
     const persistedSources = await upsertFindingSources(sourceRows);
 
+    let notifySummary = { candidates: 0, telegram: 0, discord: 0, webhook: 0, errors: [] };
+    try {
+      notifySummary = await dispatchNotifications(persistedFindings);
+    } catch (_err) {
+      // Keep going even if notification fails
+    }
+
     const sourceSummaries = runs.map((run) => summarizeRun(
       run,
       matchedBySource.get(run.source) || 0,
@@ -150,6 +158,7 @@ export default async function handler(request, response) {
       matched: findings.length,
       persisted: persistedFindings.length,
       persisted_source_sightings: persistedSources.length,
+      notifications: notifySummary,
       sources: sourceSummaries,
       errors: sourceSummaries.flatMap((run) => run.errors.map((error) => ({
         source: run.source,

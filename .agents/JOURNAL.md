@@ -65,6 +65,7 @@
 - 2026-08-23: Commit 14 (Certificate, TLD, and domain-age signals): Implemented `tldRiskSignals` (`tld_high_risk` +12, `tld_medium_risk` +6), `domainAgeSignals` (`domain_age_under_7d` +20, `domain_age_under_30d` +10), and certificate profile signals in `scoreCertificate` (`issuer_free_dv` +8, `cert_age_under_1h` +10, `cert_age_under_24h` +5, `san_count_over_20` +5). Added `scripts/test_cert_signals.js` unit test suite.
 - 2026-08-24: Commit 15 (Active capture & enrichment pipeline): Implemented `lib/domain/enrichment.js` for asynchronous DNS lookups, HTTP/HTTPS status/title/server probing, and RDAP registration metadata query with timeout boundaries. Added `api/enrich.js` serverless function, updated `supabase/schema.sql` with `domain_enrichments` table and findings `enrichment` column, and created `scripts/test_enrichment.js` unit test suite.
 - 2026-08-24: Commit 16 (Triage dashboard & actions): Added interactive triage toolbar (severity filter, real-time finding text search, JSON & CSV dataset export), modal investigation dialog with signal breakdown, certificate identity, and live on-demand domain probing in `index.html`, `app.js`, and `styles.css`.
+- 2026-08-24: Commit 17 (Notification dispatcher & webhook routing): Implemented `lib/notify.js` for multi-channel alerting across Telegram, Discord webhooks, and generic HTTP endpoints with HMAC-SHA256 signature verification. Wired alert dispatching into `api/cron/ct-poll.js` and added unit test suite `scripts/test_notify.js`.
 
 
 
