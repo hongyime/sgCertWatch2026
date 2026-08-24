@@ -177,4 +177,40 @@ Next steps:
   - Created comprehensive end-to-end integration verification suite in `scripts/test_e2e.js` testing live cert scoring, finding persistence, active capture enrichment, notification dispatch, and daily digest aggregation.
   - Verified all unit test suites (`test_scoring`, `test_ct_sources`, `test_supabase`, `test_auth`, `test_registrable`, `test_homoglyphs`, `test_edit_distance`, `test_cert_signals`, `test_enrichment`, `test_notify`, `test_digest`, `test_e2e`) pass cleanly.
   - Verified strict release-readiness data validation passes with 0 unverified allowlist/scheme items.
+- Post-Batch-D audit (2026-08-24, spec v6) found contradictions and is BLOCKED awaiting instruction:
+  - Uncommitted WIP in worktree (perf memoization + eval logging; tests pass) BUT contains a PSL-bypassing `FLAT_GTLDS` fast path in `lib/domain/registrable.js` that collapses `*.blogspot.com`, `*.web.app`, `*.pages.dev`, `*.workers.dev`, `*.herokuapp.com` etc. to the platform suffix - silent detection hole. Do not commit as-is.
+  - Commits 15-19 landed as different work than spec: no GitHub Actions capture pipeline (DECISION-04 violated by Vercel-side probing via api/enrich.js), multi-channel notify violates DECISION-01, no authenticated triage endpoint (api/triage.js absent), Commit 18 allowlist tooling not done, Commit 19 frontend safety not done.
+  - Detection below acceptance: adversarial 37/60, ~190k alerts/day extrapolated vs <=50/day budget.
+- Instruction Set B1 (prompt.md, 2026-08-24) - Batch A complete:
+  - A1: Supabase pg_cron job `sgcertwatch-ct-poll` removed via `cron.unschedule(1)` (pg_cron lacks alter_job; direct row update denied). `cron.job` count = 0, verified.
+  - A2: `.vercelignore` added (corpus.json, fixtures/, scripts/, .agents/, eval_baseline.json, supabase/); whitelisted against sourcerepo-managed `.*` in .gitignore.
+  - A3: `scripts/run-ingest.mjs` + `.github/workflows/ingest.yml` land ingest on Actions (*/15 schedule + dispatch, concurrency cancel-in-progress:false, timeout-minutes 14, repo secrets, no HTTP hop). GH secrets set: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY = new-style sb_secret key.
+  - A4: deleted api/cron/ct-poll.js, api/cron/daily-digest.js, api/enrich.js; vercel.json caps findings/source-status at maxDuration 10; README documents Actions ingestion; test_auth.js repointed to lib/auth.js (handler-HTTP tests retired with their deleted subject).
+  - Live Supabase was 3 commits behind schema.sql (4/8 tables; findings stuck at v1 columns; ZERO anon policies/grants -> anon reads silently empty since 2026-08-22 scoping). Applied full idempotent migration via Management API: now 8 tables, findings 21 columns, 7 RLS policies, scoped grants. Verified by catalog queries.
+  - First green Actions run 32726469904: 11,817 entries scanned; ct_poll_status runner=github-actions health=partial; findings count 2,574 (pipeline had been frozen near-zero since Commit 10 era due to missing columns).
+  - Bug found+fixed en route: suffix-less hosts (IP-shaped SANs where psl.get returns null) produced registrable=NULL and aborted the whole upsert batch; filtered at persistence boundary (fbf31e8), scoring semantics untouched.
+  - Lockfile fix: npm ci failed because package-lock.json resolved ws@8.21.3 vs pinned ws@8.18.0; regenerated (b2db2ad).
+  - A5 BLOCKED without Vercel access / higher Supabase token scope:
+    - Cannot remove CRON_SECRET, TELEGRAM_*, DISCORD_WEBHOOK_URL, ALERT_WEBHOOK_*, SUPABASE_SERVICE_ROLE_KEY from Vercel env (no VERCEL_TOKEN; CLI hangs on interactive login).
+    - Cannot confirm SUPABASE_ANON_KEY is present in Vercel env; if absent, dashboard reads return [] even after unpause.
+    - Cannot copy alerting secret VALUES from Vercel into GitHub secrets (unreadable without Vercel env read).
+    - Legacy service_role JWT rotation not permitted by current SUPABASE_ACCESS_TOKEN (DELETE denied; rotate endpoint absent) - dashboard action needed. Actions already use sb_secret, so rotation is safe anytime.
+    - Project is PAUSED (all prod URLs 503); deployed-asset verification deferred until unpaused. Unpause only after pg_cron stays disabled (it is unscheduled now).
 
+Next steps:
+- User actions to finish A5: provide VERCEL_TOKEN or do dashboard cleanup (remove 5 stale env vars, confirm/add SUPABASE_ANON_KEY, move alerting secrets to GitHub), rotate legacy service_role JWT in Supabase dashboard, then unpause the Vercel project and confirm corpus.json returns 404 while /api/findings works.
+- Await user go-ahead for Batch B (anchor gate, absolute acceptance floors).
+- WIP disposition per B1 ruling recorded: keep perf work, DELETE FLAT_GTLDS entirely in Batch C1; ensure no normalizeHost export reaches registrable.js (would arm probe endpoint - moot after enrich deletion, but rule stands).
+
+<!-- MOLT_AUTO_START -->
+## Auto State
+
+- Updated: 2026-08-24 18:20:27 +08:00
+- Machine: PRAWN-E14
+- Harness: claude
+- Event: stop
+- Branch: main
+- HEAD: e6faa68
+- Dirty files: 5
+- Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
+<!-- MOLT_AUTO_END -->
