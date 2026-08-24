@@ -162,4 +162,25 @@ grant select on table public.source_health to anon;
 grant select, insert on table public.source_health to service_role;
 create policy source_health_public_read on public.source_health for select to anon using (true);
 
+alter table public.findings add column if not exists enrichment jsonb not null default '{}'::jsonb;
+
+create table if not exists public.domain_enrichments (
+  domain      text primary key,
+  enriched_at timestamptz not null default now(),
+  dns         jsonb not null default '{}'::jsonb,
+  http        jsonb not null default '{}'::jsonb,
+  rdap        jsonb not null default '{}'::jsonb,
+  live        boolean not null default false,
+  details     jsonb not null default '{}'::jsonb
+);
+
+create index if not exists domain_enrichments_enriched_at_idx
+  on public.domain_enrichments (enriched_at desc);
+
+alter table public.domain_enrichments enable row level security;
+revoke all on table public.domain_enrichments from anon, authenticated;
+grant select on table public.domain_enrichments to anon;
+grant select, insert, update on table public.domain_enrichments to service_role;
+create policy domain_enrichments_public_read on public.domain_enrichments for select to anon using (true);
+
 

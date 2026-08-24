@@ -156,4 +156,9 @@ Next steps:
   - Added domain age RDAP signals (`domain_age_under_7d` +20, `domain_age_under_30d` +10).
   - Added certificate profile signals in `scoreCertificate` (`issuer_free_dv` +8, `cert_age_under_1h` +10, `cert_age_under_24h` +5, `san_count_over_20` +5).
   - Added unit test suite `scripts/test_cert_signals.js` and wired it into `package.json`.
+- Commit 15 (Active capture & enrichment pipeline) complete:
+  - Created `lib/domain/enrichment.js` implementing async DNS resolution (`A`, `AAAA`, `CNAME`, `MX`, `NS`), HTTP/HTTPS probing (status, title, server header, redirects), and RDAP registration lookup with timeout controls.
+  - Created `api/enrich.js` serverless function for on-demand domain enrichment.
+  - Added `domain_enrichments` table and findings `enrichment` column to `supabase/schema.sql`.
+  - Added unit test suite `scripts/test_enrichment.js` and wired it into `package.json`.
 
