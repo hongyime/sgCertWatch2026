@@ -1,8 +1,7 @@
-import { checkBearer } from "../../lib/auth.js";
-import { loadData } from "../../lib/data.js";
-import { scoreCertificate } from "../../lib/scoring.js";
-import { mergeSourceState, runSources } from "../../lib/ct/orchestrator.js";
-import { dispatchNotifications } from "../../lib/notify.js";
+import { loadData } from "../lib/data.js";
+import { scoreCertificate } from "../lib/scoring.js";
+import { mergeSourceState, runSources } from "../lib/ct/orchestrator.js";
+import { dispatchNotifications } from "../lib/notify.js";
 import {
   getState,
   insertSourceRuns,
@@ -11,7 +10,7 @@ import {
   tryAcquireRunLock,
   upsertFindingSources,
   upsertFindings
-} from "../../lib/supabase.js";
+} from "../lib/supabase.js";
 
 function uniqueFindings(findings) {
   const map = new Map();
@@ -20,13 +19,10 @@ function uniqueFindings(findings) {
       map.set(finding.id, { ...finding });
     } else {
       const existing = map.get(finding.id);
-      // Merge entry_types
       existing.entry_types = [...new Set([...(existing.entry_types || []), ...(finding.entry_types || [])])];
-      // Keep earliest observed_at
       if (Date.parse(finding.observed_at) < Date.parse(existing.observed_at)) {
         existing.observed_at = finding.observed_at;
       }
-      // Merge domains and update count
       existing.domains = [...new Set([...(existing.domains || []), ...(finding.domains || [])])];
       existing.san_count = existing.domains.length;
       if (finding.cert_serial && !existing.cert_serial) {
@@ -90,23 +86,14 @@ function summarizeRun(run, matched, persisted) {
   };
 }
 
-export default async function handler(request, response) {
-  if (request.method !== "POST") {
-    response.setHeader("Allow", "POST");
-    return response.status(405).json({ error: "method_not_allowed" });
-  }
-
-  const auth = checkBearer(request, process.env.CRON_SECRET);
-  if (!auth.ok) {
-    return response.status(auth.reason === "server_misconfigured" ? 500 : 401)
-      .json({ error: "unauthorized" });
-  }
-
+async function runIngest() {
   const lockAcquired = await tryAcquireRunLock("ct_poll_run", 300);
   if (!lockAcquired) {
-    return response.status(200).json({ skipped: "run_in_progress" });
+    console.log(JSON.stringify({ skipped: "run_in_progress" }));
+    return;
   }
 
+  let status;
   try {
     const data = loadData();
     const stateRow = await getState("ct_source_state");
@@ -149,10 +136,11 @@ export default async function handler(request, response) {
     await setState("ct_source_state", nextSourceState);
 
     const okSources = sourceSummaries.filter((run) => run.ok);
-    const status = {
+    status = {
       ok: okSources.length > 0,
       health: okSources.length === sourceSummaries.length ? "healthy" : (okSources.length ? "partial" : "down"),
       source: "multi-source CT polling",
+      runner: "github-actions",
       checked_at: new Date().toISOString(),
       scanned_entries: sourceSummaries.reduce((total, run) => total + run.scanned_entries, 0),
       matched: findings.length,
@@ -167,8 +155,17 @@ export default async function handler(request, response) {
     };
 
     await setState("ct_poll_status", status);
-    return response.status(200).json(status);
+    console.log(JSON.stringify(status));
   } finally {
     await releaseRunLock("ct_poll_run");
   }
+
+  if (status && status.health === "down") {
+    process.exitCode = 1;
+  }
 }
+
+runIngest().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

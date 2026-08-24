@@ -12,8 +12,7 @@ sgCertWatch2026 is a Singapore-focused Certificate Transparency monitoring dashb
 - `lib/ct/` contains the CertStream, direct CT log, and `crt.sh` source adapters.
 - `api/findings.js` exposes recent stored findings for the dashboard.
 - `api/source-status.js` exposes source health for the dashboard.
-- `api/cron/ct-poll.js` is the protected Vercel function used for periodic multi-source CT polling.
-
+- `.github/workflows/ingest.yml` polls CT sources on GitHub Actions every 15 minutes.
 ## Usage
 
 Validate the seed data and scoring engine:
@@ -23,31 +22,17 @@ npm run validate
 npm test
 ```
 
-Persistence requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, with the schema in `supabase/schema.sql`. The scheduler also requires `CRON_SECRET`.
+## Ingestion
 
-## Scheduling
+CT polling runs on GitHub Actions (`scripts/run-ingest.mjs`), which executes the multi-source
+orchestrator directly against Supabase using repository secrets - no HTTP hop through Vercel.
+Cursors stay in Supabase `ingest_state`, so a delayed or skipped run catches up on the next tick.
 
-Production CT polling is scheduled by Supabase `pg_cron` / `pg_net` every 5 minutes and POSTs to the protected Vercel function at `/api/cron/ct-poll`:
+Required repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Optional alerting secrets:
+`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `DISCORD_WEBHOOK_URL`, `ALERT_WEBHOOK_URL`,
+`ALERT_WEBHOOK_SECRET`. The dashboard functions need `SUPABASE_URL` and `SUPABASE_ANON_KEY` only, with the schema in `supabase/schema.sql`.
 
-```sql
-select cron.schedule(
-  'sgcertwatch-ct-poll',
-  '*/5 * * * *',
-  $$
-  select
-    net.http_post(
-      url := 'https://sgcertwatch.vercel.app/api/cron/ct-poll',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'CRON_SECRET' limit 1)
-      ),
-      body := '{}'::jsonb
-    ) as request_id;
-  $$
-);
-```
-
-The poller samples CertStream, tails a rotating set of direct RFC6962 CT logs, and keeps `crt.sh` as a fallback comparison source. Findings and source health are stored in Supabase so the dashboard can show partial coverage instead of treating one source outage as a total outage.
+The poller samples CertStream, tails a rotating set of direct RFC6962 CT logs, reads Let's Encrypt logs through the Static CT API tile reader, and keeps `crt.sh` as a fallback comparison source. Findings and source health are stored in Supabase so the dashboard can show partial coverage instead of treating one source outage as a total outage.
 
 ## Licence
 

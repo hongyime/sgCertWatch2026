@@ -1,10 +1,14 @@
 {
   "cleanUrls": true,
   "functions": {
-    "api/cron/ct-poll.js": {
-      "maxDuration": 60
+    "api/findings.js": {
+      "maxDuration": 10
+    },
+    "api/source-status.js": {
+      "maxDuration": 10
     }
   },
+
   "headers": [
     {
       "source": "/(.*)",
