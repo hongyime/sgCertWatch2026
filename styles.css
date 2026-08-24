@@ -511,3 +511,180 @@ tbody tr:hover {
     flex-wrap: wrap;
   }
 }
+
+/* Triage Toolbar & Interactive Findings */
+.triage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.triage-input,
+.triage-select {
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.triage-input {
+  flex: 1 1 180px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: var(--teal);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: #0d7577;
+}
+
+.btn-secondary {
+  background: var(--soft);
+  color: var(--navy);
+  border-color: var(--line);
+}
+
+.btn-secondary:hover {
+  background: #e6ebef;
+}
+
+.interactive-card {
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+
+.interactive-card:hover {
+  border-color: var(--teal);
+  transform: translateY(-1px);
+}
+
+/* Triage Dialog */
+.triage-dialog {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0;
+  max-width: 650px;
+  width: 90vw;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.triage-dialog::backdrop {
+  background: rgba(18, 32, 51, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.dialog-content {
+  padding: 24px;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.btn-close:hover {
+  color: var(--ink);
+}
+
+.dialog-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dialog-section {
+  margin-bottom: 20px;
+}
+
+.dialog-section h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.probe-result-box {
+  padding: 12px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.probe-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.badge-live {
+  padding: 2px 6px;
+  background: #dff5f1;
+  color: #0f8b8d;
+  font-weight: 700;
+  border-radius: 4px;
+}
+
+.badge-offline {
+  padding: 2px 6px;
+  background: #f0f3f5;
+  color: var(--muted);
+  font-weight: 700;
+  border-radius: 4px;
+}
+
+.signals-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.signals-table th,
+.signals-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+}

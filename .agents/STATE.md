@@ -161,4 +161,8 @@ Next steps:
   - Created `api/enrich.js` serverless function for on-demand domain enrichment.
   - Added `domain_enrichments` table and findings `enrichment` column to `supabase/schema.sql`.
   - Added unit test suite `scripts/test_enrichment.js` and wired it into `package.json`.
+- Commit 16 (Triage dashboard & actions) complete:
+  - Added finding search and severity filtering (`critical`, `high`, `medium`, `low`) to `index.html` and `app.js`.
+  - Added JSON and CSV export functionality for investigated finding sets.
+  - Added interactive triage details modal dialog with signal-by-signal scoring breakdown, certificate identity info, and live "Probe Domain" active capture trigger.
 
