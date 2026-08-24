@@ -25,4 +25,3 @@ assert.deepEqual(
 );
 
 console.log("Auth tests passed.");
-console.log("Auth and cron security tests passed.");
