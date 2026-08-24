@@ -67,6 +67,7 @@
 - 2026-08-24: Commit 16 (Triage dashboard & actions): Added interactive triage toolbar (severity filter, real-time finding text search, JSON & CSV dataset export), modal investigation dialog with signal breakdown, certificate identity, and live on-demand domain probing in `index.html`, `app.js`, and `styles.css`.
 - 2026-08-24: Commit 17 (Notification dispatcher & webhook routing): Implemented `lib/notify.js` for multi-channel alerting across Telegram, Discord webhooks, and generic HTTP endpoints with HMAC-SHA256 signature verification. Wired alert dispatching into `api/cron/ct-poll.js` and added unit test suite `scripts/test_notify.js`.
 - 2026-08-24: Commit 18 (Daily digest & reporting): Created `lib/reports/daily-digest.js` compiling daily aggregated metrics on findings, alert frequencies, top brand/scheme lures, and CT source uptimes. Added `api/cron/daily-digest.js` serverless function and `scripts/test_digest.js` unit test suite.
+- 2026-08-24: Commit 19 (End-to-end integration test & final release audit): Added comprehensive pipeline verification test `scripts/test_e2e.js` covering detection, enrichment, alerting, and reporting. Verified all unit test suites, regression check, and strict data validation pass.
 
 
 

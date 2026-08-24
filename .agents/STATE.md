@@ -173,4 +173,8 @@ Next steps:
   - Created `lib/reports/daily-digest.js` computing 24h aggregate metrics across findings, severity distributions, top targeted brands/schemes, abuse TLDs, and source run uptimes.
   - Created `api/cron/daily-digest.js` serverless cron endpoint with Bearer auth, state storage, and Telegram broadcast.
   - Created unit test suite `scripts/test_digest.js` and wired it into `package.json`.
+- Commit 19 (End-to-end integration test & final release audit) complete:
+  - Created comprehensive end-to-end integration verification suite in `scripts/test_e2e.js` testing live cert scoring, finding persistence, active capture enrichment, notification dispatch, and daily digest aggregation.
+  - Verified all unit test suites (`test_scoring`, `test_ct_sources`, `test_supabase`, `test_auth`, `test_registrable`, `test_homoglyphs`, `test_edit_distance`, `test_cert_signals`, `test_enrichment`, `test_notify`, `test_digest`, `test_e2e`) pass cleanly.
+  - Verified strict release-readiness data validation passes with 0 unverified allowlist/scheme items.
 
