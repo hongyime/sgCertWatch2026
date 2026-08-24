@@ -66,6 +66,7 @@
 - 2026-08-24: Commit 15 (Active capture & enrichment pipeline): Implemented `lib/domain/enrichment.js` for asynchronous DNS lookups, HTTP/HTTPS status/title/server probing, and RDAP registration metadata query with timeout boundaries. Added `api/enrich.js` serverless function, updated `supabase/schema.sql` with `domain_enrichments` table and findings `enrichment` column, and created `scripts/test_enrichment.js` unit test suite.
 - 2026-08-24: Commit 16 (Triage dashboard & actions): Added interactive triage toolbar (severity filter, real-time finding text search, JSON & CSV dataset export), modal investigation dialog with signal breakdown, certificate identity, and live on-demand domain probing in `index.html`, `app.js`, and `styles.css`.
 - 2026-08-24: Commit 17 (Notification dispatcher & webhook routing): Implemented `lib/notify.js` for multi-channel alerting across Telegram, Discord webhooks, and generic HTTP endpoints with HMAC-SHA256 signature verification. Wired alert dispatching into `api/cron/ct-poll.js` and added unit test suite `scripts/test_notify.js`.
+- 2026-08-24: Commit 18 (Daily digest & reporting): Created `lib/reports/daily-digest.js` compiling daily aggregated metrics on findings, alert frequencies, top brand/scheme lures, and CT source uptimes. Added `api/cron/daily-digest.js` serverless function and `scripts/test_digest.js` unit test suite.
 
 
 

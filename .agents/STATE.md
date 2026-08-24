@@ -169,4 +169,8 @@ Next steps:
   - Created `lib/notify.js` supporting multi-channel alert dispatch to Telegram (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`), Discord rich embeds (`DISCORD_WEBHOOK_URL`), and generic HTTP webhooks with HMAC-SHA256 signature (`ALERT_WEBHOOK_URL`, `ALERT_WEBHOOK_SECRET`).
   - Integrated notification dispatch into `api/cron/ct-poll.js` for newly discovered findings scoring >= 70 (`ALERT_MIN_SCORE`).
   - Created unit test suite `scripts/test_notify.js` and wired it into `package.json`.
+- Commit 18 (Daily digest & reporting) complete:
+  - Created `lib/reports/daily-digest.js` computing 24h aggregate metrics across findings, severity distributions, top targeted brands/schemes, abuse TLDs, and source run uptimes.
+  - Created `api/cron/daily-digest.js` serverless cron endpoint with Bearer auth, state storage, and Telegram broadcast.
+  - Created unit test suite `scripts/test_digest.js` and wired it into `package.json`.
 
