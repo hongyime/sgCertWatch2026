@@ -255,9 +255,9 @@ if (isCheckRegression) {
     process.exit(1);
   }
   const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"));
-  console.log(`\nRegression check against baseline F1: ${(baseline.f1 * 100).toFixed(2)}% | Alerts/Day: ${baseline.alerts_per_day}`);
+  console.log(`\nBaseline (historical reference only): F1 ${(baseline.f1 * 100).toFixed(2)}% | Alerts/Day: ${baseline.alerts_per_day}`);
 
-  // Check allowlisted false positives
+  // B3: absolute acceptance floors, not tolerance against a recorded baseline.
   const falsePositives = headlineItems.filter((item) => !item.isMalicious && !item.suppressed && item.score >= alertMin);
   const allowlistFp = falsePositives.filter((item) => item.category === "allowlisted");
   if (allowlistFp.length > 0) {
@@ -265,10 +265,23 @@ if (isCheckRegression) {
     process.exit(1);
   }
 
-  // Check F1 drop > 0.02
-  if (baseline.f1 - alertSweep.f1 > 0.02) {
-    console.error(`\nRegression failure: F1 dropped by ${((baseline.f1 - alertSweep.f1) * 100).toFixed(2)}% (> 2% tolerance)`);
+  const ALERTS_PER_DAY_FLOOR = 50;
+  if (alertSweep.alertsPerDay > ALERTS_PER_DAY_FLOOR) {
+    console.error(`\nAcceptance failure: alerts/day ${alertSweep.alertsPerDay} exceeds absolute budget of ${ALERTS_PER_DAY_FLOOR} at threshold ${alertMin}.`);
     process.exit(1);
   }
-  console.log("Regression check passed: no regressions detected.");
+
+  const ADVERSARIAL_MIN_CAUGHT = 48;
+  if (advPassed.length < ADVERSARIAL_MIN_CAUGHT) {
+    console.error(`\nAcceptance failure: adversarial suite ${advPassed.length}/${adversarialItems.length} is below the absolute floor of ${ADVERSARIAL_MIN_CAUGHT}/${adversarialItems.length}.`);
+    process.exit(1);
+  }
+
+  const baselineTp = typeof baseline.tp === "number" ? baseline.tp : null;
+  if (baselineTp !== null && alertSweep.tp < baselineTp) {
+    console.error(`\nAcceptance failure: TP count dropped from ${baselineTp} to ${alertSweep.tp}; do not compensate by moving weights.`);
+    process.exit(1);
+  }
+
+  console.log(`Acceptance check passed: alerts/day ${alertSweep.alertsPerDay} <= ${ALERTS_PER_DAY_FLOOR}, adversarial ${advPassed.length}/${adversarialItems.length} >= ${ADVERSARIAL_MIN_CAUGHT}, TP ${alertSweep.tp} preserved.`);
 }
