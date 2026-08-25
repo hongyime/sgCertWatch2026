@@ -3,8 +3,10 @@ import { scoreCertificate } from "../lib/scoring.js";
 import { mergeSourceState, runSources } from "../lib/ct/orchestrator.js";
 import { dispatchNotifications } from "../lib/notify.js";
 import {
+  getRecentAlertRegistrables,
   getState,
   insertSourceRuns,
+  recordAlerts,
   releaseRunLock,
   setState,
   tryAcquireRunLock,
@@ -123,9 +125,14 @@ async function runIngest() {
     const sourceRows = sourceRowsFor(scorable);
     const persistedSources = await upsertFindingSources(sourceRows);
 
-    let notifySummary = { candidates: 0, telegram: 0, discord: 0, webhook: 0, errors: [] };
+    let notifySummary = { candidates: 0, suppressed_by_dedupe: 0, telegram: 0, errors: [] };
     try {
-      notifySummary = await dispatchNotifications(persistedFindings);
+      const alerted72h = await getRecentAlertRegistrables(72);
+      notifySummary = await dispatchNotifications(persistedFindings, { alertedWithin72h: alerted72h });
+      const alertedNow = persistedFindings
+        .filter((f) => f.score >= (data.scoring?.thresholds?.alert_min ?? 70))
+        .map((f) => f.registrable);
+      await recordAlerts(alertedNow);
     } catch (_err) {
       // Keep going even if notification fails
     }
