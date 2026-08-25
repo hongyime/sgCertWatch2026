@@ -10,7 +10,7 @@
     "eval": "node scripts/eval.js"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20"
   },
   "dependencies": {
     "psl": "1.9.0",
