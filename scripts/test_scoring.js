@@ -18,7 +18,7 @@ const bankPhish = scoreCertificate({
 assert.ok(bankPhish);
 assert.ok(bankPhish.score >= 60);
 assert.equal(bankPhish.severity, "critical");
-assert.equal(bankPhish.scoring_version, 2);
+assert.equal(bankPhish.scoring_version, 3);;
 assert.ok(bankPhish.matched_brands.includes("dbs"));
 
 const schemePhish = scoreCertificate({
@@ -87,6 +87,40 @@ assert.ok(pureSchemeLure.signals.some((s) => s.type === "combo_scheme_keyword"),
 
 const cappedHit = scoreDomain("dbs-cdcvoucher-login-claim-portal-verify.xyz", data);
 assert.ok(cappedHit.score <= (data.scoring?.caps?.total ?? 100), "Score must not exceed total cap");
+
+// B1: anchor gate - unanchored signal stacks cannot reach the alert threshold
+const gateNow = new Date();
+const unanchored = scoreCertificate({
+  leaf_cert: {
+    all_domains: ["parcel-redelivery-portal.xyz"],
+    issuer: { CN: "Let's Encrypt E5" }
+  },
+  not_before: new Date(gateNow.getTime() - 10 * 60 * 1000).toISOString(),
+  seen: Math.floor(gateNow.getTime() / 1000),
+  domain_metadata: { created_at: new Date(gateNow.getTime() - 2 * 24 * 3600 * 1000).toISOString() }
+}, data, gateNow);
+assert.ok(unanchored, "Unanchored finding must stay visible below threshold, not be dropped");
+const noAnchorCap = data.scoring?.thresholds?.no_anchor_score_cap ?? 60;
+assert.ok(
+  unanchored.score <= noAnchorCap,
+  `Expected unanchored stack capped at <= ${noAnchorCap} (pre-gate would be >= 70), got ${unanchored.score}`
+);
+
+const anchoredControl = scoreCertificate({
+  leaf_cert: {
+    all_domains: ["dsb-secure-login-verify.xyz"],
+    issuer: { CN: "Let's Encrypt E5" }
+  },
+  seen: Math.floor(Date.now() / 1000)
+}, data);
+assert.ok(anchoredControl.score >= 70, `Anchored brand finding must stay uncapped, got ${anchoredControl.score}`);
+
+// B1: domain-level anchor cap (eval harness scores via scoreDomain)
+const unanchoredDomain = scoreDomain("parcel-redelivery-portal.xyz", data);
+assert.ok(
+  unanchoredDomain.score <= noAnchorCap,
+  `Expected unanchored DOMAIN score capped at <= ${noAnchorCap}, got ${unanchoredDomain.score}`
+);
 
 console.log("Scoring tests passed.");
 

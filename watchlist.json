@@ -3,7 +3,6 @@
   "version": 1,
   "updated": "2026-08-10",
   "status": "seed",
-
   "inclusion_criteria": {
     "_comment": "A brand is in scope if it meets TWO of these four. 'Is it a Singapore brand' is deliberately NOT the test — the test is whether impersonating it harms people in Singapore at scale.",
     "rules": [
@@ -23,7 +22,6 @@
       "CSA and ScamShield advisories (all categories)"
     ]
   },
-
   "field_docs": {
     "max_edit_distance": "0 | 1 | 2. Damerau-Levenshtein budget AFTER normalisation. Homoglyphs, punycode, fullwidth and leetspeak are handled by the normalisation chain and are caught at distance 0 — this field is ONLY about typo tolerance. Short and dictionary-word tokens get 0.",
     "require_context": "If true, a brand hit only scores when a context_token also appears in the registrable. This is what makes generic tokens like 'trust' and 'mom' usable at all.",
@@ -31,473 +29,1805 @@
     "known_tlds": "Legitimate TLDs. A brand hit on any other TLD fires tld:mismatch.",
     "allow_affix": "If true, the affix decomposer may split a token into brand+keyword (e.g. 'dbsbank' -> 'dbs'+'bank'). Disable for tokens that are common substrings."
   },
-
   "brands": [
     {
-      "id": "dbs", "display": "DBS Bank", "category": "bank",
-      "tokens": ["dbs"], "max_edit_distance": 1, "require_context": true, "allow_affix": true,
-      "context_tokens": ["bank", "banking", "ibanking", "digibank", "login", "secure", "verify", "account", "sg", "posb", "paylah"],
-      "known_tlds": ["com.sg", "com", "sg"]
+      "id": "dbs",
+      "display": "DBS Bank",
+      "category": "bank",
+      "tokens": [
+        "dbs"
+      ],
+      "max_edit_distance": 1,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "banking",
+        "ibanking",
+        "digibank",
+        "login",
+        "secure",
+        "verify",
+        "account",
+        "sg",
+        "posb",
+        "paylah"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "com",
+        "sg"
+      ]
     },
     {
-      "id": "posb", "display": "POSB", "category": "bank",
-      "tokens": ["posb"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["bank", "login", "secure", "account", "sg", "dbs"],
-      "known_tlds": ["com.sg"]
+      "id": "posb",
+      "display": "POSB",
+      "category": "bank",
+      "tokens": [
+        "posb"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "login",
+        "secure",
+        "account",
+        "sg",
+        "dbs"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ]
     },
     {
-      "id": "ocbc", "display": "OCBC Bank", "category": "bank",
-      "tokens": ["ocbc"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["bank", "banking", "velocity", "login", "secure", "verify", "account", "sg"],
-      "known_tlds": ["com", "com.sg"]
+      "id": "ocbc",
+      "display": "OCBC Bank",
+      "category": "bank",
+      "tokens": [
+        "ocbc"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "banking",
+        "velocity",
+        "login",
+        "secure",
+        "verify",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "com",
+        "com.sg"
+      ]
     },
     {
-      "id": "uob", "display": "UOB", "category": "bank",
-      "tokens": ["uob"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["bank", "banking", "tmrw", "mighty", "login", "secure", "verify", "account", "sg", "group"],
-      "known_tlds": ["com.sg", "com"]
+      "id": "uob",
+      "display": "UOB",
+      "category": "bank",
+      "tokens": [
+        "uob"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "banking",
+        "tmrw",
+        "mighty",
+        "login",
+        "secure",
+        "verify",
+        "account",
+        "sg",
+        "group"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "com"
+      ]
     },
     {
-      "id": "stanchart", "display": "Standard Chartered", "category": "bank",
-      "tokens": ["stanchart", "standardchartered", "sc"], "max_edit_distance": 2, "require_context": true, "allow_affix": true,
-      "context_tokens": ["bank", "banking", "login", "secure", "account", "verify", "token", "update", "claim", "wallet", "sg"],
-      "known_tlds": ["com", "com.sg"]
+      "id": "stanchart",
+      "display": "Standard Chartered",
+      "category": "bank",
+      "tokens": [
+        "stanchart",
+        "standardchartered",
+        "sc"
+      ],
+      "max_edit_distance": 2,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "banking",
+        "login",
+        "secure",
+        "account",
+        "verify",
+        "token",
+        "update",
+        "claim",
+        "wallet",
+        "sg"
+      ],
+      "known_tlds": [
+        "com",
+        "com.sg"
+      ]
     },
     {
-      "id": "maybank", "display": "Maybank Singapore", "category": "bank",
-      "tokens": ["maybank", "maybank2u"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["bank", "login", "secure", "account", "sg"],
-      "known_tlds": ["com.sg", "com"]
+      "id": "maybank",
+      "display": "Maybank Singapore",
+      "category": "bank",
+      "tokens": [
+        "maybank",
+        "maybank2u"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "login",
+        "secure",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "com"
+      ]
     },
     {
-      "id": "hsbc", "display": "HSBC Singapore", "category": "bank",
-      "tokens": ["hsbc"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["bank", "banking", "login", "secure", "account", "sg"],
-      "known_tlds": ["com.sg", "com"]
+      "id": "hsbc",
+      "display": "HSBC Singapore",
+      "category": "bank",
+      "tokens": [
+        "hsbc"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "banking",
+        "login",
+        "secure",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "com"
+      ]
     },
     {
-      "id": "citibank", "display": "Citibank Singapore", "category": "bank",
-      "tokens": ["citibank"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["bank", "login", "secure", "account", "sg"],
-      "known_tlds": ["com.sg", "com"]
+      "id": "citibank",
+      "display": "Citibank Singapore",
+      "category": "bank",
+      "tokens": [
+        "citibank"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "login",
+        "secure",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "com"
+      ]
     },
     {
-      "id": "trustbank", "display": "Trust Bank", "category": "bank",
-      "tokens": ["trust", "trustbank"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["bank", "banking", "card", "login", "secure", "account", "sg"],
-      "known_tlds": ["sg", "com.sg"],
+      "id": "trustbank",
+      "display": "Trust Bank",
+      "category": "bank",
+      "tokens": [
+        "trust",
+        "trustbank"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "bank",
+        "banking",
+        "card",
+        "login",
+        "secure",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com.sg"
+      ],
       "notes": "'trust' is a dictionary word and a very common domain substring. Distance 0 + mandatory context, affix decomposition OFF. Expect this brand to be a top false-positive source regardless; review it first at every calibration."
     },
     {
-      "id": "gxs", "display": "GXS Bank", "category": "bank",
-      "tokens": ["gxs"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["bank", "banking", "login", "secure", "account", "sg"],
-      "known_tlds": ["com.sg", "sg"]
+      "id": "gxs",
+      "display": "GXS Bank",
+      "category": "bank",
+      "tokens": [
+        "gxs"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "banking",
+        "login",
+        "secure",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "sg"
+      ]
     },
     {
-      "id": "maribank", "display": "MariBank", "category": "bank",
-      "tokens": ["maribank"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["bank", "login", "secure", "account", "sg"],
-      "known_tlds": ["sg", "com.sg"]
+      "id": "maribank",
+      "display": "MariBank",
+      "category": "bank",
+      "tokens": [
+        "maribank"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "login",
+        "secure",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com.sg"
+      ]
     },
     {
-      "id": "cimb", "display": "CIMB Singapore", "category": "bank",
-      "tokens": ["cimb"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["bank", "banking", "clicks", "login", "secure", "account", "sg"],
-      "known_tlds": ["com.sg", "com"]
+      "id": "cimb",
+      "display": "CIMB Singapore",
+      "category": "bank",
+      "tokens": [
+        "cimb"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "bank",
+        "banking",
+        "clicks",
+        "login",
+        "secure",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "com"
+      ]
     },
-
     {
-      "id": "singpass", "display": "Singpass", "category": "government",
-      "tokens": ["singpass"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["login", "verify", "account", "reset", "app", "gov", "sg", "face"],
-      "known_tlds": ["gov.sg"],
+      "id": "singpass",
+      "display": "Singpass",
+      "category": "government",
+      "tokens": [
+        "singpass"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "login",
+        "verify",
+        "account",
+        "reset",
+        "app",
+        "gov",
+        "sg",
+        "face"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ],
       "notes": "Highest-value identity target in the SG namespace. Any singpass lookalike outside gov.sg is notable by construction."
     },
     {
-      "id": "myinfo", "display": "Myinfo", "category": "government",
-      "tokens": ["myinfo"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["singpass", "login", "verify", "consent", "gov", "sg"],
-      "known_tlds": ["gov.sg"]
+      "id": "myinfo",
+      "display": "Myinfo",
+      "category": "government",
+      "tokens": [
+        "myinfo"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "singpass",
+        "login",
+        "verify",
+        "consent",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ]
     },
     {
-      "id": "govsg", "display": "gov.sg (government domain itself)", "category": "government",
-      "tokens": ["gov", "govsg"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["sg", "singapore", "singpass", "official", "portal", "service", "login", "notice"],
-      "known_tlds": ["sg"],
+      "id": "govsg",
+      "display": "gov.sg (government domain itself)",
+      "category": "government",
+      "tokens": [
+        "gov",
+        "govsg"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "sg",
+        "singapore",
+        "singpass",
+        "official",
+        "portal",
+        "service",
+        "login",
+        "notice"
+      ],
+      "known_tlds": [
+        "sg"
+      ],
       "notes": "CSA advisories train citizens to check for the .gov.sg suffix as THE legitimacy signal. That makes prefix-position squats (gov-sg.com, govsg.net) maximally effective against people following official advice correctly. High value despite the generic token."
     },
     {
-      "id": "gogovsg", "display": "go.gov.sg (official link shortener)", "category": "government",
-      "tokens": ["gogovsg", "gogov"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["gov", "sg", "link", "short", "official"],
-      "known_tlds": ["gov.sg"],
+      "id": "gogovsg",
+      "display": "go.gov.sg (official link shortener)",
+      "category": "government",
+      "tokens": [
+        "gogovsg",
+        "gogov"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "gov",
+        "sg",
+        "link",
+        "short",
+        "official"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ],
       "notes": "Official government link shortener, built specifically to counter phishing via commercial shorteners. Sister services for.sg and for.edu.sg. Citizens are trained to trust this hostname."
     },
     {
-      "id": "iras", "display": "IRAS", "category": "government",
-      "tokens": ["iras"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["tax", "mytax", "gst", "refund", "filing", "assessment", "login", "singpass", "gov", "sg"],
-      "known_tlds": ["gov.sg"]
+      "id": "iras",
+      "display": "IRAS",
+      "category": "government",
+      "tokens": [
+        "iras"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "tax",
+        "mytax",
+        "gst",
+        "refund",
+        "filing",
+        "assessment",
+        "login",
+        "singpass",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ]
     },
     {
-      "id": "cpf", "display": "CPF Board", "category": "government",
-      "tokens": ["cpf"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["board", "login", "singpass", "withdraw", "nomination", "retirement", "account", "gov", "sg"],
-      "known_tlds": ["gov.sg"]
+      "id": "cpf",
+      "display": "CPF Board",
+      "category": "government",
+      "tokens": [
+        "cpf"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "board",
+        "login",
+        "singpass",
+        "withdraw",
+        "nomination",
+        "retirement",
+        "account",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ]
     },
     {
-      "id": "ica", "display": "ICA", "category": "government",
-      "tokens": ["ica"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["immigration", "checkpoint", "passport", "visa", "arrival", "card", "pass", "gov", "sg"],
-      "known_tlds": ["gov.sg"],
+      "id": "ica",
+      "display": "ICA",
+      "category": "government",
+      "tokens": [
+        "ica"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "immigration",
+        "checkpoint",
+        "passport",
+        "visa",
+        "arrival",
+        "card",
+        "pass",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ],
       "notes": "Three characters and an extremely common substring (medica, publica, africa). Affix decomposition OFF."
     },
     {
-      "id": "hdb", "display": "HDB", "category": "government",
-      "tokens": ["hdb"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["flat", "bto", "resale", "housing", "login", "singpass", "gov", "sg"],
-      "known_tlds": ["gov.sg"]
+      "id": "hdb",
+      "display": "HDB",
+      "category": "government",
+      "tokens": [
+        "hdb"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "flat",
+        "bto",
+        "resale",
+        "housing",
+        "login",
+        "singpass",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ]
     },
     {
-      "id": "mom", "display": "Ministry of Manpower", "category": "government",
-      "tokens": ["mom"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["manpower", "workpass", "epass", "employment", "foreigner", "levy", "gov", "sg"],
-      "known_tlds": ["gov.sg"],
+      "id": "mom",
+      "display": "Ministry of Manpower",
+      "category": "government",
+      "tokens": [
+        "mom"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "manpower",
+        "workpass",
+        "epass",
+        "employment",
+        "foreigner",
+        "levy",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ],
       "notes": "Worst token in the file. Distance 0, mandatory context, no affix. If it still generates noise at calibration, drop the brand rather than loosen anything."
     },
     {
-      "id": "lta", "display": "LTA", "category": "government",
-      "tokens": ["lta"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["transport", "vehicle", "road", "erp", "licence", "license", "coe", "gov", "sg"],
-      "known_tlds": ["gov.sg"]
+      "id": "lta",
+      "display": "LTA",
+      "category": "government",
+      "tokens": [
+        "lta"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "transport",
+        "vehicle",
+        "road",
+        "erp",
+        "licence",
+        "license",
+        "coe",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ]
     },
     {
-      "id": "onemotoring", "display": "OneMotoring", "category": "government",
-      "tokens": ["onemotoring"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["vehicle", "road", "tax", "coe", "login", "gov", "sg"],
-      "known_tlds": ["gov.sg"]
+      "id": "onemotoring",
+      "display": "OneMotoring",
+      "category": "government",
+      "tokens": [
+        "onemotoring"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "vehicle",
+        "road",
+        "tax",
+        "coe",
+        "login",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ]
     },
     {
-      "id": "healthhub", "display": "HealthHub", "category": "government",
-      "tokens": ["healthhub"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["health", "login", "singpass", "record", "appointment", "gov", "sg"],
-      "known_tlds": ["sg", "gov.sg"]
+      "id": "healthhub",
+      "display": "HealthHub",
+      "category": "government",
+      "tokens": [
+        "healthhub"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "health",
+        "login",
+        "singpass",
+        "record",
+        "appointment",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "gov.sg"
+      ]
     },
-
     {
-      "id": "paynow", "display": "PayNow", "category": "payments",
-      "tokens": ["paynow"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["pay", "transfer", "qr", "bank", "sg", "account"],
-      "known_tlds": ["sg", "com.sg"]
+      "id": "paynow",
+      "display": "PayNow",
+      "category": "payments",
+      "tokens": [
+        "paynow"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "pay",
+        "transfer",
+        "qr",
+        "bank",
+        "sg",
+        "account"
+      ],
+      "known_tlds": [
+        "sg",
+        "com.sg"
+      ]
     },
     {
-      "id": "paylah", "display": "DBS PayLah!", "category": "payments",
-      "tokens": ["paylah"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["dbs", "pay", "transfer", "wallet", "login", "sg"],
-      "known_tlds": ["com.sg"]
+      "id": "paylah",
+      "display": "DBS PayLah!",
+      "category": "payments",
+      "tokens": [
+        "paylah"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "dbs",
+        "pay",
+        "transfer",
+        "wallet",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ]
     },
     {
-      "id": "nets", "display": "NETS", "category": "payments",
-      "tokens": ["nets"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["pay", "payment", "click", "qr", "flashpay", "terminal", "card", "sg"],
-      "known_tlds": ["com.sg"],
+      "id": "nets",
+      "display": "NETS",
+      "category": "payments",
+      "tokens": [
+        "nets"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "pay",
+        "payment",
+        "click",
+        "qr",
+        "flashpay",
+        "terminal",
+        "card",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ],
       "notes": "'nets' is a plural dictionary word and appears in cabinets, magnets, planets. Distance 0, no affix."
     },
     {
-      "id": "youtrip", "display": "YouTrip", "category": "payments",
-      "tokens": ["youtrip"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["card", "wallet", "topup", "login", "sg"],
-      "known_tlds": ["sg", "com"]
+      "id": "youtrip",
+      "display": "YouTrip",
+      "category": "payments",
+      "tokens": [
+        "youtrip"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "card",
+        "wallet",
+        "topup",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com"
+      ]
     },
     {
-      "id": "grabpay", "display": "GrabPay", "category": "payments",
-      "tokens": ["grabpay"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["grab", "wallet", "topup", "login", "sg"],
-      "known_tlds": ["com"]
+      "id": "grabpay",
+      "display": "GrabPay",
+      "category": "payments",
+      "tokens": [
+        "grabpay"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "grab",
+        "wallet",
+        "topup",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com"
+      ]
     },
     {
-      "id": "wise", "display": "Wise", "category": "payments",
-      "tokens": ["wise"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["transfer", "money", "borderless", "account", "login", "remit", "sg"],
-      "known_tlds": ["com"],
+      "id": "wise",
+      "display": "Wise",
+      "category": "payments",
+      "tokens": [
+        "wise"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "transfer",
+        "money",
+        "borderless",
+        "account",
+        "login",
+        "remit",
+        "sg"
+      ],
+      "known_tlds": [
+        "com"
+      ],
       "notes": "Dictionary word. Consider dropping entirely if calibration shows it earns nothing."
     },
-
     {
-      "id": "singtel", "display": "Singtel", "category": "telco",
-      "tokens": ["singtel"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["mobile", "bill", "account", "login", "dash", "sg", "broadband"],
-      "known_tlds": ["com", "com.sg"]
+      "id": "singtel",
+      "display": "Singtel",
+      "category": "telco",
+      "tokens": [
+        "singtel"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "mobile",
+        "bill",
+        "account",
+        "login",
+        "dash",
+        "sg",
+        "broadband"
+      ],
+      "known_tlds": [
+        "com",
+        "com.sg"
+      ]
     },
     {
-      "id": "starhub", "display": "StarHub", "category": "telco",
-      "tokens": ["starhub"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["mobile", "bill", "account", "login", "sg", "broadband", "tv"],
-      "known_tlds": ["com"]
+      "id": "starhub",
+      "display": "StarHub",
+      "category": "telco",
+      "tokens": [
+        "starhub"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "mobile",
+        "bill",
+        "account",
+        "login",
+        "sg",
+        "broadband",
+        "tv"
+      ],
+      "known_tlds": [
+        "com"
+      ]
     },
     {
-      "id": "m1", "display": "M1", "category": "telco",
-      "tokens": ["m1"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["mobile", "telco", "sim", "bill", "postpaid", "account", "sg"],
-      "known_tlds": ["com.sg"],
+      "id": "m1",
+      "display": "M1",
+      "category": "telco",
+      "tokens": [
+        "m1"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "mobile",
+        "telco",
+        "sim",
+        "bill",
+        "postpaid",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ],
       "notes": "Two characters. Only survives because of mandatory context. Note that leet folding must NOT normalise this token to 'ml' — see docs/DESIGN.md §4.1."
     },
     {
-      "id": "simba", "display": "Simba Telecom", "category": "telco",
-      "tokens": ["simba"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["mobile", "telco", "sim", "bill", "account", "sg"],
-      "known_tlds": ["sg", "com.sg"]
+      "id": "simba",
+      "display": "Simba Telecom",
+      "category": "telco",
+      "tokens": [
+        "simba"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "mobile",
+        "telco",
+        "sim",
+        "bill",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com.sg"
+      ]
     },
     {
-      "id": "myrepublic", "display": "MyRepublic", "category": "telco",
-      "tokens": ["myrepublic"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["mobile", "broadband", "bill", "account", "login", "sg"],
-      "known_tlds": ["com.sg", "net"]
+      "id": "myrepublic",
+      "display": "MyRepublic",
+      "category": "telco",
+      "tokens": [
+        "myrepublic"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "mobile",
+        "broadband",
+        "bill",
+        "account",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "net"
+      ]
     },
-
     {
-      "id": "singpost", "display": "SingPost", "category": "logistics",
-      "tokens": ["singpost"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["track", "tracking", "parcel", "delivery", "redelivery", "customs", "fee", "sg"],
-      "known_tlds": ["com.sg"],
+      "id": "singpost",
+      "display": "SingPost",
+      "category": "logistics",
+      "tokens": [
+        "singpost"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "track",
+        "tracking",
+        "parcel",
+        "delivery",
+        "redelivery",
+        "customs",
+        "fee",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ],
       "notes": "Parcel-notification lures are the highest-volume SMS scam category in SG. Weight logistics accordingly."
     },
     {
-      "id": "ninjavan", "display": "Ninja Van", "category": "logistics",
-      "tokens": ["ninjavan"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["track", "tracking", "parcel", "delivery", "redelivery", "sg"],
-      "known_tlds": ["co", "com.sg"]
+      "id": "ninjavan",
+      "display": "Ninja Van",
+      "category": "logistics",
+      "tokens": [
+        "ninjavan"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "track",
+        "tracking",
+        "parcel",
+        "delivery",
+        "redelivery",
+        "sg"
+      ],
+      "known_tlds": [
+        "co",
+        "com.sg"
+      ]
     },
     {
-      "id": "jnt", "display": "J&T Express", "category": "logistics",
-      "tokens": ["jntexpress", "jnt"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["express", "track", "tracking", "parcel", "delivery", "sg"],
-      "known_tlds": ["com.sg", "sg"]
+      "id": "jnt",
+      "display": "J&T Express",
+      "category": "logistics",
+      "tokens": [
+        "jntexpress",
+        "jnt"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "express",
+        "track",
+        "tracking",
+        "parcel",
+        "delivery",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "sg"
+      ]
     },
     {
-      "id": "shopeexpress", "display": "Shopee Xpress", "category": "logistics",
-      "tokens": ["shopeexpress", "spx"], "max_edit_distance": 1, "require_context": true, "allow_affix": true,
-      "context_tokens": ["shopee", "track", "tracking", "parcel", "delivery", "sg"],
-      "known_tlds": ["sg", "com"]
+      "id": "shopeexpress",
+      "display": "Shopee Xpress",
+      "category": "logistics",
+      "tokens": [
+        "shopeexpress",
+        "spx"
+      ],
+      "max_edit_distance": 1,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "shopee",
+        "track",
+        "tracking",
+        "parcel",
+        "delivery",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com"
+      ]
     },
     {
-      "id": "lalamove", "display": "Lalamove", "category": "logistics",
-      "tokens": ["lalamove"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["delivery", "driver", "track", "booking", "sg"],
-      "known_tlds": ["com"]
+      "id": "lalamove",
+      "display": "Lalamove",
+      "category": "logistics",
+      "tokens": [
+        "lalamove"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "delivery",
+        "driver",
+        "track",
+        "booking",
+        "sg"
+      ],
+      "known_tlds": [
+        "com"
+      ]
     },
     {
-      "id": "qxpress", "display": "Qxpress", "category": "logistics",
-      "tokens": ["qxpress"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["track", "tracking", "parcel", "delivery", "qoo10", "sg"],
-      "known_tlds": ["com", "sg"]
+      "id": "qxpress",
+      "display": "Qxpress",
+      "category": "logistics",
+      "tokens": [
+        "qxpress"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "track",
+        "tracking",
+        "parcel",
+        "delivery",
+        "qoo10",
+        "sg"
+      ],
+      "known_tlds": [
+        "com",
+        "sg"
+      ]
     },
-
     {
-      "id": "shopee", "display": "Shopee", "category": "commerce",
-      "tokens": ["shopee"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["login", "order", "seller", "refund", "voucher", "wallet", "sg"],
-      "known_tlds": ["sg", "com"],
+      "id": "shopee",
+      "display": "Shopee",
+      "category": "commerce",
+      "tokens": [
+        "shopee"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "login",
+        "order",
+        "seller",
+        "refund",
+        "voucher",
+        "wallet",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com"
+      ],
       "notes": "Distance 2 reaches 'shoppe' and 'shope' — both appear in legitimate retail domains. Watch at calibration."
     },
     {
-      "id": "lazada", "display": "Lazada", "category": "commerce",
-      "tokens": ["lazada"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["login", "order", "seller", "refund", "voucher", "wallet", "sg"],
-      "known_tlds": ["sg", "com"]
+      "id": "lazada",
+      "display": "Lazada",
+      "category": "commerce",
+      "tokens": [
+        "lazada"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "login",
+        "order",
+        "seller",
+        "refund",
+        "voucher",
+        "wallet",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com"
+      ]
     },
     {
-      "id": "carousell", "display": "Carousell", "category": "commerce",
-      "tokens": ["carousell"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["login", "listing", "seller", "buyer", "deal", "sg"],
-      "known_tlds": ["sg", "com"],
+      "id": "carousell",
+      "display": "Carousell",
+      "category": "commerce",
+      "tokens": [
+        "carousell"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "login",
+        "listing",
+        "seller",
+        "buyer",
+        "deal",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com"
+      ],
       "notes": "ACCEPTED KNOWN COLLISION: distance 2 reaches 'carousel', a common English word with legitimate domains. Decision was to keep distance 2 and absorb the cost via ongoing allowlist maintenance. Expect recurring allowlist additions here."
     },
     {
-      "id": "qoo10", "display": "Qoo10", "category": "commerce",
-      "tokens": ["qoo10"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["login", "order", "seller", "refund", "voucher", "sg"],
-      "known_tlds": ["sg", "com"]
+      "id": "qoo10",
+      "display": "Qoo10",
+      "category": "commerce",
+      "tokens": [
+        "qoo10"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "login",
+        "order",
+        "seller",
+        "refund",
+        "voucher",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com"
+      ]
     },
     {
-      "id": "fairprice", "display": "NTUC FairPrice", "category": "commerce",
-      "tokens": ["fairprice"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["ntuc", "login", "voucher", "linkpoints", "order", "sg"],
-      "known_tlds": ["com.sg"]
+      "id": "fairprice",
+      "display": "NTUC FairPrice",
+      "category": "commerce",
+      "tokens": [
+        "fairprice"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "ntuc",
+        "login",
+        "voucher",
+        "linkpoints",
+        "order",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ]
     },
     {
-      "id": "redmart", "display": "RedMart", "category": "commerce",
-      "tokens": ["redmart"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["lazada", "order", "delivery", "login", "sg"],
-      "known_tlds": ["sg", "com"]
+      "id": "redmart",
+      "display": "RedMart",
+      "category": "commerce",
+      "tokens": [
+        "redmart"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "lazada",
+        "order",
+        "delivery",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com"
+      ]
     },
     {
-      "id": "grab", "display": "Grab", "category": "commerce",
-      "tokens": ["grab"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["pay", "food", "taxi", "ride", "driver", "merchant", "mart", "account", "login", "sg"],
-      "known_tlds": ["com"],
+      "id": "grab",
+      "display": "Grab",
+      "category": "commerce",
+      "tokens": [
+        "grab"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "pay",
+        "food",
+        "taxi",
+        "ride",
+        "driver",
+        "merchant",
+        "mart",
+        "account",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com"
+      ],
       "notes": "Dictionary word ('grab bag', 'landgrab'). Distance 0 + context. Affix ON because grabpay/grabfood are the real attack shapes."
     },
     {
-      "id": "qoo10sg", "display": "Qoo10 SG (alias)", "category": "commerce",
-      "tokens": ["qoo10sg"], "max_edit_distance": 1, "require_context": false, "allow_affix": false,
-      "context_tokens": ["login", "order", "sg"],
-      "known_tlds": ["sg"]
+      "id": "qoo10sg",
+      "display": "Qoo10 SG (alias)",
+      "category": "commerce",
+      "tokens": [
+        "qoo10sg"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": false,
+      "context_tokens": [
+        "login",
+        "order",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg"
+      ]
     },
-
     {
-      "id": "singaporeair", "display": "Singapore Airlines", "category": "transport",
-      "tokens": ["singaporeair", "krisflyer"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["flight", "booking", "ticket", "miles", "login", "checkin", "sg"],
-      "known_tlds": ["com", "com.sg"]
+      "id": "singaporeair",
+      "display": "Singapore Airlines",
+      "category": "transport",
+      "tokens": [
+        "singaporeair",
+        "krisflyer"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "flight",
+        "booking",
+        "ticket",
+        "miles",
+        "login",
+        "checkin",
+        "sg"
+      ],
+      "known_tlds": [
+        "com",
+        "com.sg"
+      ]
     },
     {
-      "id": "scoot", "display": "Scoot", "category": "transport",
-      "tokens": ["scoot", "flyscoot"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["fly", "flight", "booking", "ticket", "air", "checkin", "sg"],
-      "known_tlds": ["com"],
+      "id": "scoot",
+      "display": "Scoot",
+      "category": "transport",
+      "tokens": [
+        "scoot",
+        "flyscoot"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "fly",
+        "flight",
+        "booking",
+        "ticket",
+        "air",
+        "checkin",
+        "sg"
+      ],
+      "known_tlds": [
+        "com"
+      ],
       "notes": "'scoot' is a dictionary verb and appears in scooter domains. Distance 0 + context."
     },
     {
-      "id": "simplygo", "display": "SimplyGo", "category": "transport",
-      "tokens": ["simplygo"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["transit", "card", "ezlink", "topup", "login", "fare", "sg"],
-      "known_tlds": ["com.sg"]
+      "id": "simplygo",
+      "display": "SimplyGo",
+      "category": "transport",
+      "tokens": [
+        "simplygo"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "transit",
+        "card",
+        "ezlink",
+        "topup",
+        "login",
+        "fare",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ]
     },
     {
-      "id": "comfortdelgro", "display": "ComfortDelGro", "category": "transport",
-      "tokens": ["comfortdelgro", "cdgtaxi"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["taxi", "booking", "driver", "fare", "login", "sg"],
-      "known_tlds": ["com", "com.sg"]
+      "id": "comfortdelgro",
+      "display": "ComfortDelGro",
+      "category": "transport",
+      "tokens": [
+        "comfortdelgro",
+        "cdgtaxi"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "taxi",
+        "booking",
+        "driver",
+        "fare",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com",
+        "com.sg"
+      ]
     },
     {
-      "id": "smrt", "display": "SMRT", "category": "transport",
-      "tokens": ["smrt"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["train", "transit", "mrt", "fare", "card", "sg"],
-      "known_tlds": ["com.sg"]
+      "id": "smrt",
+      "display": "SMRT",
+      "category": "transport",
+      "tokens": [
+        "smrt"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "train",
+        "transit",
+        "mrt",
+        "fare",
+        "card",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ]
     },
     {
-      "id": "changi", "display": "Changi Airport", "category": "transport",
-      "tokens": ["changi", "changiairport"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["airport", "flight", "shop", "rewards", "login", "sg"],
-      "known_tlds": ["com", "com.sg"]
+      "id": "changi",
+      "display": "Changi Airport",
+      "category": "transport",
+      "tokens": [
+        "changi",
+        "changiairport"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "airport",
+        "flight",
+        "shop",
+        "rewards",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com",
+        "com.sg"
+      ]
     },
-
     {
-      "id": "spgroup", "display": "SP Group", "category": "utilities",
-      "tokens": ["spgroup"], "max_edit_distance": 1, "require_context": false, "allow_affix": true,
-      "context_tokens": ["utilities", "bill", "power", "energy", "meter", "login", "account", "sg"],
-      "known_tlds": ["com.sg"],
+      "id": "spgroup",
+      "display": "SP Group",
+      "category": "utilities",
+      "tokens": [
+        "spgroup"
+      ],
+      "max_edit_distance": 1,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "utilities",
+        "bill",
+        "power",
+        "energy",
+        "meter",
+        "login",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ],
       "notes": "Bare 'sp' is excluded as a token — two characters and a substring of everything. Only the compound form is watched."
     },
     {
-      "id": "cityenergy", "display": "City Energy", "category": "utilities",
-      "tokens": ["cityenergy"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["gas", "bill", "utilities", "account", "login", "sg"],
-      "known_tlds": ["com.sg"]
+      "id": "cityenergy",
+      "display": "City Energy",
+      "category": "utilities",
+      "tokens": [
+        "cityenergy"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "gas",
+        "bill",
+        "utilities",
+        "account",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ]
     },
     {
-      "id": "greateastern", "display": "Great Eastern", "category": "insurance",
-      "tokens": ["greateastern"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["insurance", "policy", "claim", "login", "life", "sg"],
-      "known_tlds": ["com", "com.sg"]
+      "id": "greateastern",
+      "display": "Great Eastern",
+      "category": "insurance",
+      "tokens": [
+        "greateastern"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "insurance",
+        "policy",
+        "claim",
+        "login",
+        "life",
+        "sg"
+      ],
+      "known_tlds": [
+        "com",
+        "com.sg"
+      ]
     },
     {
-      "id": "income", "display": "NTUC Income", "category": "insurance",
-      "tokens": ["income"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["ntuc", "insurance", "policy", "claim", "login", "sg"],
-      "known_tlds": ["com.sg"],
+      "id": "income",
+      "display": "NTUC Income",
+      "category": "insurance",
+      "tokens": [
+        "income"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "ntuc",
+        "insurance",
+        "policy",
+        "claim",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ],
       "notes": "Dictionary word, extremely common in finance domains. Mandatory context, no affix. Second-worst token in the file after 'mom'."
     },
     {
-      "id": "aia", "display": "AIA Singapore", "category": "insurance",
-      "tokens": ["aia"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["insurance", "policy", "claim", "login", "sg", "vitality"],
-      "known_tlds": ["com.sg", "com"]
+      "id": "aia",
+      "display": "AIA Singapore",
+      "category": "insurance",
+      "tokens": [
+        "aia"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "insurance",
+        "policy",
+        "claim",
+        "login",
+        "sg",
+        "vitality"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "com"
+      ]
     },
     {
-      "id": "prudential", "display": "Prudential Singapore", "category": "insurance",
-      "tokens": ["prudential", "pruadviser"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["insurance", "policy", "claim", "login", "sg"],
-      "known_tlds": ["com.sg", "com"]
+      "id": "prudential",
+      "display": "Prudential Singapore",
+      "category": "insurance",
+      "tokens": [
+        "prudential",
+        "pruadviser"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "insurance",
+        "policy",
+        "claim",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg",
+        "com"
+      ]
     },
-
     {
-      "id": "nus", "display": "National University of Singapore", "category": "university",
-      "tokens": ["nus"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["login", "portal", "canvas", "luminus", "student", "staff", "email", "edu", "sg"],
-      "known_tlds": ["edu.sg"],
+      "id": "nus",
+      "display": "National University of Singapore",
+      "category": "university",
+      "tokens": [
+        "nus"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "login",
+        "portal",
+        "canvas",
+        "luminus",
+        "student",
+        "staff",
+        "email",
+        "edu",
+        "sg"
+      ],
+      "known_tlds": [
+        "edu.sg"
+      ],
       "notes": "All SG universities are acronym-shaped with brutal substring collisions (nus appears in 'bonus', 'census', 'campus'). Distance 0 + mandatory context + no affix is the only workable setting. This catches nus-login.sg and nothing else, which is the correct outcome."
     },
     {
-      "id": "ntu", "display": "Nanyang Technological University", "category": "university",
-      "tokens": ["ntu"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["login", "portal", "ntulearn", "student", "staff", "email", "edu", "sg"],
-      "known_tlds": ["edu.sg"]
+      "id": "ntu",
+      "display": "Nanyang Technological University",
+      "category": "university",
+      "tokens": [
+        "ntu"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "login",
+        "portal",
+        "ntulearn",
+        "student",
+        "staff",
+        "email",
+        "edu",
+        "sg"
+      ],
+      "known_tlds": [
+        "edu.sg"
+      ]
     },
     {
-      "id": "smu", "display": "Singapore Management University", "category": "university",
-      "tokens": ["smu"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["login", "portal", "elearn", "student", "staff", "email", "edu", "sg"],
-      "known_tlds": ["edu.sg"]
+      "id": "smu",
+      "display": "Singapore Management University",
+      "category": "university",
+      "tokens": [
+        "smu"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "login",
+        "portal",
+        "elearn",
+        "student",
+        "staff",
+        "email",
+        "edu",
+        "sg"
+      ],
+      "known_tlds": [
+        "edu.sg"
+      ]
     },
     {
-      "id": "sutd", "display": "Singapore University of Technology and Design", "category": "university",
-      "tokens": ["sutd"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["login", "portal", "mysutd", "student", "staff", "edu", "sg"],
-      "known_tlds": ["edu.sg"]
+      "id": "sutd",
+      "display": "Singapore University of Technology and Design",
+      "category": "university",
+      "tokens": [
+        "sutd"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "login",
+        "portal",
+        "mysutd",
+        "student",
+        "staff",
+        "edu",
+        "sg"
+      ],
+      "known_tlds": [
+        "edu.sg"
+      ]
     },
     {
-      "id": "sit", "display": "Singapore Institute of Technology", "category": "university",
-      "tokens": ["singaporetech"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["login", "portal", "student", "staff", "edu", "sg"],
-      "known_tlds": ["edu.sg"],
+      "id": "sit",
+      "display": "Singapore Institute of Technology",
+      "category": "university",
+      "tokens": [
+        "singaporetech"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "login",
+        "portal",
+        "student",
+        "staff",
+        "edu",
+        "sg"
+      ],
+      "known_tlds": [
+        "edu.sg"
+      ],
       "notes": "Bare 'sit' is deliberately NOT a token — it is a dictionary verb and a substring of visit, deposit, opposite, website. Only the full 'singaporetech' form is watched."
     },
     {
-      "id": "suss", "display": "Singapore University of Social Sciences", "category": "university",
-      "tokens": ["suss"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["login", "portal", "canvas", "student", "staff", "edu", "sg"],
-      "known_tlds": ["edu.sg"]
-    },
-
-    {
-      "id": "singhealth", "display": "SingHealth", "category": "healthcare",
-      "tokens": ["singhealth"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["health", "clinic", "hospital", "appointment", "login", "sg"],
-      "known_tlds": ["com.sg"]
-    },
-    {
-      "id": "nuhs", "display": "NUHS", "category": "healthcare",
-      "tokens": ["nuhs"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["health", "clinic", "hospital", "appointment", "login", "edu", "sg"],
-      "known_tlds": ["edu.sg", "com.sg"]
-    },
-    {
-      "id": "nhg", "display": "National Healthcare Group", "category": "healthcare",
-      "tokens": ["nhg"], "max_edit_distance": 0, "require_context": true, "allow_affix": true,
-      "context_tokens": ["health", "clinic", "polyclinic", "hospital", "appointment", "login", "sg"],
-      "known_tlds": ["com.sg"]
+      "id": "suss",
+      "display": "Singapore University of Social Sciences",
+      "category": "university",
+      "tokens": [
+        "suss"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "login",
+        "portal",
+        "canvas",
+        "student",
+        "staff",
+        "edu",
+        "sg"
+      ],
+      "known_tlds": [
+        "edu.sg"
+      ]
     },
     {
-      "id": "forsg", "display": "for.sg / for.edu.sg (healthcare & education shorteners)", "category": "healthcare",
-      "tokens": ["forsg"], "max_edit_distance": 0, "require_context": true, "allow_affix": false,
-      "context_tokens": ["health", "gov", "official", "link", "sg"],
-      "known_tlds": ["sg", "edu.sg"]
+      "id": "singhealth",
+      "display": "SingHealth",
+      "category": "healthcare",
+      "tokens": [
+        "singhealth"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "health",
+        "clinic",
+        "hospital",
+        "appointment",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ]
     },
-
     {
-      "id": "mediacorp", "display": "Mediacorp", "category": "media",
-      "tokens": ["mediacorp", "meweb"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["login", "account", "news", "watch", "sg"],
-      "known_tlds": ["sg", "com.sg"]
+      "id": "nuhs",
+      "display": "NUHS",
+      "category": "healthcare",
+      "tokens": [
+        "nuhs"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "health",
+        "clinic",
+        "hospital",
+        "appointment",
+        "login",
+        "edu",
+        "sg"
+      ],
+      "known_tlds": [
+        "edu.sg",
+        "com.sg"
+      ]
     },
     {
-      "id": "straitstimes", "display": "The Straits Times", "category": "media",
-      "tokens": ["straitstimes"], "max_edit_distance": 2, "require_context": false, "allow_affix": true,
-      "context_tokens": ["news", "login", "subscribe", "account", "sg"],
-      "known_tlds": ["com"]
+      "id": "nhg",
+      "display": "National Healthcare Group",
+      "category": "healthcare",
+      "tokens": [
+        "nhg"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "health",
+        "clinic",
+        "polyclinic",
+        "hospital",
+        "appointment",
+        "login",
+        "sg"
+      ],
+      "known_tlds": [
+        "com.sg"
+      ]
+    },
+    {
+      "id": "forsg",
+      "display": "for.sg / for.edu.sg (healthcare & education shorteners)",
+      "category": "healthcare",
+      "tokens": [
+        "forsg"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": false,
+      "context_tokens": [
+        "health",
+        "gov",
+        "official",
+        "link",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "edu.sg"
+      ]
+    },
+    {
+      "id": "mediacorp",
+      "display": "Mediacorp",
+      "category": "media",
+      "tokens": [
+        "mediacorp",
+        "meweb"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "login",
+        "account",
+        "news",
+        "watch",
+        "sg"
+      ],
+      "known_tlds": [
+        "sg",
+        "com.sg"
+      ]
+    },
+    {
+      "id": "straitstimes",
+      "display": "The Straits Times",
+      "category": "media",
+      "tokens": [
+        "straitstimes"
+      ],
+      "max_edit_distance": 2,
+      "require_context": false,
+      "allow_affix": true,
+      "context_tokens": [
+        "news",
+        "login",
+        "subscribe",
+        "account",
+        "sg"
+      ],
+      "known_tlds": [
+        "com"
+      ]
+    },
+    {
+      "id": "govtech",
+      "display": "GovTech Singapore",
+      "category": "government",
+      "tokens": [
+        "govtech"
+      ],
+      "max_edit_distance": 1,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "login",
+        "verify",
+        "singpass",
+        "account",
+        "gov",
+        "sg",
+        "tech",
+        "api"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ]
+    },
+    {
+      "id": "moe",
+      "display": "Ministry of Education",
+      "category": "government",
+      "tokens": [
+        "moe"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "school",
+        "student",
+        "education",
+        "learning",
+        "login",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ]
+    },
+    {
+      "id": "moh",
+      "display": "Ministry of Health",
+      "category": "government",
+      "tokens": [
+        "moh"
+      ],
+      "max_edit_distance": 0,
+      "require_context": true,
+      "allow_affix": true,
+      "context_tokens": [
+        "health",
+        "vaccine",
+        "hospital",
+        "login",
+        "gov",
+        "sg"
+      ],
+      "known_tlds": [
+        "gov.sg"
+      ]
     }
   ]
 }

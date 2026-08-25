@@ -1,14 +1,27 @@
 {
   "_comment": "Scoring weights as data. Every finding records scoring_version so historical scores stay interpretable. Changing any weight REQUIRES a passing eval run (npm run eval) — see .github/workflows.",
-  "version": 2,
-  "updated": "2026-08-22",
+  "version": 3,
+  "updated": "2026-08-24",
   "thresholds": {
     "_comment": "See DECISION-10. alert_min is recalibrated after each corpus refresh to the lowest score with precision >= 0.80.",
     "persist_min": 30,
     "dashboard_min": 30,
     "digest_min": 50,
-    "alert_min": 70
+    "alert_min": 70,
+    "no_anchor_score_cap": 60
   },
+  "anchor_signals": [
+    "brand:exact",
+    "brand:fuzzy",
+    "brand:edit_distance_1",
+    "brand:edit_distance_2",
+    "brand:edit_distance_3",
+    "subdomain_brand_squat",
+    "scheme",
+    "punycode_brand_match",
+    "confusable_skeleton_match",
+    "homoglyph:ascii"
+  ],
   "weights": {
     "brand:exact": 35,
     "brand:fuzzy": 25,

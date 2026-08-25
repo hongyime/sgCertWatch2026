@@ -3,7 +3,6 @@
   "version": 1,
   "updated": "2026-08-10",
   "status": "seed-unverified",
-
   "READ_THIS_FIRST": {
     "problem": "A WRONG allowlist entry silently suppresses a real threat. That is the most dangerous kind of error this project can make, and it fails closed with no visible symptom.",
     "rule": "Every entry below was seeded from general knowledge and is marked verified:false. Unverified entries DO suppress (otherwise the seed is useless and the feed floods on day one), but P0 launch is BLOCKED until all of them are verified. See TASKS.md M2-02b.",
@@ -11,87 +10,498 @@
     "ci_gate": "CI fails the release workflow while any entry has verified:false.",
     "coverage_expectation": "This seed is roughly 90 entries. Realistic full coverage is 200-600, because banks and telcos own large numbers of campaign and product domains. The list grows forever; budget for that."
   },
-
   "entries": [
-    { "registrable": "dbs.com", "brand": "dbs", "verified": true, "verified_at": "2026-08-14", "source": "https://www.dbs.com.sg/index/default.page" },
-    { "registrable": "dbs.com.sg", "brand": "dbs", "verified": true, "verified_at": "2026-08-14", "source": "https://www.dbs.com.sg/index/default.page" },
-    { "registrable": "posb.com.sg", "brand": "posb", "verified": true, "verified_at": "2026-08-14", "source": "https://www.posb.com.sg/personal/default.page" },
-    { "registrable": "ocbc.com", "brand": "ocbc", "verified": true, "verified_at": "2026-08-14", "source": "https://www.ocbc.com/group/gateway.page" },
-    { "registrable": "ocbc.com.sg", "brand": "ocbc", "verified": true, "verified_at": "2026-08-14", "source": "https://www.ocbc.com.sg/" },
-    { "registrable": "uob.com.sg", "brand": "uob", "verified": true, "verified_at": "2026-08-14", "source": "https://www.uob.com.sg/" },
-    { "registrable": "uobgroup.com", "brand": "uob", "verified": true, "verified_at": "2026-08-14", "source": "https://www.uobgroup.com/" },
-    { "registrable": "sc.com", "brand": "stanchart", "verified": true, "verified_at": "2026-08-14", "source": "https://www.sc.com/sg/" },
-    { "registrable": "maybank.com.sg", "brand": "maybank", "verified": true, "verified_at": "2026-08-14", "source": "https://www.maybank.com.sg/" },
-    { "registrable": "maybank2u.com.sg", "brand": "maybank", "verified": true, "verified_at": "2026-08-14", "source": "https://www.maybank2u.com.sg/" },
-    { "registrable": "hsbc.com.sg", "brand": "hsbc", "verified": true, "verified_at": "2026-08-14", "source": "https://www.hsbc.com.sg/" },
-    { "registrable": "citibank.com.sg", "brand": "citibank", "verified": true, "verified_at": "2026-08-14", "source": "https://www.citibank.com.sg/" },
-    { "registrable": "trustbank.sg", "brand": "trustbank", "verified": true, "verified_at": "2026-08-14", "source": "https://trustbank.sg/" },
-    { "registrable": "gxs.com.sg", "brand": "gxs", "verified": true, "verified_at": "2026-08-14", "source": "https://www.gxs.com.sg/" },
-    { "registrable": "maribank.sg", "brand": "maribank", "verified": true, "verified_at": "2026-08-14", "source": "https://www.maribank.sg/" },
-    { "registrable": "cimb.com.sg", "brand": "cimb", "verified": true, "verified_at": "2026-08-14", "source": "https://www.cimb.com.sg/" },
-
-    { "registrable": "singpass.gov.sg", "brand": "singpass", "verified": true, "verified_at": "2026-08-14", "source": "https://www.singpass.gov.sg/main/" },
-    { "registrable": "myinfo.gov.sg", "brand": "myinfo", "verified": true, "verified_at": "2026-08-14", "source": "https://www.tech.gov.sg/media/opening-bank-accounts-becomes-more-seamless-and-convenient-for-myinfo-users/" },
-    { "registrable": "go.gov.sg", "brand": "gogovsg", "verified": true, "verified_at": "2026-08-14", "source": "https://www.gov.sg/trusted-sites/" },
-    { "registrable": "for.sg", "brand": "forsg", "verified": true, "verified_at": "2026-08-14", "source": "https://www.gov.sg/trusted-sites/" },
-    { "registrable": "for.edu.sg", "brand": "forsg", "verified": true, "verified_at": "2026-08-14", "source": "https://www.gov.sg/trusted-sites/" },
-    { "registrable": "iras.gov.sg", "brand": "iras", "verified": true, "verified_at": "2026-08-14", "source": "https://www.iras.gov.sg/" },
-    { "registrable": "cpf.gov.sg", "brand": "cpf", "verified": true, "verified_at": "2026-08-14", "source": "https://www.cpf.gov.sg/" },
-    { "registrable": "ica.gov.sg", "brand": "ica", "verified": true, "verified_at": "2026-08-14", "source": "https://www.ica.gov.sg/" },
-    { "registrable": "hdb.gov.sg", "brand": "hdb", "verified": true, "verified_at": "2026-08-14", "source": "https://www.hdb.gov.sg/" },
-    { "registrable": "mom.gov.sg", "brand": "mom", "verified": true, "verified_at": "2026-08-14", "source": "https://www.mom.gov.sg/" },
-    { "registrable": "lta.gov.sg", "brand": "lta", "verified": true, "verified_at": "2026-08-14", "source": "https://www.lta.gov.sg/" },
-    { "registrable": "healthhub.sg", "brand": "healthhub", "verified": true, "verified_at": "2026-08-14", "source": "https://www.healthhub.sg/" },
-
-    { "registrable": "nets.com.sg", "brand": "nets", "verified": true, "verified_at": "2026-08-14", "source": "https://www.nets.com.sg/" },
-    { "registrable": "grab.com", "brand": "grab", "verified": true, "verified_at": "2026-08-14", "source": "https://www.grab.com/sg/" },
-
-    { "registrable": "singtel.com", "brand": "singtel", "verified": true, "verified_at": "2026-08-14", "source": "https://www.singtel.com/" },
-    { "registrable": "singtel.com.sg", "brand": "singtel", "verified": true, "verified_at": "2026-08-14", "source": "https://www.singtel.com.sg/" },
-    { "registrable": "starhub.com", "brand": "starhub", "verified": true, "verified_at": "2026-08-14", "source": "https://www.starhub.com/personal.html" },
-    { "registrable": "m1.com.sg", "brand": "m1", "verified": true, "verified_at": "2026-08-14", "source": "https://www.m1.com.sg/" },
-    { "registrable": "myrepublic.com.sg", "brand": "myrepublic", "verified": true, "verified_at": "2026-08-14", "source": "https://www.myrepublic.com.sg/" },
-
-    { "registrable": "singpost.com.sg", "brand": "singpost", "verified": true, "verified_at": "2026-08-14", "source": "https://www.singpost.com/index" },
-    { "registrable": "ninjavan.co", "brand": "ninjavan", "verified": true, "verified_at": "2026-08-14", "source": "https://www.ninjavan.co/en-sg" },
-    { "registrable": "lalamove.com", "brand": "lalamove", "verified": true, "verified_at": "2026-08-14", "source": "https://www.lalamove.com/en-sg/" },
-
-    { "registrable": "shopee.sg", "brand": "shopee", "verified": true, "verified_at": "2026-08-14", "source": "https://shopee.sg/" },
-    { "registrable": "lazada.sg", "brand": "lazada", "verified": true, "verified_at": "2026-08-14", "source": "https://www.lazada.sg/" },
-    { "registrable": "carousell.sg", "brand": "carousell", "verified": true, "verified_at": "2026-08-14", "source": "https://www.carousell.sg/" },
-    { "registrable": "carousell.com", "brand": "carousell", "verified": true, "verified_at": "2026-08-14", "source": "https://www.carousell.com/" },
-    { "registrable": "fairprice.com.sg", "brand": "fairprice", "verified": true, "verified_at": "2026-08-14", "source": "https://www.fairprice.com.sg/" },
-
-    { "registrable": "singaporeair.com", "brand": "singaporeair", "verified": true, "verified_at": "2026-08-14", "source": "https://www.singaporeair.com/" },
-    { "registrable": "flyscoot.com", "brand": "scoot", "verified": true, "verified_at": "2026-08-14", "source": "https://www.flyscoot.com/" },
-    { "registrable": "simplygo.com.sg", "brand": "simplygo", "verified": true, "verified_at": "2026-08-14", "source": "https://www.simplygo.com.sg/" },
-    { "registrable": "comfortdelgro.com", "brand": "comfortdelgro", "verified": true, "verified_at": "2026-08-14", "source": "https://www.comfortdelgro.com/" },
-    { "registrable": "cdgtaxi.com.sg", "brand": "comfortdelgro", "verified": true, "verified_at": "2026-08-14", "source": "https://www.cdgtaxi.com.sg/" },
-    { "registrable": "smrt.com.sg", "brand": "smrt", "verified": true, "verified_at": "2026-08-14", "source": "https://www.smrt.com.sg/" },
-    { "registrable": "changiairport.com", "brand": "changi", "verified": true, "verified_at": "2026-08-14", "source": "https://www.changiairport.com/" },
-
-    { "registrable": "spgroup.com.sg", "brand": "spgroup", "verified": true, "verified_at": "2026-08-14", "source": "https://www.spgroup.com.sg/" },
-    { "registrable": "cityenergy.com.sg", "brand": "cityenergy", "verified": true, "verified_at": "2026-08-14", "source": "https://www.cityenergy.com.sg/" },
-    { "registrable": "greateasternlife.com", "brand": "greateastern", "verified": true, "verified_at": "2026-08-14", "source": "https://www.greateasternlife.com/" },
-    { "registrable": "income.com.sg", "brand": "income", "verified": true, "verified_at": "2026-08-14", "source": "https://www.income.com.sg/" },
-    { "registrable": "aia.com.sg", "brand": "aia", "verified": true, "verified_at": "2026-08-14", "source": "https://www.aia.com.sg/" },
-    { "registrable": "prudential.com.sg", "brand": "prudential", "verified": true, "verified_at": "2026-08-14", "source": "https://www.prudential.com.sg/" },
-
-    { "registrable": "nus.edu.sg", "brand": "nus", "verified": true, "verified_at": "2026-08-14", "source": "https://www.nus.edu.sg/" },
-    { "registrable": "ntu.edu.sg", "brand": "ntu", "verified": true, "verified_at": "2026-08-14", "source": "https://www.ntu.edu.sg/" },
-    { "registrable": "smu.edu.sg", "brand": "smu", "verified": true, "verified_at": "2026-08-14", "source": "https://www.smu.edu.sg/" },
-    { "registrable": "sutd.edu.sg", "brand": "sutd", "verified": true, "verified_at": "2026-08-14", "source": "https://www.sutd.edu.sg/" },
-    { "registrable": "singaporetech.edu.sg", "brand": "sit", "verified": true, "verified_at": "2026-08-14", "source": "https://www.singaporetech.edu.sg/" },
-    { "registrable": "suss.edu.sg", "brand": "suss", "verified": true, "verified_at": "2026-08-14", "source": "https://www.suss.edu.sg/" },
-
-    { "registrable": "singhealth.com.sg", "brand": "singhealth", "verified": true, "verified_at": "2026-08-14", "source": "https://www.singhealth.com.sg/" },
-    { "registrable": "nuhs.edu.sg", "brand": "nuhs", "verified": true, "verified_at": "2026-08-14", "source": "https://www.nuhs.edu.sg/" },
-    { "registrable": "nhg.com.sg", "brand": "nhg", "verified": true, "verified_at": "2026-08-14", "source": "https://www.nhg.com.sg/" },
-
-    { "registrable": "mediacorp.sg", "brand": "mediacorp", "verified": true, "verified_at": "2026-08-14", "source": "https://www.mediacorp.sg/" },
-    { "registrable": "straitstimes.com", "brand": "straitstimes", "verified": true, "verified_at": "2026-08-14", "source": "https://www.straitstimes.com/" }
+    {
+      "registrable": "dbs.com",
+      "brand": "dbs",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.dbs.com.sg/index/default.page"
+    },
+    {
+      "registrable": "dbs.com.sg",
+      "brand": "dbs",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.dbs.com.sg/index/default.page"
+    },
+    {
+      "registrable": "posb.com.sg",
+      "brand": "posb",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.posb.com.sg/personal/default.page"
+    },
+    {
+      "registrable": "ocbc.com",
+      "brand": "ocbc",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.ocbc.com/group/gateway.page"
+    },
+    {
+      "registrable": "ocbc.com.sg",
+      "brand": "ocbc",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.ocbc.com.sg/"
+    },
+    {
+      "registrable": "uob.com.sg",
+      "brand": "uob",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.uob.com.sg/"
+    },
+    {
+      "registrable": "uobgroup.com",
+      "brand": "uob",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.uobgroup.com/"
+    },
+    {
+      "registrable": "sc.com",
+      "brand": "stanchart",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.sc.com/sg/"
+    },
+    {
+      "registrable": "maybank.com.sg",
+      "brand": "maybank",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.maybank.com.sg/"
+    },
+    {
+      "registrable": "maybank2u.com.sg",
+      "brand": "maybank",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.maybank2u.com.sg/"
+    },
+    {
+      "registrable": "hsbc.com.sg",
+      "brand": "hsbc",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.hsbc.com.sg/"
+    },
+    {
+      "registrable": "citibank.com.sg",
+      "brand": "citibank",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.citibank.com.sg/"
+    },
+    {
+      "registrable": "trustbank.sg",
+      "brand": "trustbank",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://trustbank.sg/"
+    },
+    {
+      "registrable": "gxs.com.sg",
+      "brand": "gxs",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.gxs.com.sg/"
+    },
+    {
+      "registrable": "maribank.sg",
+      "brand": "maribank",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.maribank.sg/"
+    },
+    {
+      "registrable": "cimb.com.sg",
+      "brand": "cimb",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.cimb.com.sg/"
+    },
+    {
+      "registrable": "singpass.gov.sg",
+      "brand": "singpass",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.singpass.gov.sg/main/"
+    },
+    {
+      "registrable": "myinfo.gov.sg",
+      "brand": "myinfo",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.tech.gov.sg/media/opening-bank-accounts-becomes-more-seamless-and-convenient-for-myinfo-users/"
+    },
+    {
+      "registrable": "go.gov.sg",
+      "brand": "gogovsg",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.gov.sg/trusted-sites/"
+    },
+    {
+      "registrable": "for.sg",
+      "brand": "forsg",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.gov.sg/trusted-sites/"
+    },
+    {
+      "registrable": "for.edu.sg",
+      "brand": "forsg",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.gov.sg/trusted-sites/"
+    },
+    {
+      "registrable": "iras.gov.sg",
+      "brand": "iras",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.iras.gov.sg/"
+    },
+    {
+      "registrable": "cpf.gov.sg",
+      "brand": "cpf",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.cpf.gov.sg/"
+    },
+    {
+      "registrable": "ica.gov.sg",
+      "brand": "ica",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.ica.gov.sg/"
+    },
+    {
+      "registrable": "hdb.gov.sg",
+      "brand": "hdb",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.hdb.gov.sg/"
+    },
+    {
+      "registrable": "mom.gov.sg",
+      "brand": "mom",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.mom.gov.sg/"
+    },
+    {
+      "registrable": "lta.gov.sg",
+      "brand": "lta",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.lta.gov.sg/"
+    },
+    {
+      "registrable": "healthhub.sg",
+      "brand": "healthhub",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.healthhub.sg/"
+    },
+    {
+      "registrable": "nets.com.sg",
+      "brand": "nets",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.nets.com.sg/"
+    },
+    {
+      "registrable": "grab.com",
+      "brand": "grab",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.grab.com/sg/"
+    },
+    {
+      "registrable": "singtel.com",
+      "brand": "singtel",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.singtel.com/"
+    },
+    {
+      "registrable": "singtel.com.sg",
+      "brand": "singtel",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.singtel.com.sg/"
+    },
+    {
+      "registrable": "starhub.com",
+      "brand": "starhub",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.starhub.com/personal.html"
+    },
+    {
+      "registrable": "m1.com.sg",
+      "brand": "m1",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.m1.com.sg/"
+    },
+    {
+      "registrable": "myrepublic.com.sg",
+      "brand": "myrepublic",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.myrepublic.com.sg/"
+    },
+    {
+      "registrable": "singpost.com.sg",
+      "brand": "singpost",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.singpost.com/index"
+    },
+    {
+      "registrable": "ninjavan.co",
+      "brand": "ninjavan",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.ninjavan.co/en-sg"
+    },
+    {
+      "registrable": "lalamove.com",
+      "brand": "lalamove",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.lalamove.com/en-sg/"
+    },
+    {
+      "registrable": "shopee.sg",
+      "brand": "shopee",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://shopee.sg/"
+    },
+    {
+      "registrable": "lazada.sg",
+      "brand": "lazada",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.lazada.sg/"
+    },
+    {
+      "registrable": "carousell.sg",
+      "brand": "carousell",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.carousell.sg/"
+    },
+    {
+      "registrable": "carousell.com",
+      "brand": "carousell",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.carousell.com/"
+    },
+    {
+      "registrable": "fairprice.com.sg",
+      "brand": "fairprice",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.fairprice.com.sg/"
+    },
+    {
+      "registrable": "singaporeair.com",
+      "brand": "singaporeair",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.singaporeair.com/"
+    },
+    {
+      "registrable": "flyscoot.com",
+      "brand": "scoot",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.flyscoot.com/"
+    },
+    {
+      "registrable": "simplygo.com.sg",
+      "brand": "simplygo",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.simplygo.com.sg/"
+    },
+    {
+      "registrable": "comfortdelgro.com",
+      "brand": "comfortdelgro",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.comfortdelgro.com/"
+    },
+    {
+      "registrable": "cdgtaxi.com.sg",
+      "brand": "comfortdelgro",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.cdgtaxi.com.sg/"
+    },
+    {
+      "registrable": "smrt.com.sg",
+      "brand": "smrt",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.smrt.com.sg/"
+    },
+    {
+      "registrable": "changiairport.com",
+      "brand": "changi",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.changiairport.com/"
+    },
+    {
+      "registrable": "spgroup.com.sg",
+      "brand": "spgroup",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.spgroup.com.sg/"
+    },
+    {
+      "registrable": "cityenergy.com.sg",
+      "brand": "cityenergy",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.cityenergy.com.sg/"
+    },
+    {
+      "registrable": "greateasternlife.com",
+      "brand": "greateastern",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.greateasternlife.com/"
+    },
+    {
+      "registrable": "income.com.sg",
+      "brand": "income",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.income.com.sg/"
+    },
+    {
+      "registrable": "aia.com.sg",
+      "brand": "aia",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.aia.com.sg/"
+    },
+    {
+      "registrable": "prudential.com.sg",
+      "brand": "prudential",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.prudential.com.sg/"
+    },
+    {
+      "registrable": "nus.edu.sg",
+      "brand": "nus",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.nus.edu.sg/"
+    },
+    {
+      "registrable": "ntu.edu.sg",
+      "brand": "ntu",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.ntu.edu.sg/"
+    },
+    {
+      "registrable": "smu.edu.sg",
+      "brand": "smu",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.smu.edu.sg/"
+    },
+    {
+      "registrable": "sutd.edu.sg",
+      "brand": "sutd",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.sutd.edu.sg/"
+    },
+    {
+      "registrable": "singaporetech.edu.sg",
+      "brand": "sit",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.singaporetech.edu.sg/"
+    },
+    {
+      "registrable": "suss.edu.sg",
+      "brand": "suss",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.suss.edu.sg/"
+    },
+    {
+      "registrable": "singhealth.com.sg",
+      "brand": "singhealth",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.singhealth.com.sg/"
+    },
+    {
+      "registrable": "nuhs.edu.sg",
+      "brand": "nuhs",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.nuhs.edu.sg/"
+    },
+    {
+      "registrable": "nhg.com.sg",
+      "brand": "nhg",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.nhg.com.sg/"
+    },
+    {
+      "registrable": "mediacorp.sg",
+      "brand": "mediacorp",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.mediacorp.sg/"
+    },
+    {
+      "registrable": "straitstimes.com",
+      "brand": "straitstimes",
+      "verified": true,
+      "verified_at": "2026-08-14",
+      "source": "https://www.straitstimes.com/"
+    },
+    {
+      "registrable": "govtech.gov.sg",
+      "brand": "govtech",
+      "verified": true,
+      "verified_at": "2026-08-24",
+      "source": "https://www.tech.gov.sg"
+    },
+    {
+      "registrable": "moe.gov.sg",
+      "brand": "moe",
+      "verified": true,
+      "verified_at": "2026-08-24",
+      "source": "https://www.moe.gov.sg"
+    },
+    {
+      "registrable": "moh.gov.sg",
+      "brand": "moh",
+      "verified": true,
+      "verified_at": "2026-08-24",
+      "source": "https://www.moh.gov.sg"
+    }
   ],
-
   "known_collisions": {
     "_comment": "Non-brand-owned registrables that will repeatedly false-positive due to accepted scoring decisions. These are legitimate third parties, not brand domains. Keep them separate from 'entries' so the two lists can be audited differently.",
     "carousell_distance_2": {
@@ -105,12 +515,10 @@
       "registrables": []
     }
   },
-
   "removal_requests": {
     "_comment": "Entries added in response to a correction request via the repo issue template. Logged separately and visibly, per the transparency commitment in PRD.md §8.",
     "entries": []
   },
-
   "pending_verification": {
     "_comment": "Candidate allowlist entries that must NOT suppress detections until exact-domain ownership is verified from an official source.",
     "entries": [
