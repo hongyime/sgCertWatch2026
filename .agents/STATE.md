@@ -197,20 +197,30 @@ Next steps:
     - Legacy service_role JWT rotation not permitted by current SUPABASE_ACCESS_TOKEN (DELETE denied; rotate endpoint absent) - dashboard action needed. Actions already use sb_secret, so rotation is safe anytime.
     - Project is PAUSED (all prod URLs 503); deployed-asset verification deferred until unpaused. Unpause only after pg_cron stays disabled (it is unscheduled now).
 
+- A5 completed after token handoff: Vercel env now exactly SUPABASE_URL + SUPABASE_ANON_KEY + sb_secret service credential (for 17R) + TRIAGE_TOKEN; CRON_SECRET/legacy SERVICE_ROLE_KEY removed; fresh deploy READY; corpus.json and fixtures return 404 in production; findings/source-status live.
+
+- Instruction Set B1 continuation - Batches B, C, D executed:
+  - Batch B: scoring.json v3 anchor gate (anchor_signals + no_anchor_score_cap=60) at scoreDomain and scoreCertificate; exact matching whole-segment-only with suffix-label exclusion and apex-self suppression; squat = whole-segment equality or distance<=1 across non-suffix segments; context tokens segment-boundary or >=4-char; govtech/moe/moh brands added with verified allowlist entries. Absolute acceptance floors replace baseline tolerance in eval.js.
+  - Batch C: WIP perf kept minus FLAT_GTLDS (deleted entirely per ruling; free-hosting pinned in test_registrable); hot-path inversion: char-mask gates, bounded memo caches (compact/decompose/leet/minSubstringED), set membership, length-bucketed squat index, ASCII IDN fast path, normaliseName cache. Cold-stream cost remains tens of ms/domain on unique hosts - bounded Actions ingest unaffected.
+  - Batch C3 classes named then closed: punycode-skeleton substring matching -> segment-fuzz anchors; SG-context starvation -> sg-suffix satisfies 'sg' ctx-token; leet-digit squats -> leet-segment equality; intra-word prefix lures -> prefix-compound exact+squat; dаs-class mixed-script deceptions -> deception-marker bypass (skeleton != raw host). ed_2 never anchors. Suffix labels excluded from candidate forms. Char-mask pre-gates relaxed to missing-count<=1 for substitution homoglyphs.
+  - Full-eval official numbers: TP@70 = 132/165 (baseline 131 preserved), FN 33, adversarial 53/60 (floor 48 exceeded), FP@70 = 72 -> ~7187 alerts/day extrapolated. ABSOLUTE <=50/day FLOOR NOT MET; the new regression gate fails CI by design. Residual FPs are .sg-hosted single-edit coincidences anchored via sgNexus+keyword corroboration. Resolution options documented below.
+  - Batch D: de-scope executed (Discord/generic-webhook channels removed per DECISION-01; live Probe Domain trigger removed per DECISION-04). 16R Telegram-only dispatch + alert_log table (migrated live) with 72h registrable dedupe wired into run-ingest. 17R api/triage.js POST-only TRIAGE_TOKEN endpoint: triage_actions audit row then suppressed=true (RLS hides from public), zero outbound calls; rotated sb_secret write credential + TRIAGE_TOKEN provisioned on Vercel. 18R verify_allowlist.py tier classification/probe/purge + monthly expiry CI opening maintenance issues. 19R lib/defang.js in Telegram alerts, https-only safeLink with noopener, robots.txt, CSP self-only + HSTS preload headers, disclaimer footer.
+  - All 13 unit suites + e2e pass; strict validation passes (76 brands, 70 verified allowlist entries, v3 config).
+
 Next steps:
-- User actions to finish A5: provide VERCEL_TOKEN or do dashboard cleanup (remove 5 stale env vars, confirm/add SUPABASE_ANON_KEY, move alerting secrets to GitHub), rotate legacy service_role JWT in Supabase dashboard, then unpause the Vercel project and confirm corpus.json returns 404 while /api/findings works.
-- Await user go-ahead for Batch B (anchor gate, absolute acceptance floors).
-- WIP disposition per B1 ruling recorded: keep perf work, DELETE FLAT_GTLDS entirely in Batch C1; ensure no normalizeHost export reaches registrable.js (would arm probe endpoint - moot after enrich deletion, but rule stands).
+- OPEN ACCEPTANCE ITEM: alerts/day <= 50 at threshold 70 unmet (~7187). Options: (a) recalibrate alert_min upward per DECISION-10 precision rule using the eval sweep (precision >= 0.80 lands near threshold 90 at ~998/day), (b) further precision passes targeting .sg-hosted fuzzy coincidences, or (c) amend budget. The absolute gate fails CI until resolved - intentional forcing function.
+- 15R capture pipeline (Actions + Playwright screenshots, captures table, favicon mmh3, two-pass cloaking) not built this pass; remaining spec-v6 item for a future batch.
+- Legacy Supabase service_role JWT rotation still requires dashboard action (token scope denied API rotation).
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-08-24 18:20:27 +08:00
+- Updated: 2026-08-25 20:18:14 +08:00
 - Machine: PRAWN-E14
 - Harness: claude
 - Event: stop
 - Branch: main
-- HEAD: e6faa68
-- Dirty files: 5
+- HEAD: fd917c4
+- Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
