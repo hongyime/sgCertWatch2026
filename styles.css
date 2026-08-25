@@ -688,3 +688,11 @@ tbody tr:hover {
   display: flex;
   gap: 10px;
 }
+
+.site-footer {
+  margin-top: 48px;
+  padding: 20px 24px;
+  border-top: 1px solid rgba(128,128,128,.25);
+  font-size: 13px;
+  color: #888;
+}

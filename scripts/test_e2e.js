@@ -78,19 +78,16 @@ const mockNotifyFetch = async (_url) => {
 const notifySummary = await dispatchNotifications([finding], {
   env: {
     TELEGRAM_BOT_TOKEN: "mock_token",
-    TELEGRAM_CHAT_ID: "mock_chat",
-    DISCORD_WEBHOOK_URL: "https://discord.com/mock/webhook",
-    ALERT_WEBHOOK_URL: "https://mock.example.com/alerts",
-    ALERT_WEBHOOK_SECRET: "secret123"
+    TELEGRAM_CHAT_ID: "mock_chat"
   },
-  fetch: mockNotifyFetch
+  fetch: mockNotifyFetch,
+  skipDedupe: true
 });
 
 assert.equal(notifySummary.candidates, 1, "Finding qualified for alert");
 assert.equal(notifySummary.telegram, 1, "Dispatched to Telegram");
-assert.equal(notifySummary.discord, 1, "Dispatched to Discord");
-assert.equal(notifySummary.webhook, 1, "Dispatched to Generic Webhook");
-assert.equal(notifiedChannels, 3, "3 webhook HTTP calls completed");
+assert.equal(notifySummary.discord, undefined, "Discord removed per DECISION-01/16R");
+assert.equal(notifiedChannels, 1, "Only Telegram HTTP call completed");
 
 // 5. Daily digest reporting simulation
 const digest = generateDailyDigest({

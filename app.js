@@ -37,6 +37,13 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+// Only http(s) URLs become links; anything else (javascript:, data:, garbage) renders as inert text.
+function safeLink(url, className) {
+  const raw = String(url || "").trim();
+  if (!/^https:\/\/[^\s"'<>]+$/i.test(raw)) return escapeHtml(raw);
+  return `<a href="${escapeHtml(raw)}" target="_blank" rel="noopener noreferrer"${className ? ` class="${escapeHtml(className)}"` : ""}>${escapeHtml(raw)}</a>`;
+}
+
 function sourceLabel(source) {
   const labels = {
     certstream: "Live stream",
@@ -230,7 +237,7 @@ function renderTable() {
         <td>${escapeHtml(row.name)}</td>
         <td>${escapeHtml(row.category)}</td>
         <td>${escapeHtml(row.verified)}</td>
-        <td>${row.source ? `<a href="${escapeHtml(row.source)}">${escapeHtml(row.source)}</a>` : ""}</td>
+        <td>${row.source ? safeLink(row.source) : ""}</td>
       </tr>
     `).join("");
     return;
@@ -243,7 +250,7 @@ function renderTable() {
         <td>${escapeHtml(row.name)}</td>
         <td>${escapeHtml(row.category)}</td>
         <td>${tokenList(row.tokens)}</td>
-        <td>${row.source ? `<a href="${escapeHtml(row.source)}">${escapeHtml(row.source)}</a>` : ""}</td>
+        <td>${row.source ? safeLink(row.source) : ""}</td>
       </tr>
     `).join("");
     return;
@@ -397,14 +404,11 @@ function openFindingDetails(finding) {
     </div>
 
     <section class="dialog-section">
-      <h3>Active Capture & Live Probe</h3>
-      <div id="probe-result" class="probe-result-box">
-        <p class="muted-text">Click "Probe Domain" to perform real-time DNS resolution, HTTP inspection, and RDAP registration lookup.</p>
-      </div>
+      <h3>Analyst Actions</h3>
       <div class="dialog-actions">
-        <button type="button" id="probe-now-btn" class="btn-primary">Probe Domain Now</button>
         <button type="button" id="copy-triage-btn" class="btn-secondary">Copy Triage Report</button>
       </div>
+      <p class="muted-text">Live probing is performed by analysts off-platform; this dashboard never fetches a suspected hostile host from production.</p>
     </section>
 
     <section class="dialog-section">
@@ -431,27 +435,6 @@ function openFindingDetails(finding) {
 
   $("close-dialog-btn").onclick = () => dialog.close();
 
-  $("probe-now-btn").onclick = async () => {
-    const box = $("probe-result");
-    box.innerHTML = "<p>Probing DNS, HTTP, and RDAP...</p>";
-    try {
-      const resp = await fetch(`/api/enrich?domain=${encodeURIComponent(finding.registrable)}`);
-      const data = await resp.json();
-      box.innerHTML = `
-        <div class="probe-grid">
-          <div><strong>Live:</strong> ${data.live ? "<span class='badge-live'>LIVE</span>" : "<span class='badge-offline'>OFFLINE</span>"}</div>
-          <div><strong>HTTP Status:</strong> ${escapeHtml(data.http?.status || "N/A")}</div>
-          <div><strong>Server:</strong> ${escapeHtml(data.http?.server || "N/A")}</div>
-          <div><strong>Page Title:</strong> ${escapeHtml(data.http?.title || "None")}</div>
-          <div><strong>DNS A:</strong> ${escapeHtml((data.dns?.a || []).join(", ") || "None")}</div>
-          <div><strong>Registrar:</strong> ${escapeHtml(data.rdap?.registrar || "N/A")}</div>
-          <div><strong>Domain Created:</strong> ${escapeHtml(data.rdap?.created_at || "N/A")}</div>
-        </div>
-      `;
-    } catch (err) {
-      box.innerHTML = `<p class="error">Probe failed: ${escapeHtml(err.message)}</p>`;
-    }
-  };
 
   $("copy-triage-btn").onclick = () => {
     const report = `# Triage Report: ${finding.registrable}\n- Score: ${finding.score} (${finding.severity})\n- Issuer: ${finding.issuer}\n- Observed: ${finding.observed_at}\n- Signals:\n${(finding.signals || []).map((s) => `  * ${s.type} (+${s.points})`).join("\n")}`;
