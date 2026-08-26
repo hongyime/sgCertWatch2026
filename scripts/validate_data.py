@@ -9,6 +9,7 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -277,6 +278,73 @@ def validate_scoring_keys_referenced(keywords: dict[str, Any], schemes: dict[str
                 errors.append(f"schemes.json: scoring key '{key}' is never referenced in lib/")
 
 
+# Source-ref format contracts per declared feed source. Flat feeds (openphish
+# feed.txt) never emit '#fragment' sub-records; a fragment there is fabricated
+# provenance. Hosts must match the declared source's domain.
+SOURCE_REF_CONTRACTS = {
+    "openphish": {
+        "host_suffix": "openphish.com",
+        "allow_fragment": False,
+    },
+    "phishtank": {
+        "host_suffix": "phishtank.org",
+        "allow_fragment": False,
+        "path_pattern": r"^/phish_detail\.php$",
+        "require_query_id": True,
+    },
+    "urlhaus": {
+        "host_suffix": "urlhaus.abuse.ch",
+        "allow_fragment": False,
+        "path_pattern": r"^/url/\d+$",
+    },
+}
+
+
+def validate_corpus_provenance(corpus: dict[str, Any], errors: list[str]) -> None:
+    """E2 (Instruction Set B2): a positive item's source_ref must match its declared
+    source's record format. Fabricated provenance is a hard failure."""
+    items = corpus.get("items") or []
+    sequential_ids: dict[str, list[int]] = {}
+    for idx, item in enumerate(items):
+        if item.get("label") != "positive":
+            continue
+        path = f"corpus.json.items[{idx}]"
+        source = item.get("source")
+        ref = item.get("source_ref")
+        if not ref:
+            if not item.get("constructed"):
+                errors.append(f"{path}: positive without source_ref must be constructed:true")
+            continue
+        contract = SOURCE_REF_CONTRACTS.get(source)
+        if contract is None:
+            continue
+        parsed = urlparse(ref)
+        host = (parsed.hostname or '').lower()
+        if not host.endswith(contract['host_suffix']):
+            errors.append(f"{path}: source_ref host '{host}' does not match declared source '{source}'")
+            continue
+        if parsed.fragment and not contract.get('allow_fragment', True):
+            errors.append(f"{path}: source_ref carries a '#'fragment but {source} feeds are flat lists with no sub-records")
+        path_re = contract.get("path_pattern")
+        if path_re and not re.match(path_re, parsed.path or ''):
+            errors.append(f"{path}: source_ref path '{parsed.path}' does not match {source} record format")
+        if contract.get('require_query_id'):
+            m = re.search(r'[?&]id=(\d+)', parsed.query or '')
+            if m:
+                sequential_ids.setdefault(source, []).append(int(m.group(1)))
+    # Perfectly consecutive id blocks across many entries are a generation artifact.
+    for src, ids in sequential_ids.items():
+        ids_sorted = sorted(ids)
+        run = 1
+        for prev, cur in zip(ids_sorted, ids_sorted[1:]):
+            run = run + 1 if cur == prev + 1 else 1
+            if run >= 10:
+                errors.append(
+                    f"corpus.json: {src} source_ref ids form a strictly consecutive block "
+                    f"(>=10 running from {ids_sorted[0]}); real feed assignments are not sequential"
+                )
+                break
+
 def main() -> int:
     parser = ArgumentParser(description="Validate sgCertWatch2026 seed data files.")
     parser.add_argument("--release", action="store_true", help="fail if launch-readiness verification is incomplete")
@@ -299,6 +367,8 @@ def main() -> int:
     unverified_schemes = validate_schemes(schemes, errors, args.release)
     validate_scoring(scoring, errors)
     validate_scoring_keys_referenced(keywords, schemes, errors)
+    if Path('corpus.json').exists():
+        validate_corpus_provenance(load_json('corpus.json'), errors)
 
     if errors:
         print("Data validation failed:", file=sys.stderr)
