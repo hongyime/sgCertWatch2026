@@ -81,6 +81,8 @@ Current understanding:
 - Follow-up research confirms neither pending candidate should be restored to active suppression without stronger proof.
 - CI includes seed-data validation and scoring-engine tests for data/scoring changes.
 
+- Batch F complete (B2): structural anchor predicate shipped (commit 4c5df27) - exact/squat-exact unconditional, fuzzy needs context-token or deception marker, geography removed. F2 spread dbs-token-auth.rest vs dbs-login-verify.cfd = 0pts (both 147). Post-F official eval: FP@70=129 (~12876/day stage-one candidates), adversarial 53/60.
+
 Next steps:
 - Review and commit Phase 1-5 plus final verification changes if acceptable.
 - JSON release-readiness gate is now green.
@@ -206,6 +208,8 @@ Next steps:
   - Full-eval official numbers: TP@70 = 132/165 (baseline 131 preserved), FN 33, adversarial 53/60 (floor 48 exceeded), FP@70 = 72 -> ~7187 alerts/day extrapolated. ABSOLUTE <=50/day FLOOR NOT MET; the new regression gate fails CI by design. Residual FPs are .sg-hosted single-edit coincidences anchored via sgNexus+keyword corroboration. Resolution options documented below.
   - Batch D: de-scope executed (Discord/generic-webhook channels removed per DECISION-01; live Probe Domain trigger removed per DECISION-04). 16R Telegram-only dispatch + alert_log table (migrated live) with 72h registrable dedupe wired into run-ingest. 17R api/triage.js POST-only TRIAGE_TOKEN endpoint: triage_actions audit row then suppressed=true (RLS hides from public), zero outbound calls; rotated sb_secret write credential + TRIAGE_TOKEN provisioned on Vercel. 18R verify_allowlist.py tier classification/probe/purge + monthly expiry CI opening maintenance issues. 19R lib/defang.js in Telegram alerts, https-only safeLink with noopener, robots.txt, CSP self-only + HSTS preload headers, disclaimer footer.
   - All 13 unit suites + e2e pass; strict validation passes (76 brands, 70 verified allowlist entries, v3 config).
+
+- Batch F complete (B2): structural anchor predicate shipped (commit 4c5df27) - exact/squat-exact unconditional, fuzzy needs context-token or deception marker, geography removed. F2 spread dbs-token-auth.rest vs dbs-login-verify.cfd = 0pts (both 147). Post-F official eval: FP@70=129 (~12876/day stage-one candidates), adversarial 53/60.
 
 Next steps:
 - OPEN ACCEPTANCE ITEM: alerts/day <= 50 at threshold 70 unmet (~7187). Options: (a) recalibrate alert_min upward per DECISION-10 precision rule using the eval sweep (precision >= 0.80 lands near threshold 90 at ~998/day), (b) further precision passes targeting .sg-hosted fuzzy coincidences, or (c) amend budget. The absolute gate fails CI until resolved - intentional forcing function.
