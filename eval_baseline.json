@@ -3,10 +3,10 @@
   "alert_min": 70,
   "daily_ct_volume": 6000000,
   "headline_denominator": 60275,
-  "tp": 131,
+  "tp": null,
   "fp": 1909,
   "tn": 58201,
-  "fn": 34,
+  "fn": null,
   "precision": 0.0642,
   "recall": 0.7939,
   "f1": 0.1188,
@@ -868,5 +868,6 @@
       "recall": 1,
       "f1": 1
     }
-  ]
+  ],
+  "provenance_audit": "2026-08-25 Instruction Set B2 Batch E: all 165 headline positives failed source-record resolution (openphish impossible #fragments vs flat feed, zero live-feed hits; phishtank strictly sequential ids 100000-100034, detail 403 without API key; urlhaus sequential 200000+, API 401, public page silent on claimed domains). Moved to fixtures/corpus/constructed.jsonl as constructed:true. TP/FN preservation floors withdrawn pending re-derivation from provenance-backed positives (currently 0)."
 }
