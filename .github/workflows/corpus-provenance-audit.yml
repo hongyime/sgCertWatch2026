@@ -1,0 +1,46 @@
+name: Corpus Positive Provenance Audit
+
+on:
+  schedule:
+    - cron: "0 8 1 * *"
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  audit:
+    name: Re-verify positive provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Audit positive provenance
+        id: audit
+        run: node scripts/audit_positive_provenance.mjs
+        env:
+          CORPUS_SAMPLE_SIZE: "50"
+
+      - name: Open issue on stale provenance
+        if: steps.audit.outputs.failures != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ["corpus", "maintenance"],
+              title: `Corpus provenance audit: ${${{ steps.audit.outputs.failures }}} items unresolvable (${new Date().toISOString().slice(0,10)})`,
+              body: "Monthly corpus provenance audit found items whose CT artifact can no longer be resolved.\n\nRun `node scripts/audit_positive_provenance.mjs` locally for details. Items that remain unresolvable after investigation should move to `constructed: true` in `fixtures/corpus/constructed.jsonl`.\n\nNote: a missing record is 'stale' (acceptable — CT logs prune entries); a mismatched fingerprint is 'fabricated' (not acceptable — hard failure)."
+            });
