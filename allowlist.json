@@ -500,6 +500,33 @@
       "verified": true,
       "verified_at": "2026-08-24",
       "source": "https://www.moh.gov.sg"
+    },
+    {
+      "registrable": "n-cimbbank.com.ph",
+      "brand": "cimb",
+      "tier": "international_affiliate",
+      "note": "CIMB Bank Philippines Inc.",
+      "verified": true,
+      "verified_at": "2026-08-25",
+      "source": "https://www.cimb.com.ph"
+    },
+    {
+      "registrable": "cimb.com.ph",
+      "brand": "cimb",
+      "tier": "international_affiliate",
+      "note": "CIMB Philippines official domain",
+      "verified": true,
+      "verified_at": "2026-08-25",
+      "source": "https://www.cimb.com.ph"
+    },
+    {
+      "registrable": "smokeping.eu",
+      "brand": "singtel",
+      "tier": "international_affiliate",
+      "note": "oetiker.ch SmokePing public instance used for network monitoring; singtel-speed.sg subdomain is a network test node, not a phishing site",
+      "verified": true,
+      "verified_at": "2026-08-25",
+      "source": "https://oss.oetiker.ch/smokeping/"
     }
   ],
   "known_collisions": {

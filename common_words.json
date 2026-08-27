@@ -1,0 +1,21 @@
+{
+  "_comment": "Corpus-grounded wordlist for brand-token collision detection (B2 Batch G). At data-load time every brand token is checked against this list at its configured edit distance. Tokens that collide are forced to exact-match only to prevent spurious fuzzy alerts. Tokens that ARE themselves in this list also require a context-token hit even for exact matching. Source: B2 B3 FP analysis of 60k unfiltered negatives.",
+  "version": 1,
+  "updated": "2026-08-25",
+  "words": [
+    "express", "post", "group", "trust", "gov", "carousel",
+    "bank", "link", "click", "smart", "store", "trade", "focus",
+    "prime", "atlas", "nexus", "vista", "media", "cloud", "tech",
+    "hub", "pro", "net", "web", "pay", "connect", "health",
+    "plus", "one", "ace", "max", "sky", "red", "new", "old",
+    "digital", "global", "first", "best", "easy", "fast", "safe",
+    "asia", "east", "west", "north", "south", "world", "home",
+    "portal", "service", "support", "center", "centre", "point",
+    "care", "help", "info", "guide", "space", "base", "core",
+    "auto", "data", "file", "host", "mail", "shop", "site",
+    "market", "place", "partner", "direct", "line", "zone",
+    "bright", "clear", "clean", "fresh", "real", "true", "bold",
+    "power", "force", "drive", "swift", "fleet", "spark", "flow",
+    "edge", "peak", "crest", "cross", "crown", "arch", "bridge"
+  ]
+}
