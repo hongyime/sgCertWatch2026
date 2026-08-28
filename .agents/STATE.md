@@ -105,6 +105,7 @@ Next steps:
   - Corrected Actions run 33186128572 completed successfully and uploaded `extended-negatives-jsonl`, but the artifact contained 333,815 negatives, not 600k. Widened workflow sampling to 3,000,000 entries/log and added 25k progress logs for the next 600k retry.
   - Widened Actions run 33188880545 completed successfully and uploaded a 541,825-negative artifact, still short of 600k by 58,175. Increased workflow sampling to 4,000,000 entries/log for the next retry.
   - 4,000,000-entry single-window run 33192705501 completed successfully but only uploaded 381,900 negatives. Logs showed the miner stops after one trailing window per log; patched it to support `MAX_WINDOWS_PER_LOG` and set the workflow to scan up to 3 trailing windows/log.
+  - Multi-window run 33196667853 completed successfully and uploaded a 600,000-line artifact at `C:\Users\bryan\AppData\Local\Temp\sgcertwatch_artifact_33196667853\extended_negatives.jsonl` (314,283,132 bytes). Full streaming G eval completed on all 600,000 negatives: FP@70=605, TN=599,395, suppressed=2, extrapolated alerts/day=6,050.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
