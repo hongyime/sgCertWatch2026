@@ -9,6 +9,7 @@ import crypto from "node:crypto";
 const LOG_LIST_URL = "https://www.gstatic.com/ct/log_list/v3/log_list.json";
 const TARGET_COUNT  = parseInt(process.env.TARGET_NEGATIVES || "600000", 10);
 const BATCH_SIZE    = parseInt(process.env.BATCH_SIZE || "512", 10);
+const PROGRESS_EVERY = parseInt(process.env.PROGRESS_EVERY || "25000", 10);
 const SAMPLE_WINDOW_PER_LOG = process.env.SAMPLE_WINDOW_PER_LOG
   ? parseInt(process.env.SAMPLE_WINDOW_PER_LOG, 10)
   : null;
@@ -177,6 +178,7 @@ async function main() {
 
   const out = fs.createWriteStream(OUT_PATH, { flags: "a" });
   let total = existingCount;
+  let nextProgressAt = Math.ceil((total + 1) / PROGRESS_EVERY) * PROGRESS_EVERY;
   const observed_at = new Date().toISOString();
 
   for (const log of logs) {
@@ -219,6 +221,10 @@ async function main() {
         existingIds.add(rec.id);
         out.write(JSON.stringify(rec) + "\n");
         total++;
+        if (PROGRESS_EVERY > 0 && total >= nextProgressAt) {
+          console.log(`  total so far: ${total}`);
+          nextProgressAt += PROGRESS_EVERY;
+        }
       }
     }
     console.log(`  total so far: ${total}`);

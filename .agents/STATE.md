@@ -101,6 +101,8 @@ Next steps:
   - 600k negatives cannot be safely synced into `corpus.json` or committed as one JSONL file under current record size; use local/artifact/sharded JSONL plus `scripts/eval_extended_negatives.mjs` for G rerun evidence.
   - `scripts/build_sg_advisories.mjs` now treats MAS IAL as the only potential domain-IOC source and records CSA/SingCERT, ScamShield, SPF, and GovTech ScamShield as source-status only. Current official pages fetch HTTP 200 but expose no safe machine-readable malicious-domain IOC feed; `fixtures/corpus/sg_advisories.jsonl` is intentionally empty and `fixtures/corpus/sg_advisory_sources.json` records fetch/source status.
   - Validation passed after SG source cleanup: `python scripts/validate_data.py --release`. Unit test suite passed after restart.
+  - Interim streaming eval over the pulled 68,231-negative checkpoint completed: FP@70=58, TN=68,173, extrapolated alerts/day=5,100. This is not the final G rerun; corrected Actions run 33186128572 is generating/uploading the 600k artifact.
+  - Corrected Actions run 33186128572 completed successfully and uploaded `extended-negatives-jsonl`, but the artifact contained 333,815 negatives, not 600k. Widened workflow sampling to 3,000,000 entries/log and added 25k progress logs for the next 600k retry.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
