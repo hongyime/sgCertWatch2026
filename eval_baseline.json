@@ -3,19 +3,19 @@
   "alert_min": 70,
   "daily_ct_volume": 6000000,
   "headline_denominator": 60275,
-  "tp": null,
-  "fp": 1909,
+  "tp": 38,
+  "fp": 72,
   "tn": 58201,
   "fn": null,
-  "precision": 0.0642,
-  "recall": 0.7939,
-  "f1": 0.1188,
-  "alerts_per_day": 190551,
+  "precision": 0.3455,
+  "recall": 0.0741,
+  "f1": 0.122,
+  "alerts_per_day": 7511,
   "band_crossings": 19,
   "band_total": 2606,
   "adversarial_total": 60,
-  "adversarial_passed": 38,
-  "adversarial_missed": 22,
+  "adversarial_passed": 48,
+  "adversarial_missed": 12,
   "constructed_total": 21,
   "constructed_passed": 14,
   "pos_histogram": {
@@ -869,5 +869,8 @@
       "f1": 1
     }
   ],
-  "provenance_audit": "2026-08-25 Instruction Set B2 Batch E: all 165 headline positives failed source-record resolution (openphish impossible #fragments vs flat feed, zero live-feed hits; phishtank strictly sequential ids 100000-100034, detail 403 without API key; urlhaus sequential 200000+, API 401, public page silent on claimed domains). Moved to fixtures/corpus/constructed.jsonl as constructed:true. TP/FN preservation floors withdrawn pending re-derivation from provenance-backed positives (currently 0)."
+  "provenance_audit": "2026-08-25 Instruction Set B2 Batch E: all 165 headline positives failed source-record resolution (openphish impossible #fragments vs flat feed, zero live-feed hits; phishtank strictly sequential ids 100000-100034, detail 403 without API key; urlhaus sequential 200000+, API 401, public page silent on claimed domains). Moved to fixtures/corpus/constructed.jsonl as constructed:true. TP/FN preservation floors withdrawn pending re-derivation from provenance-backed positives (currently 0).",
+  "stage1_candidates_per_day_floor": 5000,
+  "stage2_alerts_per_day_floor": 50,
+  "stage_note": "stage1 = candidates at persist_min (scorer output, informational); stage2 = alerts at alert_min (post-capture gate, blocks CI). Budget of 50/day belongs to stage2 per amended DECISION-10."
 }
