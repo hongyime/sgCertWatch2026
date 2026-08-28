@@ -26,12 +26,18 @@ async function getTargetLogs() {
   const list = await fetchJson(LOG_LIST_URL);
   const logs = [];
   for (const op of list.operators || []) {
+    // Accept any operator whose name includes the Let's Encrypt identifier
+    if (!(op.name || "").toLowerCase().includes("encrypt")) continue;
     for (const log of op.logs || []) {
-      if (!TARGET_LOG_NAMES.some(n => (log.description || "").includes(n))) continue;
-      if (!["usable", "qualified"].includes((log.state || {}).name || "")) continue;
-      logs.push({ log_id: log.log_id, url: log.url, description: log.description });
+      // State is an object keyed by state-type (usable/qualified/retired/readonly/rejected)
+      const stateType = Object.keys(log.state || {})[0] || "";
+      // Retired and readonly logs still serve get-entries; skip only 'rejected'
+      if (stateType === "rejected") continue;
+      if (!log.url || !log.log_id) continue;
+      logs.push({ log_id: log.log_id, url: log.url, description: log.description, state: stateType });
     }
   }
+  console.log(`Found ${logs.length} target logs:`, logs.map(l => l.description + ` [${l.state}]`).join(", "));
   return logs;
 }
 
