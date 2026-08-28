@@ -264,10 +264,20 @@ if (isCheckRegression) {
     console.error(`\nRegression failure: ${allowlistFp.length} allowlisted domain(s) classified as malicious!`);
     process.exit(1);
   }
+  // H-2: Two-stage budget split.
+  // Stage 1 = candidates/day at persist_min (scorer output, informational).
+  // Stage 2 = alerts/day at alert_min (post-capture budget, blocks CI).
+  const STAGE2_FLOOR = baseline.stage2_alerts_per_day_floor ?? 50;
+  const STAGE1_FLOOR = baseline.stage1_candidates_per_day_floor ?? 5000;
+  const persistSweep = sweepResults.find((r) => r.threshold === (data.scoring?.thresholds?.persist_min ?? 30));
+  if (persistSweep) {
+    const stage1Day = persistSweep.alertsPerDay;
+    const stage1Status = stage1Day <= STAGE1_FLOOR ? "OK" : "OVER FLOOR (informational; extend negatives per H-3)";
+    console.log(`\nStage-1 candidates/day at persist_min: ${stage1Day} | floor=${STAGE1_FLOOR}/day | ${stage1Status}`);
+  }
 
-  const ALERTS_PER_DAY_FLOOR = 50;
-  if (alertSweep.alertsPerDay > ALERTS_PER_DAY_FLOOR) {
-    console.error(`\nAcceptance failure: alerts/day ${alertSweep.alertsPerDay} exceeds absolute budget of ${ALERTS_PER_DAY_FLOOR} at threshold ${alertMin}.`);
+  if (alertSweep.alertsPerDay > STAGE2_FLOOR) {
+    console.error(`\nAcceptance failure: stage-2 alerts/day ${alertSweep.alertsPerDay} exceeds budget of ${STAGE2_FLOOR} at threshold ${alertMin}.`);
     process.exit(1);
   }
 
@@ -283,5 +293,5 @@ if (isCheckRegression) {
     process.exit(1);
   }
 
-  console.log(`Acceptance check passed: alerts/day ${alertSweep.alertsPerDay} <= ${ALERTS_PER_DAY_FLOOR}, adversarial ${advPassed.length}/${adversarialItems.length} >= ${ADVERSARIAL_MIN_CAUGHT}, TP ${alertSweep.tp} preserved.`);
+  console.log(`Acceptance check passed: stage-2 alerts/day ${alertSweep.alertsPerDay} <= ${STAGE2_FLOOR}, adversarial ${advPassed.length}/${adversarialItems.length} >= ${ADVERSARIAL_MIN_CAUGHT}, TP ${alertSweep.tp}.`);
 }

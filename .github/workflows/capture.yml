@@ -1,0 +1,47 @@
+name: 15R Capture Pipeline
+
+on:
+  schedule:
+    - cron: "30 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      max_captures:
+        description: "Max findings to capture per run (default: 50)"
+        required: false
+        default: "50"
+
+concurrency:
+  group: capture-pipeline
+  cancel-in-progress: false
+
+permissions: read-all
+
+jobs:
+  capture:
+    name: Capture high-score findings
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Run capture pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MAX_CAPTURES: ${{ inputs.max_captures || '50' }}
+          ALERT_MIN_SCORE: "70"
+          PAGE_TIMEOUT_MS: "20000"
+        run: node scripts/run-capture.mjs

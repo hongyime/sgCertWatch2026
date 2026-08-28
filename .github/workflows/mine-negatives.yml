@@ -1,0 +1,52 @@
+name: Mine Extended Negatives
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_negatives:
+        description: "Target total negatives in extended sample (default: 600000)"
+        required: false
+        default: "600000"
+  schedule:
+    - cron: "0 4 1 * *"
+
+permissions: read-all
+
+jobs:
+  mine:
+    name: Mine CT log entries for extended negatives
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Mine negatives from CT logs
+        env:
+          TARGET_NEGATIVES: ${{ inputs.target_negatives || '600000' }}
+          BATCH_SIZE: "512"
+        run: node scripts/mine_extended_negatives.mjs
+
+      - name: Commit extended negatives if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add fixtures/corpus/extended_negatives.jsonl
+          if git diff --cached --quiet; then
+            echo "No new entries mined."
+          else
+            COUNT=$(wc -l < fixtures/corpus/extended_negatives.jsonl)
+            git commit -m "data(corpus): extend negative sample to ${COUNT} entries (H-3)"
+            git push
+          fi

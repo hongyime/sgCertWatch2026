@@ -14,5 +14,8 @@
   "dependencies": {
     "psl": "1.9.0",
     "ws": "8.18.0"
+  },
+  "devDependencies": {
+    "playwright": "1.47.0"
   }
 }
