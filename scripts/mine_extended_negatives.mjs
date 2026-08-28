@@ -1,7 +1,7 @@
-// H-3: Mine additional unfiltered negatives from Let's Encrypt static CT logs to
+// H-3: Mine additional unfiltered negatives from live RFC6962 CT logs to
 // reach the >=600,000 sample needed to measure a 50/day alert rate at 6M certs/day.
-// Fetches new entries from the same four LE logs used in 11D, with identical
-// four-field provenance: log_id, tree_index, cert_sha256, observed_at.
+// Defaults to Google + DigiCert usable logs from Chrome's current log list, with
+// identical four-field provenance: log_id, tree_index, cert_sha256, observed_at.
 // Output: JSONL records appended to fixtures/corpus/extended_negatives.jsonl
 import fs from "node:fs";
 import crypto from "node:crypto";
@@ -9,12 +9,19 @@ import crypto from "node:crypto";
 const LOG_LIST_URL = "https://www.gstatic.com/ct/log_list/v3/log_list.json";
 const TARGET_COUNT  = parseInt(process.env.TARGET_NEGATIVES || "600000", 10);
 const BATCH_SIZE    = parseInt(process.env.BATCH_SIZE || "512", 10);
+const SAMPLE_WINDOW_PER_LOG = parseInt(process.env.SAMPLE_WINDOW_PER_LOG || "100000", 10);
 const OUT_PATH      = "fixtures/corpus/extended_negatives.jsonl";
-
-// LE logs used in 11D (same ones, continue from their latest tree_size)
-const TARGET_LOG_NAMES = [
-  "Sycamore2026h2", "Willow2026h2", "Sycamore2027h1", "Willow2027h1"
-];
+const CORPUS_PATH   = "corpus.json";
+const TARGET_OPERATORS = (process.env.CT_LOG_OPERATORS || "Google,DigiCert")
+  .split(",")
+  .map((name) => name.trim().toLowerCase())
+  .filter(Boolean);
+const TARGET_STATES = new Set(
+  (process.env.CT_LOG_STATES || "usable,qualified,readonly")
+    .split(",")
+    .map((state) => state.trim().toLowerCase())
+    .filter(Boolean)
+);
 
 async function fetchJson(url) {
   const r = await fetch(url, { signal: AbortSignal.timeout(30000) });
@@ -26,18 +33,24 @@ async function getTargetLogs() {
   const list = await fetchJson(LOG_LIST_URL);
   const logs = [];
   for (const op of list.operators || []) {
-    // Accept any operator whose name includes the Let's Encrypt identifier
-    if (!(op.name || "").toLowerCase().includes("encrypt")) continue;
+    const operatorName = (op.name || "").toLowerCase();
+    if (!TARGET_OPERATORS.some((target) => operatorName.includes(target))) continue;
     for (const log of op.logs || []) {
       // State is an object keyed by state-type (usable/qualified/retired/readonly/rejected)
       const stateType = Object.keys(log.state || {})[0] || "";
-      // Retired and readonly logs still serve get-entries; skip only 'rejected'
-      if (stateType === "rejected") continue;
+      if (!TARGET_STATES.has(stateType)) continue;
       if (!log.url || !log.log_id) continue;
-      logs.push({ log_id: log.log_id, url: log.url, description: log.description, state: stateType });
+      logs.push({
+        log_id: log.log_id,
+        url: log.url,
+        description: log.description,
+        operator: op.name,
+        state: stateType
+      });
     }
   }
-  console.log(`Found ${logs.length} target logs:`, logs.map(l => l.description + ` [${l.state}]`).join(", "));
+  console.log(`Target operators: ${TARGET_OPERATORS.join(", ")} | states: ${[...TARGET_STATES].join(", ")}`);
+  console.log(`Found ${logs.length} target logs:`, logs.map(l => `${l.operator} ${l.description} [${l.state}]`).join(", "));
   return logs;
 }
 
@@ -72,6 +85,61 @@ function extractDomains(leafInput) {
   return [...domains];
 }
 
+function normalizeExtendedNegative(record, fallbackIndex) {
+  const provenance = record.ct_provenance || {};
+  const sourceRef = record.source_ref || (
+    provenance.log_id && Number.isInteger(provenance.tree_index)
+      ? `${provenance.log_id}#${provenance.tree_index}`
+      : "fixtures/corpus/extended_negatives.jsonl"
+  );
+  return {
+    id: record.id || `ext-neg-${String(fallbackIndex + 1).padStart(6, "0")}`,
+    domain: record.domain,
+    expected: "benign",
+    label: "negative",
+    source: "ct_log_mining",
+    source_ref: sourceRef,
+    log_id: record.log_id || provenance.log_id,
+    tree_index: record.tree_index ?? provenance.tree_index,
+    cert_sha256: record.cert_sha256 || provenance.cert_sha256,
+    observed_at: record.observed_at || provenance.observed_at || new Date().toISOString(),
+    category: record.category || "extended_unfiltered_real_ct",
+    adversarial: false,
+    constructed: false,
+    notes: record.notes || "Real unfiltered CT certificate mined from live CT log endpoint"
+  };
+}
+
+function syncExtendedNegativesToCorpus() {
+  if (!fs.existsSync(CORPUS_PATH) || !fs.existsSync(OUT_PATH)) return 0;
+
+  const corpus = JSON.parse(fs.readFileSync(CORPUS_PATH, "utf8"));
+  const existingIds = new Set((corpus.items || []).map((item) => item.id));
+  const lines = fs.readFileSync(OUT_PATH, "utf8").split("\n").filter(Boolean);
+  const additions = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const record = JSON.parse(lines[i]);
+    if (!record.domain || existingIds.has(record.id)) continue;
+    const item = normalizeExtendedNegative(record, i);
+    additions.push(item);
+    existingIds.add(item.id);
+  }
+
+  if (!additions.length) return 0;
+
+  corpus.items = [...(corpus.items || []), ...additions];
+  corpus.composition = {
+    ...(corpus.composition || {}),
+    total_headline_items: corpus.items.length,
+    extended_negatives_added: (corpus.composition?.extended_negatives_added || 0) + additions.length
+  };
+  corpus.updated = new Date().toISOString().slice(0, 10);
+
+  fs.writeFileSync(CORPUS_PATH, JSON.stringify(corpus, null, 2) + "\n");
+  return additions.length;
+}
+
 async function main() {
   // Count existing extended negatives
   let existingCount = 0;
@@ -82,6 +150,8 @@ async function main() {
   console.log(`Existing extended negatives: ${existingCount} | target: ${TARGET_COUNT}`);
 
   if (existingCount >= TARGET_COUNT) {
+    const synced = syncExtendedNegativesToCorpus();
+    console.log(`Synced ${synced} extended negatives into corpus.json`);
     console.log("Target already met. Nothing to do.");
     return;
   }
@@ -99,8 +169,9 @@ async function main() {
     const sth = await getSTH(log.url).catch(() => null);
     if (!sth) { console.log(`  skip ${log.description}: STH failed`); continue; }
     const treeSize = sth.tree_size;
-    // Start near the end (recent entries, diverse sample)
-    const startIdx = Math.max(0, treeSize - 50000);
+    // Start near the end (recent entries, diverse sample). Use a wide default
+    // window because 600k needs more than the old 50k-per-log LE sample.
+    const startIdx = Math.max(0, treeSize - SAMPLE_WINDOW_PER_LOG);
     console.log(`  ${log.description}: tree_size=${treeSize}, sampling from ${startIdx}`);
 
     for (let i = startIdx; i < treeSize && total < TARGET_COUNT; i += BATCH_SIZE) {
@@ -135,7 +206,9 @@ async function main() {
     }
     console.log(`  total so far: ${total}`);
   }
-  out.end();
+  await new Promise((resolve) => out.end(resolve));
+  const synced = syncExtendedNegativesToCorpus();
+  console.log(`Synced ${synced} extended negatives into corpus.json`);
   console.log(`Done. Extended negatives: ${total}`);
 }
 

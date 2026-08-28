@@ -86,19 +86,26 @@ Current understanding:
 Next steps:
 - alerts/day stage-2 floor (50/day) not yet met by the scorer alone (~7511/day at alert_min); stage-2 is gated on post-capture verification, not raw scorer output per amended DECISION-10 and B3 Finding 3.
 - Run mine-negatives workflow to extend unfiltered negative sample from 57515 -> >=600k entries so a 50/day rate is measurable.
-- Legacy Supabase service_role JWT rotation still requires one dashboard click (Settings -> API Keys -> service_role -> Rotate); Vercel already uses sb_publishable for anon reads and sb_secret for writes so rotation is zero-downtime.
+- Supabase JWT/key cleanup still requires one authenticated dashboard action. Current docs: rotate JWT signing keys via Project Settings -> JWT Keys -> JWT Signing Keys -> Rotate Keys; legacy `anon`/`service_role` JWT API keys should be replaced/deactivated after moving to `sb_publishable`/`sb_secret`. Repo audit on 2026-08-28 confirmed GitHub writer secret was updated 2026-08-24 and recent ingest is green, and `/api/findings` plus `/api/source-status` returned 200 on both `sgcertwatch.vercel.app` and `sgcertwatch.hong-yi.me` before rotation. No Supabase dashboard connector/browser auth was available in the Codex session, so the click remains user-owned.
 - Batch G TP loss 3 items (41->38): documented, within noise, not compensated per spec. Rebuild positive set once more monitor findings accumulate (Batch I framework in place).
 - Batches I/G/H fully committed and pushed to main. 15R capture workflow live on Actions schedule.
+- 2026-08-28 Codex follow-up on items 2/3/4:
+  - H-3 unblocked: current Chrome v3 log list exposes live usable Google Argon/Xenon 2026h2/2027h1 and DigiCert Wyvern/Sphinx 2026h2/2027h1/2027h2 RFC6962 endpoints; all 10 returned `get-sth` 200 and one-entry `get-entries` 200.
+  - `scripts/mine_extended_negatives.mjs` now defaults to Google,DigiCert operators from the live Chrome list, has env knobs for operators/states/sample window, and syncs `fixtures/corpus/extended_negatives.jsonl` into `corpus.json`; `mine-negatives.yml` stages both files.
+  - Smoke-mined 94 new live CT negatives (extended file 2606 -> 2700) and synced 1837 previously missing extended negatives into `corpus.json` (current `extended_negatives_added` 2700).
+  - 15R capture pipeline manually verified via Actions run 33179003348: success, `MAX_CAPTURES=5`, processed 5 findings and wrote captures without errors.
+  - Fixed remaining current gov/trust exact-anchored FP class: `subdomain_brand_squat` now applies the common-word context requirement for bare exact segments; targeted gov/trust FP@70 is 0/265 candidates.
+  - Verification: `python scripts/validate_data.py --release` passed; `npm run test:unit` passed including e2e. Full `node scripts/eval.js` was stopped after running silently for several minutes; use the 600k workflow then rerun eval for final G metrics.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-08-28 09:46:36 +08:00
+- Updated: 2026-08-28 21:34:58 +08:00
 - Machine: PRAWN-E14
 - Harness: claude
 - Event: stop
 - Branch: main
-- HEAD: fcd4d01
-- Dirty files: 0
+- HEAD: 3722759
+- Dirty files: 1
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->

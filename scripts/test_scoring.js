@@ -122,5 +122,14 @@ assert.ok(
   `Expected unanchored DOMAIN score capped at <= ${noAnchorCap}, got ${unanchoredDomain.score}`
 );
 
-console.log("Scoring tests passed.");
+const bareTrustInfra = scoreDomain("www.app.zero-trust-access-solutions-szw.cyou", data);
+assert.ok(
+  !bareTrustInfra.signals.some((s) => s.type === "subdomain_brand_squat" && s.brand === "trustbank"),
+  "Bare common-word token 'trust' without Trust Bank context must not anchor as a subdomain squat"
+);
+assert.ok(
+  bareTrustInfra.score < 70,
+  `Expected bare trust infrastructure below alert threshold, got ${bareTrustInfra.score}`
+);
 
+console.log("Scoring tests passed.");
