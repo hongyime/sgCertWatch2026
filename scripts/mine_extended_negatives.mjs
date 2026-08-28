@@ -10,6 +10,7 @@ const LOG_LIST_URL = "https://www.gstatic.com/ct/log_list/v3/log_list.json";
 const TARGET_COUNT  = parseInt(process.env.TARGET_NEGATIVES || "600000", 10);
 const BATCH_SIZE    = parseInt(process.env.BATCH_SIZE || "512", 10);
 const PROGRESS_EVERY = parseInt(process.env.PROGRESS_EVERY || "25000", 10);
+const MAX_WINDOWS_PER_LOG = parseInt(process.env.MAX_WINDOWS_PER_LOG || "1", 10);
 const SAMPLE_WINDOW_PER_LOG = process.env.SAMPLE_WINDOW_PER_LOG
   ? parseInt(process.env.SAMPLE_WINDOW_PER_LOG, 10)
   : null;
@@ -186,44 +187,48 @@ async function main() {
     const sth = await getSTH(log.url).catch(() => null);
     if (!sth) { console.log(`  skip ${log.description}: STH failed`); continue; }
     const treeSize = sth.tree_size;
-    // Start near the end (recent entries, diverse sample). Use a wide default
-    // window because 600k needs more than the old 50k-per-log LE sample.
-    const startIdx = Math.max(0, treeSize - sampleWindow);
-    console.log(`  ${log.description}: tree_size=${treeSize}, sampling from ${startIdx}`);
+    console.log(`  ${log.description}: tree_size=${treeSize}, max_windows=${MAX_WINDOWS_PER_LOG}`);
 
-    for (let i = startIdx; i < treeSize && total < TARGET_COUNT; i += BATCH_SIZE) {
-      const end = Math.min(i + BATCH_SIZE - 1, treeSize - 1);
-      let entries;
-      try { entries = await getEntries(log.url, i, end); } catch (_) { continue; }
-      for (let j = 0; j < entries.length && total < TARGET_COUNT; j++) {
-        const entry = entries[j];
-        const leafInput = entry.leaf_input;
-        if (!leafInput) continue;
-        const cert_sha256 = crypto.createHash("sha256").update(Buffer.from(leafInput, "base64")).digest("hex");
-        const domains = extractDomains(leafInput);
-        const tree_index = i + j;
-        const rec = {
-          id: `ext-neg-${log.log_id.slice(0, 8)}-${tree_index}`,
-          domain: domains[0] || null,
-          all_domains: domains,
-          label: "negative",
-          source: "ct_log_mining",
-          constructed: false,
-          ct_provenance: {
-            log_id: log.log_id,
-            tree_index,
-            cert_sha256,
-            observed_at
+    for (let windowIndex = 0; windowIndex < MAX_WINDOWS_PER_LOG && total < TARGET_COUNT; windowIndex++) {
+      const windowEnd = treeSize - (windowIndex * sampleWindow) - 1;
+      if (windowEnd < 0) break;
+      const startIdx = Math.max(0, windowEnd - sampleWindow + 1);
+      console.log(`    window ${windowIndex + 1}/${MAX_WINDOWS_PER_LOG}: sampling ${startIdx}-${windowEnd}`);
+
+      for (let i = startIdx; i <= windowEnd && total < TARGET_COUNT; i += BATCH_SIZE) {
+        const end = Math.min(i + BATCH_SIZE - 1, windowEnd);
+        let entries;
+        try { entries = await getEntries(log.url, i, end); } catch (_) { continue; }
+        for (let j = 0; j < entries.length && total < TARGET_COUNT; j++) {
+          const entry = entries[j];
+          const leafInput = entry.leaf_input;
+          if (!leafInput) continue;
+          const cert_sha256 = crypto.createHash("sha256").update(Buffer.from(leafInput, "base64")).digest("hex");
+          const domains = extractDomains(leafInput);
+          const tree_index = i + j;
+          const rec = {
+            id: `ext-neg-${log.log_id.slice(0, 8)}-${tree_index}`,
+            domain: domains[0] || null,
+            all_domains: domains,
+            label: "negative",
+            source: "ct_log_mining",
+            constructed: false,
+            ct_provenance: {
+              log_id: log.log_id,
+              tree_index,
+              cert_sha256,
+              observed_at
+            }
+          };
+          if (!rec.domain) continue;
+          if (existingIds.has(rec.id)) continue;
+          existingIds.add(rec.id);
+          out.write(JSON.stringify(rec) + "\n");
+          total++;
+          if (PROGRESS_EVERY > 0 && total >= nextProgressAt) {
+            console.log(`  total so far: ${total}`);
+            nextProgressAt += PROGRESS_EVERY;
           }
-        };
-        if (!rec.domain) continue;
-        if (existingIds.has(rec.id)) continue;
-        existingIds.add(rec.id);
-        out.write(JSON.stringify(rec) + "\n");
-        total++;
-        if (PROGRESS_EVERY > 0 && total >= nextProgressAt) {
-          console.log(`  total so far: ${total}`);
-          nextProgressAt += PROGRESS_EVERY;
         }
       }
     }
