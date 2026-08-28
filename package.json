@@ -6,7 +6,8 @@
   "scripts": {
     "validate": "python scripts/validate_data.py --release",
     "test:unit": "node scripts/test_scoring.js && node scripts/test_ct_sources.js && node scripts/test_supabase.js && node scripts/test_auth.js && node scripts/test_registrable.js && node scripts/test_homoglyphs.js && node scripts/test_edit_distance.js && node scripts/test_cert_signals.js && node scripts/test_enrichment.js && node scripts/test_notify.js && node scripts/test_digest.js && node scripts/test_triage.js && node scripts/test_e2e.js",
-    "eval": "node scripts/eval.js"
+    "eval": "node scripts/eval.js",
+    "eval:extended": "node scripts/eval_extended_negatives.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -96,6 +96,11 @@ Next steps:
   - 15R capture pipeline manually verified via Actions run 33179003348: success, `MAX_CAPTURES=5`, processed 5 findings and wrote captures without errors.
   - Fixed remaining current gov/trust exact-anchored FP class: `subdomain_brand_squat` now applies the common-word context requirement for bare exact segments; targeted gov/trust FP@70 is 0/265 candidates.
   - Verification: `python scripts/validate_data.py --release` passed; `npm run test:unit` passed including e2e. Full `node scripts/eval.js` was stopped after running silently for several minutes; use the 600k workflow then rerun eval for final G metrics.
+- 2026-08-28 continuation:
+  - Full `mine-negatives.yml` run 33181258726 succeeded but only reached 68,231 extended negatives, not 600k, because the per-log sample window capped the run. The workflow pushed commit `99ca748` remotely and GitHub warned `corpus.json` was 83.37 MB.
+  - 600k negatives cannot be safely synced into `corpus.json` or committed as one JSONL file under current record size; use local/artifact/sharded JSONL plus `scripts/eval_extended_negatives.mjs` for G rerun evidence.
+  - `scripts/build_sg_advisories.mjs` now treats MAS IAL as the only potential domain-IOC source and records CSA/SingCERT, ScamShield, SPF, and GovTech ScamShield as source-status only. Current official pages fetch HTTP 200 but expose no safe machine-readable malicious-domain IOC feed; `fixtures/corpus/sg_advisories.jsonl` is intentionally empty and `fixtures/corpus/sg_advisory_sources.json` records fetch/source status.
+  - Validation passed after SG source cleanup: `python scripts/validate_data.py --release`. Unit test suite passed after restart.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State

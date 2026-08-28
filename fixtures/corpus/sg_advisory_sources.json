@@ -1,0 +1,64 @@
+{
+  "retrieved_at": "2026-08-28T15:18:00.527Z",
+  "sources": [
+    {
+      "source": "mas_investor_alert_list",
+      "url": "https://www.mas.gov.sg/investor-alert-list",
+      "retrieved_at": "2026-08-28T15:18:00.527Z",
+      "http_status": 200,
+      "artifact_sha256": "46e57152bd924d4f65aef8f388097c5c372891eceb7247cfced3f562caa64b43",
+      "fetch_ok": true,
+      "domains_extracted": 0,
+      "candidate_domains_seen": 0,
+      "pages_scanned": 1
+    },
+    {
+      "source": "singcert_advisories",
+      "url": "https://www.csa.gov.sg/alerts-and-advisories/advisories/",
+      "retrieved_at": "2026-08-28T15:18:00.527Z",
+      "http_status": 200,
+      "artifact_sha256": "1d1b65d1af458b797f1357e80cef33519d8427a541cf5af390f16f6b0ff19ac7",
+      "fetch_ok": true,
+      "domains_extracted": 0,
+      "candidate_domains_seen": 17,
+      "pages_scanned": 13,
+      "note": "Current SingCERT/CSA advisories are human-readable vulnerability/scam advisories, not a domain IOC feed."
+    },
+    {
+      "source": "scamshield_portal",
+      "url": "https://www.scamshield.gov.sg/",
+      "retrieved_at": "2026-08-28T15:18:00.527Z",
+      "http_status": 200,
+      "artifact_sha256": "4de45e71c6528f987fa258eda93fc1cb16980f9469349da1f5339ad0f0aad951",
+      "fetch_ok": true,
+      "domains_extracted": 0,
+      "candidate_domains_seen": 0,
+      "pages_scanned": 6,
+      "note": "No public ScamShield domain-check API or bulk domain feed was found; portal is monitored for status only."
+    },
+    {
+      "source": "spf_scams_advisory",
+      "url": "https://www.police.gov.sg/Advisories/Scams",
+      "retrieved_at": "2026-08-28T15:18:00.527Z",
+      "http_status": 200,
+      "artifact_sha256": "5f76b1689d0b52bb42c2e5ce321a7d5ec651b1bffc6cfc028f04bf539d712851",
+      "fetch_ok": true,
+      "domains_extracted": 0,
+      "candidate_domains_seen": 0,
+      "pages_scanned": 1,
+      "note": "SPF scam guidance page is not a domain IOC feed."
+    },
+    {
+      "source": "govtech_scamshield",
+      "url": "https://www.tech.gov.sg/products-and-services/for-citizens/scam-prevention/scamshield/",
+      "retrieved_at": "2026-08-28T15:18:00.527Z",
+      "http_status": 200,
+      "artifact_sha256": "bb1afcd07128de8777df08ca14af5ccd801e6d2edab434a18ee3b6a31e41f5c6",
+      "fetch_ok": true,
+      "domains_extracted": 0,
+      "candidate_domains_seen": 0,
+      "pages_scanned": 1,
+      "note": "GovTech product page documents ScamShield; it does not publish suspect domains."
+    }
+  ]
+}

@@ -35,14 +35,29 @@ jobs:
       - name: Mine negatives from CT logs
         env:
           TARGET_NEGATIVES: ${{ inputs.target_negatives || '600000' }}
-          BATCH_SIZE: "512"
+          BATCH_SIZE: "1024"
+          SAMPLE_WINDOW_PER_LOG: "1000000"
+          SYNC_CORPUS: "0"
         run: node scripts/mine_extended_negatives.mjs
 
-      - name: Commit extended negatives if changed
+      - name: Upload extended negatives artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extended-negatives-jsonl
+          path: fixtures/corpus/extended_negatives.jsonl
+          retention-days: 14
+
+      - name: Commit extended negatives checkpoint if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add fixtures/corpus/extended_negatives.jsonl corpus.json
+          SIZE_BYTES=$(wc -c < fixtures/corpus/extended_negatives.jsonl)
+          MAX_BYTES=$((95 * 1024 * 1024))
+          if [ "$SIZE_BYTES" -gt "$MAX_BYTES" ]; then
+            echo "Extended negatives file is ${SIZE_BYTES} bytes; skipping commit to stay below GitHub's 100 MB file limit."
+            exit 0
+          fi
+          git add fixtures/corpus/extended_negatives.jsonl
           if git diff --cached --quiet; then
             echo "No new entries mined."
           else

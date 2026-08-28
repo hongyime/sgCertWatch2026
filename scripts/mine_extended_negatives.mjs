@@ -9,9 +9,12 @@ import crypto from "node:crypto";
 const LOG_LIST_URL = "https://www.gstatic.com/ct/log_list/v3/log_list.json";
 const TARGET_COUNT  = parseInt(process.env.TARGET_NEGATIVES || "600000", 10);
 const BATCH_SIZE    = parseInt(process.env.BATCH_SIZE || "512", 10);
-const SAMPLE_WINDOW_PER_LOG = parseInt(process.env.SAMPLE_WINDOW_PER_LOG || "100000", 10);
-const OUT_PATH      = "fixtures/corpus/extended_negatives.jsonl";
+const SAMPLE_WINDOW_PER_LOG = process.env.SAMPLE_WINDOW_PER_LOG
+  ? parseInt(process.env.SAMPLE_WINDOW_PER_LOG, 10)
+  : null;
+const OUT_PATH      = process.env.EXTENDED_NEGATIVES_PATH || "fixtures/corpus/extended_negatives.jsonl";
 const CORPUS_PATH   = "corpus.json";
+const SYNC_CORPUS   = process.env.SYNC_CORPUS !== "0";
 const TARGET_OPERATORS = (process.env.CT_LOG_OPERATORS || "Google,DigiCert")
   .split(",")
   .map((name) => name.trim().toLowerCase())
@@ -111,6 +114,7 @@ function normalizeExtendedNegative(record, fallbackIndex) {
 }
 
 function syncExtendedNegativesToCorpus() {
+  if (!SYNC_CORPUS) return 0;
   if (!fs.existsSync(CORPUS_PATH) || !fs.existsSync(OUT_PATH)) return 0;
 
   const corpus = JSON.parse(fs.readFileSync(CORPUS_PATH, "utf8"));
@@ -143,11 +147,19 @@ function syncExtendedNegativesToCorpus() {
 async function main() {
   // Count existing extended negatives
   let existingCount = 0;
+  const existingIds = new Set();
   if (fs.existsSync(OUT_PATH)) {
-    const lines = fs.readFileSync(OUT_PATH, "utf8").trim().split("\n").filter(Boolean);
+    const lines = fs.readFileSync(OUT_PATH, "utf8").split("\n").filter(Boolean);
     existingCount = lines.length;
+    for (const line of lines) {
+      try {
+        const record = JSON.parse(line);
+        if (record.id) existingIds.add(record.id);
+      } catch (_) {}
+    }
   }
   console.log(`Existing extended negatives: ${existingCount} | target: ${TARGET_COUNT}`);
+  console.log(`Output path: ${OUT_PATH} | sync corpus: ${SYNC_CORPUS ? "yes" : "no"}`);
 
   if (existingCount >= TARGET_COUNT) {
     const synced = syncExtendedNegativesToCorpus();
@@ -159,6 +171,9 @@ async function main() {
   const logs = await getTargetLogs();
   console.log(`Found ${logs.length} target logs`);
   if (!logs.length) { console.error("No target logs found"); process.exit(1); }
+  const sampleWindow = SAMPLE_WINDOW_PER_LOG
+    || Math.max(100000, Math.ceil(((TARGET_COUNT - existingCount) * 12) / logs.length));
+  console.log(`Sample window per log: ${sampleWindow}`);
 
   const out = fs.createWriteStream(OUT_PATH, { flags: "a" });
   let total = existingCount;
@@ -171,7 +186,7 @@ async function main() {
     const treeSize = sth.tree_size;
     // Start near the end (recent entries, diverse sample). Use a wide default
     // window because 600k needs more than the old 50k-per-log LE sample.
-    const startIdx = Math.max(0, treeSize - SAMPLE_WINDOW_PER_LOG);
+    const startIdx = Math.max(0, treeSize - sampleWindow);
     console.log(`  ${log.description}: tree_size=${treeSize}, sampling from ${startIdx}`);
 
     for (let i = startIdx; i < treeSize && total < TARGET_COUNT; i += BATCH_SIZE) {
@@ -200,6 +215,8 @@ async function main() {
           }
         };
         if (!rec.domain) continue;
+        if (existingIds.has(rec.id)) continue;
+        existingIds.add(rec.id);
         out.write(JSON.stringify(rec) + "\n");
         total++;
       }
