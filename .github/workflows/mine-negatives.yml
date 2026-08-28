@@ -36,7 +36,7 @@ jobs:
         env:
           TARGET_NEGATIVES: ${{ inputs.target_negatives || '600000' }}
           BATCH_SIZE: "2048"
-          SAMPLE_WINDOW_PER_LOG: "3000000"
+          SAMPLE_WINDOW_PER_LOG: "4000000"
           PROGRESS_EVERY: "25000"
           SYNC_CORPUS: "0"
         run: node scripts/mine_extended_negatives.mjs

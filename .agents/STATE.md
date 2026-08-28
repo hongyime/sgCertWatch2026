@@ -103,6 +103,7 @@ Next steps:
   - Validation passed after SG source cleanup: `python scripts/validate_data.py --release`. Unit test suite passed after restart.
   - Interim streaming eval over the pulled 68,231-negative checkpoint completed: FP@70=58, TN=68,173, extrapolated alerts/day=5,100. This is not the final G rerun; corrected Actions run 33186128572 is generating/uploading the 600k artifact.
   - Corrected Actions run 33186128572 completed successfully and uploaded `extended-negatives-jsonl`, but the artifact contained 333,815 negatives, not 600k. Widened workflow sampling to 3,000,000 entries/log and added 25k progress logs for the next 600k retry.
+  - Widened Actions run 33188880545 completed successfully and uploaded a 541,825-negative artifact, still short of 600k by 58,175. Increased workflow sampling to 4,000,000 entries/log for the next retry.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
