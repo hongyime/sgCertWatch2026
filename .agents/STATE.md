@@ -89,3 +89,16 @@ Next steps:
 - Legacy Supabase service_role JWT rotation still requires one dashboard click (Settings -> API Keys -> service_role -> Rotate); Vercel already uses sb_publishable for anon reads and sb_secret for writes so rotation is zero-downtime.
 - Batch G TP loss 3 items (41->38): documented, within noise, not compensated per spec. Rebuild positive set once more monitor findings accumulate (Batch I framework in place).
 - Batches I/G/H fully committed and pushed to main. 15R capture workflow live on Actions schedule.
+
+<!-- MOLT_AUTO_START -->
+## Auto State
+
+- Updated: 2026-08-28 09:46:36 +08:00
+- Machine: PRAWN-E14
+- Harness: claude
+- Event: stop
+- Branch: main
+- HEAD: fcd4d01
+- Dirty files: 0
+- Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
+<!-- MOLT_AUTO_END -->
