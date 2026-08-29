@@ -32,14 +32,47 @@ p {
 }
 
 .topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  gap: 18px;
   padding: 28px clamp(18px, 4vw, 48px);
   color: #f9fbfc;
   background: var(--navy);
   border-bottom: 4px solid var(--teal);
+}
+
+.brand-block {
+  min-width: 0;
+}
+
+.primary-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.primary-nav button {
+  height: 38px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 12px;
+  color: #d6e3ea;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-nav button:hover,
+.primary-nav button.active {
+  color: #10202f;
+  background: #ffffff;
 }
 
 .eyebrow {
@@ -72,6 +105,14 @@ main {
   padding: 22px clamp(16px, 3vw, 40px) 44px;
 }
 
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
 .status {
   padding: 8px 12px;
   color: #17332f;
@@ -90,6 +131,7 @@ main {
 }
 
 .readiness,
+.watch-hero,
 .feed,
 .config-explorer {
   border: 1px solid var(--line);
@@ -97,9 +139,14 @@ main {
   background: var(--paper);
 }
 
-.readiness {
+.readiness,
+.watch-hero {
   padding: 18px;
   border-top: 4px solid var(--teal);
+}
+
+.watch-hero {
+  margin-bottom: 16px;
 }
 
 .section-heading {
@@ -156,7 +203,18 @@ label span {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  margin-top: 10px;
+}
+
+.source-details {
   margin-top: 12px;
+}
+
+.source-details summary {
+  cursor: pointer;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .source-row {
@@ -312,7 +370,6 @@ label span {
 }
 
 .config-explorer {
-  margin-top: 18px;
   padding: 18px;
   overflow: hidden;
 }
@@ -472,6 +529,15 @@ tbody tr:hover {
 }
 
 @media (max-width: 1050px) {
+  .topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .primary-nav {
+    width: 100%;
+    overflow-x: auto;
+  }
+
   .status-grid,
   .summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -492,6 +558,14 @@ tbody tr:hover {
 
   .status {
     white-space: normal;
+  }
+
+  .primary-nav {
+    align-items: stretch;
+  }
+
+  .primary-nav button {
+    flex: 1 0 auto;
   }
 
   .status-grid,

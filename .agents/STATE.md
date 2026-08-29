@@ -119,6 +119,12 @@ Next steps:
   - Item 6 complete as evidence, not a new commit of data: the existing 600,000-line artifact from Actions run 33196667853 remains the full G rerun evidence (FP@70=605, TN=599,395, suppressed=2, extrapolated alerts/day=6,050). A fresh full local rerun was stopped after an extended silent runtime; a capped artifact sanity rerun over 10,000 rows completed with FP@70=8, TN=9,992.
   - Item 7 complete: refreshed `fixtures/corpus/sg_advisory_sources.json`; MAS IAL, ScamShield, CSA/SingCERT, SPF, and GovTech ScamShield remain status-only sources with 0 extracted usable domain IOCs. `fixtures/corpus/sg_advisories.jsonl` remains empty.
   - Verification this pass: `python scripts/validate_data.py --release` passed; `npm run test:unit` passed.
+- 2026-08-29 frontend restructure:
+  - User reported raw CT log IDs/degraded source rows on the front page and asked for `Domains to watch now` to be the first/main user flow.
+  - Reworked the static UI into top-level views: Domains, Watchlist, Review, Monitor. The default first view is now the live suspicious-domain feed headed `Domains to watch now`; detection config moved to Watchlist; CT source rows moved to Monitor behind a details disclosure.
+  - Added `favicon.svg` to remove the browser favicon 404.
+  - Local Playwright verification on desktop and mobile confirmed first active panel is `alerts`, visible heading is `Domains to watch now`, first card is a finding, no CT log hash IDs appear in the first-view text, Watchlist search still returns DBS allowlist results, and Monitor source details are collapsed by default.
+  - Verification: `python scripts/validate_data.py --release` passed; `npm run test:unit` passed.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State

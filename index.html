@@ -5,61 +5,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Singapore Certificate Transparency watchlist dashboard">
     <title>sgCertWatch</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
     <header class="topbar">
-      <div>
+      <div class="brand-block">
         <p class="eyebrow">Certificate Transparency</p>
         <h1>sgCertWatch</h1>
         <p class="tagline">Singapore scam-domain early warning</p>
       </div>
+      <nav class="primary-nav" aria-label="Primary">
+        <button type="button" class="active" data-view="alerts">Domains</button>
+        <button type="button" data-view="watch">Watchlist</button>
+        <button type="button" data-view="review">Review</button>
+        <button type="button" data-view="monitor">Monitor</button>
+      </nav>
       <div class="status" id="data-status">Loading data</div>
     </header>
 
     <main>
-      <section class="readiness" aria-label="Release readiness">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow dark">Release readiness</p>
-            <h2>Monitor status</h2>
+      <section class="view" data-view-panel="watch">
+        <section class="watch-hero" aria-label="Domains to watch now">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow dark">Watchlist</p>
+              <h2>Detection watchlist</h2>
+            </div>
+            <span id="watch-count-summary">Loading</span>
           </div>
-          <span id="last-feed-check">checking</span>
-        </div>
-        <div class="status-grid">
-          <article class="status-tile">
-            <span>Backend</span>
-            <strong id="feed-health">Checking</strong>
-          </article>
-          <article class="status-tile">
-            <span>Monitor</span>
-            <strong id="source-status">checking</strong>
-          </article>
-          <article class="status-tile">
-            <span>Stored alerts</span>
-            <strong id="feed-count">0</strong>
-          </article>
-          <article class="status-tile">
-            <span>Allowlist</span>
-            <strong id="allowlist-status">-</strong>
-          </article>
-          <article class="status-tile">
-            <span>Schemes</span>
-            <strong id="scheme-status">-</strong>
-          </article>
-          <article class="status-tile">
-            <span>Manual review</span>
-            <strong id="pending-status">-</strong>
-          </article>
-        </div>
-        <div class="source-list" id="source-list"></div>
+          <section class="summary" aria-label="Dataset summary">
+            <article class="summary-card active" data-dataset="brands" tabindex="0" role="button" aria-pressed="true">
+              <span id="brand-count">-</span>
+              <p>Watched brands</p>
+              <small>Banks, wallets, delivery, telco, government</small>
+            </article>
+            <article class="summary-card" data-dataset="keywords" tabindex="0" role="button" aria-pressed="false">
+              <span id="keyword-count">-</span>
+              <p>Suspicious keywords</p>
+              <small>Login, refund, OTP, claim, verify</small>
+            </article>
+            <article class="summary-card" data-dataset="allowlist" tabindex="0" role="button" aria-pressed="false">
+              <span id="allowlist-count">-</span>
+              <p>Official domains</p>
+              <small>Verified domains suppressed from alerts</small>
+            </article>
+            <article class="summary-card" data-dataset="schemes" tabindex="0" role="button" aria-pressed="false">
+              <span id="scheme-count">-</span>
+              <p>Government schemes</p>
+              <small>Voucher and payout names scammers copy</small>
+            </article>
+          </section>
+        </section>
+
+        <section class="config-explorer" aria-label="Watchlist explorer">
+          <section class="toolbar" aria-label="Filters">
+            <label class="search">
+              <span>Search</span>
+              <input id="search" type="search" placeholder="brand, token, category, domain">
+            </label>
+            <label>
+              <span>Category</span>
+              <select id="category-filter">
+                <option value="">All categories</option>
+              </select>
+            </label>
+            <div class="mode-tabs" aria-label="Dataset">
+              <button type="button" data-dataset="brands" class="active">Brands</button>
+              <button type="button" data-dataset="keywords">Keywords</button>
+              <button type="button" data-dataset="allowlist">Allowlist</button>
+              <button type="button" data-dataset="schemes">Schemes</button>
+            </div>
+          </section>
+
+          <section>
+            <div class="section-heading">
+              <h2 id="table-title">Brands</h2>
+              <span id="result-count">0 results</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
       </section>
 
-      <section class="attention-grid">
+      <section class="view active" data-view-panel="alerts">
         <section class="feed primary-feed" aria-label="Live findings">
           <div class="section-heading">
             <div>
-              <p class="eyebrow dark">Live findings</p>
+              <p class="eyebrow dark">Live alerts</p>
               <h2>Domains to watch now</h2>
             </div>
             <span id="feed-status">Loading feed</span>
@@ -80,7 +118,9 @@
 
           <ul class="watch-list" id="finding-list"></ul>
         </section>
+      </section>
 
+      <section class="view" data-view-panel="review">
         <section class="feed review-feed" aria-label="Manual review">
           <div class="section-heading">
             <div>
@@ -96,65 +136,45 @@
         <div class="dialog-content" id="dialog-body"></div>
       </dialog>
 
-      <section class="config-explorer" aria-label="How sgCertWatch decides">
-        <div class="config-heading">
-          <span>How sgCertWatch decides</span>
-          <small>Watched brands, suspicious keywords, allowlist, and schemes</small>
-        </div>
-
-        <section class="summary" aria-label="Dataset summary">
-          <article class="summary-card active" data-dataset="brands" tabindex="0" role="button" aria-pressed="true">
-            <span id="brand-count">-</span>
-            <p>Watched brands</p>
-            <small>Names scammers may copy</small>
-          </article>
-          <article class="summary-card" data-dataset="keywords" tabindex="0" role="button" aria-pressed="false">
-            <span id="keyword-count">-</span>
-            <p>Suspicious keywords</p>
-            <small>Words like login, refund, OTP</small>
-          </article>
-          <article class="summary-card" data-dataset="allowlist" tabindex="0" role="button" aria-pressed="false">
-            <span id="allowlist-count">-</span>
-            <p>Allowlist</p>
-            <small>Official domains we suppress</small>
-          </article>
-          <article class="summary-card" data-dataset="schemes" tabindex="0" role="button" aria-pressed="false">
-            <span id="scheme-count">-</span>
-            <p>Government schemes</p>
-            <small>Vouchers and payouts</small>
-          </article>
-        </section>
-
-        <section class="toolbar" aria-label="Filters">
-          <label class="search">
-            <span>Search</span>
-            <input id="search" type="search" placeholder="brand, token, category, domain">
-          </label>
-          <label>
-            <span>Category</span>
-            <select id="category-filter">
-              <option value="">All categories</option>
-            </select>
-          </label>
-          <div class="mode-tabs" aria-label="Dataset">
-            <button type="button" data-dataset="brands" class="active">Brands</button>
-            <button type="button" data-dataset="keywords">Keywords</button>
-            <button type="button" data-dataset="allowlist">Allowlist</button>
-            <button type="button" data-dataset="schemes">Schemes</button>
-          </div>
-        </section>
-
-        <section>
+      <section class="view" data-view-panel="monitor">
+        <section class="readiness" aria-label="Monitor status">
           <div class="section-heading">
-            <h2 id="table-title">Brands</h2>
-            <span id="result-count">0 results</span>
+            <div>
+              <p class="eyebrow dark">Monitor</p>
+              <h2>Pipeline health</h2>
+            </div>
+            <span id="last-feed-check">checking</span>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead id="table-head"></thead>
-              <tbody id="table-body"></tbody>
-            </table>
+          <div class="status-grid">
+            <article class="status-tile">
+              <span>Backend</span>
+              <strong id="feed-health">Checking</strong>
+            </article>
+            <article class="status-tile">
+              <span>Monitor</span>
+              <strong id="source-status">checking</strong>
+            </article>
+            <article class="status-tile">
+              <span>Stored alerts</span>
+              <strong id="feed-count">0</strong>
+            </article>
+            <article class="status-tile">
+              <span>Allowlist</span>
+              <strong id="allowlist-status">-</strong>
+            </article>
+            <article class="status-tile">
+              <span>Schemes</span>
+              <strong id="scheme-status">-</strong>
+            </article>
+            <article class="status-tile">
+              <span>Manual review</span>
+              <strong id="pending-status">-</strong>
+            </article>
           </div>
+          <details class="source-details">
+            <summary>CT log source details</summary>
+            <div class="source-list" id="source-list"></div>
+          </details>
         </section>
       </section>
     </main>

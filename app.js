@@ -9,6 +9,7 @@ const CT_SOURCE_STATUS_URL = "/api/source-status";
 
 const state = {
   data: null,
+  view: "alerts",
   dataset: "brands",
   query: "",
   category: "",
@@ -217,6 +218,7 @@ function renderTable() {
   };
   $("table-title").textContent = titles[state.dataset];
   $("result-count").textContent = `${rows.length} result${rows.length === 1 ? "" : "s"}`;
+  $("watch-count-summary").textContent = `${rows.length} ${titles[state.dataset].toLowerCase()}`;
 
   if (state.dataset === "keywords") {
     $("table-head").innerHTML = "<tr><th>Keyword</th><th>Type</th><th>How it is used</th></tr>";
@@ -271,6 +273,7 @@ function renderTable() {
 function setDataset(dataset) {
   state.dataset = dataset;
   state.category = "";
+  setView("watch");
   render();
 
   document.querySelectorAll("[data-dataset]").forEach((element) => {
@@ -279,6 +282,16 @@ function setDataset(dataset) {
     if (element.hasAttribute("aria-pressed")) {
       element.setAttribute("aria-pressed", active ? "true" : "false");
     }
+  });
+}
+
+function setView(view) {
+  state.view = view;
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === view);
+  });
+  document.querySelectorAll("[data-view-panel]").forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.viewPanel === view);
   });
 }
 
@@ -546,3 +559,7 @@ document.querySelectorAll("[data-dataset]").forEach((element) => {
 loadData();
 setInterval(renderFindings, 60000);
 setInterval(renderSourceStatus, 60000);
+
+document.querySelectorAll("[data-view]").forEach((button) => {
+  button.addEventListener("click", () => setView(button.dataset.view));
+});
