@@ -125,6 +125,7 @@ Next steps:
   - Added `favicon.svg` to remove the browser favicon 404.
   - Local Playwright verification on desktop and mobile confirmed first active panel is `alerts`, visible heading is `Domains to watch now`, first card is a finding, no CT log hash IDs appear in the first-view text, Watchlist search still returns DBS allowlist results, and Monitor source details are collapsed by default.
   - Verification: `python scripts/validate_data.py --release` passed; `npm run test:unit` passed.
+  - Commit `fe75d12` (`feat: make domains feed the primary view`) was pushed to `main`, but Vercel production is still serving the older deployment because explicit `vercel deploy --prod --yes` failed with the free daily deployment limit: `Resource is limited - try again in 24 hours (more than 100, code: "api-deployments-free-per-day")`.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
