@@ -84,9 +84,9 @@ Current understanding:
 - Batch F complete (B2): structural anchor predicate shipped (commit 4c5df27) - exact/squat-exact unconditional, fuzzy needs context-token or deception marker, geography removed. F2 spread dbs-token-auth.rest vs dbs-login-verify.cfd = 0pts (both 147). Post-F official eval: FP@70=129 (~12876/day stage-one candidates), adversarial 53/60.
 
 Next steps:
-- alerts/day stage-2 floor (50/day) not yet met by the scorer alone (~7511/day at alert_min); stage-2 is gated on post-capture verification, not raw scorer output per amended DECISION-10 and B3 Finding 3.
-- Run mine-negatives workflow to extend unfiltered negative sample from 57515 -> >=600k entries so a 50/day rate is measurable.
-- Supabase JWT/key cleanup still requires one authenticated dashboard action. Current docs: rotate JWT signing keys via Project Settings -> JWT Keys -> JWT Signing Keys -> Rotate Keys; legacy `anon`/`service_role` JWT API keys should be replaced/deactivated after moving to `sb_publishable`/`sb_secret`. Repo audit on 2026-08-28 confirmed GitHub writer secret was updated 2026-08-24 and recent ingest is green, and `/api/findings` plus `/api/source-status` returned 200 on both `sgcertwatch.vercel.app` and `sgcertwatch.hong-yi.me` before rotation. No Supabase dashboard connector/browser auth was available in the Codex session, so the click remains user-owned.
+- alerts/day stage-2 floor (50/day) is not met by the scorer alone (600k artifact eval: ~6,050/day at alert_min); stage-2 remains gated on post-capture verification, not raw scorer output per amended DECISION-10 and B3 Finding 3.
+- 600k-negative artifact mining is complete for current G evidence. Do not commit the huge artifact; keep using local/artifact/sharded JSONL for future reruns.
+- Supabase JWT/key cleanup is no longer an active item; user explicitly said to skip/ignore rotation on 2026-08-29.
 - Batch G TP loss 3 items (41->38): documented, within noise, not compensated per spec. Rebuild positive set once more monitor findings accumulate (Batch I framework in place).
 - Batches I/G/H fully committed and pushed to main. 15R capture workflow live on Actions schedule.
 - 2026-08-28 Codex follow-up on items 2/3/4:
@@ -111,6 +111,14 @@ Next steps:
   - Added `plan.html` to `.gitignore`, committed `3162441` (`chore: ignore local plan html`), and pushed to `main`.
   - Production browser flow was verified on `https://sgcertwatch.vercel.app/` and `https://sgcertwatch.hong-yi.me/`: app loads, live Supabase feed connects, dataset tabs/search/filter work, and finding detail dialog opens.
   - `https://3xiv17lbp26g.postplan.dev/` is a stale static planning page, not the production app.
+- 2026-08-29 items 2-7 restart:
+  - Item 2 complete: live Chrome v3 log list currently exposes 10 Google/DigiCert candidate RFC6962 logs. 9/10 returned `get-sth` 200 and one-entry `get-entries` 200 in the fresh check; DigiCert Sphinx2027h1 returned `get-sth` 200 but one trailing `get-entries` probe returned 400.
+  - Item 3 complete: fresh `capture.yml` workflow dispatch run 33229261575 succeeded on commit `2f5c929`; capture step ran with `MAX_CAPTURES=5`, queried Supabase, found 0 uncaptured findings, and exited cleanly.
+  - Item 4 complete: `npm run test:unit` passed, including the gov/trust common-word regression test. Additional targeted scan over 260 gov/trust candidate rows found 0 exact-anchored gov/trust FP offenders at score >=70.
+  - Item 5 complete/no rebuild: live Supabase classification check found 14 new live SG-positive domains beyond the fixture, below the 200-new-finding threshold. Existing fixture has 514 SG-positive monitor rows; `corpus.json` already contains 513 monitor positives.
+  - Item 6 complete as evidence, not a new commit of data: the existing 600,000-line artifact from Actions run 33196667853 remains the full G rerun evidence (FP@70=605, TN=599,395, suppressed=2, extrapolated alerts/day=6,050). A fresh full local rerun was stopped after an extended silent runtime; a capped artifact sanity rerun over 10,000 rows completed with FP@70=8, TN=9,992.
+  - Item 7 complete: refreshed `fixtures/corpus/sg_advisory_sources.json`; MAS IAL, ScamShield, CSA/SingCERT, SPF, and GovTech ScamShield remain status-only sources with 0 extracted usable domain IOCs. `fixtures/corpus/sg_advisories.jsonl` remains empty.
+  - Verification this pass: `python scripts/validate_data.py --release` passed; `npm run test:unit` passed.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
