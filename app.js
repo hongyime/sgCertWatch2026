@@ -15,7 +15,7 @@ const state = {
   category: "",
   findings: [],
   findingQuery: "",
-  findingSeverity: ""
+  findingSeverity: "watch"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -192,7 +192,9 @@ function filteredRows() {
 
 function filteredFindings() {
   return (state.findings || []).filter((f) => {
-    const sevMatch = !state.findingSeverity || f.severity === state.findingSeverity;
+    const sevMatch = state.findingSeverity === "watch"
+      ? Number(f.score || 0) >= 70
+      : (!state.findingSeverity || f.severity === state.findingSeverity);
     const searchTarget = `${f.registrable} ${(f.domains || []).join(" ")} ${(f.matched_brands || []).join(" ")} ${(f.matched_schemes || []).join(" ")}`.toLowerCase();
     const queryMatch = !state.findingQuery || searchTarget.includes(state.findingQuery);
     return sevMatch && queryMatch;
@@ -330,7 +332,7 @@ async function renderFindings() {
     state.findings = findings;
 
     $("feed-status").textContent = payload.storage_configured
-      ? (findings.length ? "Latest stored alerts from Supabase" : "No suspicious certificate alerts stored yet")
+      ? (filteredFindings().length ? `${filteredFindings().length} domains need review` : "No high-score domains need review")
       : "Database not connected";
     $("feed-health").textContent = payload.storage_configured ? "Live database connected" : "Database not connected";
     $("feed-count").textContent = findings.length;

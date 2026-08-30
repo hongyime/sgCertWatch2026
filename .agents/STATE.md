@@ -130,6 +130,7 @@ Next steps:
   - Retried production deploy after quota reset; initial explicit deployment `dpl_AnrQf8BYQ97KvtMdSSZK6kHLj1Bp` was accepted.
   - While inspecting deployment headers, found and fixed malformed CSP in `vercel.json`: `frame-ancestors 'none` was missing the closing quote.
   - Verification after CSP fix: `python scripts/validate_data.py --release` passed; `npm run test:unit` passed.
+  - Tightened the default Domains view to `Watch now (>=70)` so low-score stored findings do not lead the analyst workflow. Local browser verification confirmed the default list hides a score-10 item, shows the score-88 item, and still shows low-score findings after switching to `All stored findings`.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
