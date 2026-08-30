@@ -55,20 +55,23 @@ function sourceLabel(source) {
 }
 
 function sourceState(item) {
-  if (item.ok && item.details?.state === "standby") {
+  if (item.ok && (item.details?.state === "standby" || item.status === "standby")) {
     return { label: "standby", className: "standby" };
   }
-  if (item.ok) {
+  if (item.ok || item.status === "ok") {
     return { label: "ok", className: "ok" };
   }
-  return { label: "degraded", className: "warn" };
+  if (item.status === "stale") return { label: "stale", className: "warn" };
+  if (item.status === "failed") return { label: "failed", className: "bad" };
+  return { label: item.status || "degraded", className: "warn" };
 }
 
 function sourceDetail(item) {
   const checked = `${item.scanned_entries || 0} checked`;
   const matched = `${item.matched || 0} matches`;
+  const persisted = Number.isFinite(item.persisted) ? ` - ${item.persisted} stored` : "";
   const note = item.details?.note || item.errors?.[0]?.message || "";
-  return note ? `${checked} - ${matched} - ${note}` : `${checked} - ${matched}`;
+  return note ? `${checked} - ${matched}${persisted} - ${note}` : `${checked} - ${matched}${persisted}`;
 }
 
 function searchable(row) {
@@ -354,12 +357,13 @@ async function renderSourceStatus() {
     const status = await response.json();
 
     const source = status.status || status;
-    const sources = source.sources || [];
-    const okCount = sources.filter((item) => item.ok).length;
+    const sources = source.display_sources || source.sources || [];
+    const okCount = sources.filter((item) => item.ok || item.status === "ok").length;
+    const health = source.health || source.overall;
 
-    if (source.health === "healthy") {
+    if (health === "healthy") {
       $("source-status").textContent = "Monitoring active";
-    } else if (source.health === "partial" || okCount > 0) {
+    } else if (health === "partial" || okCount > 0) {
       $("source-status").textContent = "Partial coverage";
     } else if (source.errors?.length) {
       $("source-status").textContent = "Source degraded";
@@ -370,9 +374,10 @@ async function renderSourceStatus() {
     $("source-list").innerHTML = sources.length
       ? sources.map((item) => {
         const state = sourceState(item);
+        const label = item.label || item.description || sourceLabel(item.source);
         return `
         <div class="source-row ${state.className}">
-          <span>${escapeHtml(item.label || sourceLabel(item.source))}</span>
+          <span>${escapeHtml(label)}</span>
           <strong>${escapeHtml(state.label)}</strong>
           <small>${escapeHtml(sourceDetail(item))}</small>
         </div>
