@@ -360,9 +360,13 @@ async function renderSourceStatus() {
     const sources = source.display_sources || source.sources || [];
     const okCount = sources.filter((item) => item.ok || item.status === "ok").length;
     const health = source.health || source.overall;
+    const primaryActive = sources.some((item) => item.source === "direct_ct" && item.ok)
+      || sources.some((item) => item.source === "static_ct" && item.ok);
 
     if (health === "healthy") {
       $("source-status").textContent = "Monitoring active";
+    } else if (primaryActive) {
+      $("source-status").textContent = "Primary sources active";
     } else if (health === "partial" || okCount > 0) {
       $("source-status").textContent = "Partial coverage";
     } else if (source.errors?.length) {

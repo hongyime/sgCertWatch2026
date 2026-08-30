@@ -138,6 +138,7 @@ Next steps:
   - Scans are scheduled in GitHub Actions, not Vercel Edge/Cron: `.github/workflows/ingest.yml` runs `scripts/run-ingest.mjs` on `*/15 * * * *` plus manual `workflow_dispatch`. GitHub schedule delivery is not exact and recent scheduled runs were several hours apart, but the workflow is the authoritative scheduler after the Vercel quota/Edge constraint.
   - Added dashboard-facing `display_sources`, `health`, and scheduler metadata to `/api/source-status`; frontend now prefers `display_sources`, uses human labels, shows persisted counts, and no longer renders raw CT log IDs in normal Monitor details.
   - Added extra favicon metadata (`shortcut icon`, `apple-touch-icon`, Open Graph title/description) pointing at `favicon.svg` for browser/dashboard crawlers.
+  - Updated Monitor top-line copy to `Primary sources active` when Direct CT or Static CT is ok, so a degraded `crt.sh` backup does not make the primary scan path look down.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
