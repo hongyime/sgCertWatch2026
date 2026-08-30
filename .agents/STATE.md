@@ -126,6 +126,10 @@ Next steps:
   - Local Playwright verification on desktop and mobile confirmed first active panel is `alerts`, visible heading is `Domains to watch now`, first card is a finding, no CT log hash IDs appear in the first-view text, Watchlist search still returns DBS allowlist results, and Monitor source details are collapsed by default.
   - Verification: `python scripts/validate_data.py --release` passed; `npm run test:unit` passed.
   - Commit `fe75d12` (`feat: make domains feed the primary view`) was pushed to `main`, but Vercel production is still serving the older deployment because explicit `vercel deploy --prod --yes` failed with the free daily deployment limit: `Resource is limited - try again in 24 hours (more than 100, code: "api-deployments-free-per-day")`.
+- 2026-08-30 deployment retry:
+  - Retried production deploy after quota reset; initial explicit deployment `dpl_AnrQf8BYQ97KvtMdSSZK6kHLj1Bp` was accepted.
+  - While inspecting deployment headers, found and fixed malformed CSP in `vercel.json`: `frame-ancestors 'none` was missing the closing quote.
+  - Verification after CSP fix: `python scripts/validate_data.py --release` passed; `npm run test:unit` passed.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
