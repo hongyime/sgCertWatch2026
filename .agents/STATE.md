@@ -139,6 +139,8 @@ Next steps:
   - Added dashboard-facing `display_sources`, `health`, and scheduler metadata to `/api/source-status`; frontend now prefers `display_sources`, uses human labels, shows persisted counts, and no longer renders raw CT log IDs in normal Monitor details.
   - Added extra favicon metadata (`shortcut icon`, `apple-touch-icon`, Open Graph title/description) pointing at `favicon.svg` for browser/dashboard crawlers.
   - Updated Monitor top-line copy to `Primary sources active` when Direct CT or Static CT is ok, so a degraded `crt.sh` backup does not make the primary scan path look down.
+  - Manual CT ingest workflow run 33286954335 succeeded. Production deploy `dpl_3TzKC8PNGhgYjRnGj1vqnh7xhHwP` succeeded from commit `a846f21` and is aliased to both public domains.
+  - Production browser verification on both aliases: Monitor shows `Primary sources active`; details show grouped labels (`crt.sh backup`, `Direct CT logs`, `Live stream`, `Static CT logs`); no base64 CT log IDs render in the monitor detail text; `/api/source-status` includes `display_sources` and `schedule`.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State

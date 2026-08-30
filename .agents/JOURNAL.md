@@ -137,3 +137,4 @@
 - 2026-08-30: Default Domains view now filters to score >=70 (`Watch now`) so the first analyst-facing cards are actionable domains, while lower-score stored findings remain available via `All stored findings`.
 - 2026-08-30: Production rollout verified on both public aliases after deploy `dpl_D7MPbmgXi6hqpnQET8UALidj8o3E`; default Domains view shows only score >=70 review domains and no CT log hashes on first view.
 - 2026-08-30: Monitor tab now uses latest source-run summaries instead of raw CT log cursor IDs; scans remain GitHub Actions scheduled via `ingest.yml` every 15 minutes plus manual dispatch, not Vercel Edge/Cron.
+- 2026-08-30: Monitor cleanup deployed as `dpl_3TzKC8PNGhgYjRnGj1vqnh7xhHwP`; production aliases now show primary CT sources active and hide raw CT log IDs.
