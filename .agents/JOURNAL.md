@@ -135,3 +135,4 @@
 - 2026-08-29: Production rollout of `fe75d12` is blocked by Vercel's free daily deployment limit (`api-deployments-free-per-day`); the UI is committed and locally verified, but live aliases will continue serving the older deployment until the quota resets or the project is moved/upgraded.
 - 2026-08-30: Retried production deployment after Vercel quota reset and fixed the malformed CSP `frame-ancestors` directive before final rollout verification.
 - 2026-08-30: Default Domains view now filters to score >=70 (`Watch now`) so the first analyst-facing cards are actionable domains, while lower-score stored findings remain available via `All stored findings`.
+- 2026-08-30: Production rollout verified on both public aliases after deploy `dpl_D7MPbmgXi6hqpnQET8UALidj8o3E`; default Domains view shows only score >=70 review domains and no CT log hashes on first view.

@@ -131,6 +131,8 @@ Next steps:
   - While inspecting deployment headers, found and fixed malformed CSP in `vercel.json`: `frame-ancestors 'none` was missing the closing quote.
   - Verification after CSP fix: `python scripts/validate_data.py --release` passed; `npm run test:unit` passed.
   - Tightened the default Domains view to `Watch now (>=70)` so low-score stored findings do not lead the analyst workflow. Local browser verification confirmed the default list hides a score-10 item, shows the score-88 item, and still shows low-score findings after switching to `All stored findings`.
+  - Final production deploy `dpl_D7MPbmgXi6hqpnQET8UALidj8o3E` succeeded after commit `3f24350`. Both `https://sgcertwatch.vercel.app/` and `https://sgcertwatch.hong-yi.me/` served the final HTML.
+  - Production Playwright verification passed on both aliases: active panel `alerts`, heading `Domains to watch now`, default filter `watch`, 8 visible review domains all score >=70, no raw CT log hashes in the first-view text, Watchlist allowlist search for `dbs` returns 2 results, Monitor source details are collapsed by default, JSON/API/favicon requests returned 200, and browser console errors were empty.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
