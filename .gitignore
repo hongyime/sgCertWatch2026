@@ -10,6 +10,7 @@ plan.html
 
 
 
+
 # AI / editor dot directories (managed via sourcerepo)
 .*
 !.github/
@@ -19,7 +20,6 @@ plan.html
 !.agents/JOURNAL.md
 !.agents/handoffs/
 !.agents/handoffs/**
-!.vercelignore
 !.gitignore
 !.gitattributes
 !.gitmodules
