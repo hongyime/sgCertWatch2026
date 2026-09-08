@@ -1,0 +1,10 @@
+corpus.json
+fixtures/
+scripts/
+.agents/
+.github/
+.env*
+node_modules/
+eval_baseline.json
+supabase/
+plan.html
