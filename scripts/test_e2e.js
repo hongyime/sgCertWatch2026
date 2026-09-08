@@ -72,7 +72,7 @@ finding.enrichment = enrichment;
 let notifiedChannels = 0;
 const mockNotifyFetch = async (_url) => {
   notifiedChannels += 1;
-  return { ok: true };
+  return Response.json({ ok: true, result: { message_id: 1, chat: { id: 123 } } });
 };
 
 const notifySummary = await dispatchNotifications([finding], {

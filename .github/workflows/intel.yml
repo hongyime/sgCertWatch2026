@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: "7 * * * *"
   workflow_dispatch:
+    inputs:
+      scheduler:
+        description: "Dispatch origin"
+        type: choice
+        options: [manual, cloudflare]
+        default: manual
 
 concurrency:
   group: threat-intel
@@ -29,4 +35,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ABUSECH_AUTH_KEY: ${{ secrets.ABUSECH_AUTH_KEY }}
           URLSCAN_API_KEY: ${{ secrets.URLSCAN_API_KEY }}
+          INTEL_MIN_INTERVAL_MS: 3300000
+          SCHEDULER_TRIGGER: ${{ inputs.scheduler || 'github' }}
         run: node scripts/run-intel.mjs

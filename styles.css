@@ -728,6 +728,70 @@ button:disabled {
   font-size: 16px;
 }
 
+.monitor-operations {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.monitor-scheduler {
+  margin: 0 0 6px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.monitor-scheduler strong {
+  margin-right: 8px;
+}
+
+.monitor-cadence {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.monitor-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px 24px;
+  margin: 20px 0;
+}
+
+.monitor-metrics > div {
+  min-width: 0;
+}
+
+.monitor-metrics dt {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.monitor-metrics dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+[data-view-panel="monitor"] [data-level="warning"] {
+  color: #865500;
+}
+
+[data-view-panel="monitor"] [data-level="critical"] {
+  color: var(--red);
+}
+
+@media (max-width: 800px) {
+  .monitor-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 16px;
+  }
+}
+
 .intel-health .source-list {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

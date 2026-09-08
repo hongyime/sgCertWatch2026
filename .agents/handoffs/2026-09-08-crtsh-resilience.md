@@ -21,6 +21,11 @@ Do not add keys, rotate JWT, use Vercel scanning, or mark unavailable crt.sh hea
 
 ## Remaining Limits
 
+## Approved Reliability Continuation
+
+User approved all five follow-up tasks and subagent verification. Parent handles atomic lock RPCs, fenced state/checkpoint writes, runner integration, workflows, monitoring, deployment and live checks. Disjoint workers handle provider adapters/tests, scheduler folder, and notification outbox module/SQL/tests. Do not deploy before SQL grants, lock contention/expiry and outbox replay tests pass. Scheduler must dispatch GitHub Actions only and avoid duplicate work; no privileged database key in Cloudflare. Check existing Wrangler authentication; otherwise ask for account setup and a repo-scoped GitHub Actions token. Optional Telegram requires a destination before real delivery/incident verification. Start and record an actual 24-hour soak after activation; do not claim completion from unit tests alone.
+
 - GitHub cron is active but actual scheduled runs had a median 2h51m gap in the audited sample, with a maximum 12h26m. Offset `7,22,37,52` is only mitigation. Asked user about a free Cloudflare trigger; no answer/account integration yet. Any independent trigger should dispatch the existing workflow so its concurrency guard remains effective, not start a competing scanner.
-- Database lock is advisory; GitHub workflow concurrency is the serialization boundary. Use an atomic owner-checked lock before introducing independent scanner processes.
-- Optional Telegram delivery is bounded/best-effort, with no durable retry queue for unsent notifications. Stored Domains findings remain authoritative.
+- Atomic owner-checked database leases and the durable outbox are implemented, with additive migrations applied. Final integrated local suites pass, including 74 scheduler tests; independent PostgreSQL 16.15 tests pass 15 outbox mocks, 15 SQL checks, 20-way lock contention and four blocked-expiry regressions. CI provisions PostgreSQL 17 and now includes desktop/mobile Chromium fixtures.
+- Final CI-mode browser fixtures pass at 1440x900 and 390x900 with ten screenshots inspected. Release security review has no blockers; dependency audit reports zero vulnerabilities. No owned test containers/processes remain. Runtime release, hosted CI and live workflow/browser verification are next.
+- External scheduler is implemented but not remotely activated. Repo-scoped Actions token and operational alert destination are still absent. Domain notification delivery needs Telegram credentials. Do not reuse the broad machine token or count simulated cadence as the required live 24-hour soak. Stored Domains findings remain authoritative even without notifications.

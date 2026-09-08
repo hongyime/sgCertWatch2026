@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "deployment_performed": false,
+  "worker_name": "sgcertwatch-scheduler",
+  "config": "scheduler/wrangler.jsonc",
+  "required_secrets": {
+    "GITHUB_TOKEN": "Parent supplies SCHEDULER_GITHUB_TOKEN from ignored .env.scheduler. Fine-grained PAT, selected repository only, Actions read/write. Never reuse the broad shell token.",
+    "STATUS_TOKEN": "Random secret of at least 32 characters. Read-only GET /status uses Authorization: Bearer."
+  },
+  "optional_secrets": {
+    "TELEGRAM_BOT_TOKEN": "Pair with TELEGRAM_CHAT_ID for proactive alerts.",
+    "TELEGRAM_CHAT_ID": "Private alert destination, stored only as a Worker secret.",
+    "ALERT_WEBHOOK_URL": "Alternative HTTPS destination, Worker secret only. Telegram takes precedence when both are configured.",
+    "ALERT_WEBHOOK_SECRET": "Optional Bearer credential for the private webhook.",
+    "SUPABASE_URL": "Direct https://<project>.supabase.co origin, without path/query/credentials.",
+    "SUPABASE_PUBLISHABLE_KEY": "Public publishable key or anon JWT. Privileged secret/service-role keys are rejected."
+  },
+  "integration": {
+    "workflow_inputs": { "scheduler": "cloudflare" },
+    "workflows": { "ingest.yml": "15 minutes", "intel.yml": "60 minutes", "notifications.yml": "15 minutes" },
+    "watchdog_cron_utc": "*/5 * * * *",
+    "heartbeat_rows": ["ct_poll_status", "intel_poll_status", "notifications_poll_status"],
+    "heartbeat_access": "Parent grants anon SELECT of the three safe ingest_state rows. No outbox payload read, RPC call or service key is used.",
+    "heartbeat_isolation": "Per-workflow parse errors cannot gate valid sibling pipelines. Transport/JSON failures are global. A never-observed missing row bootstraps via GitHub recency and durable reservations; an established malformed/missing scan heartbeat gates only that scan.",
+    "execution_lock": "Parent owns workflow concurrency and atomic DB lock with CT 14m / intel 55m minimum intervals. These protect the cross-provider dispatch race.",
+    "public_routes": "Only protected GET /status. Cron calls the singleton object internally; no public mutation route.",
+    "alert_delivery": "Stable per-incident transition event_id; five attempts with >=5m exponential cooldown capped at 60m locally; longer Retry-After survives body stalls. Expired leases and unknown outcomes retry. Recovery retains the previous delivery record and queues a resolved-incident summary for attempted/rate-limited notices; pending recovery keeps status nonhealthy. At-least-once attempts can duplicate a delivered message after a lost response. Dead letters remain visible.",
+    "dispatch_ambiguity": "Reservation persists before POST. Accepted/unconfirmed outcomes wait up to two workflow intervals; observed runs use the 14m/55m minimum plus durable 15m/60m slot. Reservations record origin and correlation. No exactly-once claim across GitHub's API boundary.",
+    "soak": "No 24h pass is asserted. Parent verifier evaluates soak.active, observedActiveMs, unique actual start/success counts, maximum gaps, freshness and configured alert channel. An elapsed interval alone is insufficient."
+  },
+  "commands_for_parent": {
+    "test": "node --test scheduler/tests/*.test.mjs",
+    "validate": "wrangler deploy --dry-run --config scheduler/wrangler.jsonc --outdir scheduler/dist",
+    "deploy_after_review": "wrangler deploy --config scheduler/wrangler.jsonc",
+    "set_secret": "wrangler secret put <NAME> --config scheduler/wrangler.jsonc"
+  },
+  "free_plan_verified_at": "2026-09-08",
+  "free_plan_limits": {
+    "workers_requests_per_day": 100000,
+    "workers_cpu_ms_per_invocation": 10,
+    "workers_external_subrequests_per_invocation": 50,
+    "cron_triggers_per_account": 5,
+    "durable_object_requests_per_day": 100000,
+    "durable_object_duration_gb_seconds_per_day": 13000,
+    "sqlite_rows_read_per_day": 5000000,
+    "sqlite_rows_written_per_day": 100000,
+    "sqlite_storage_gb_per_account": 5,
+    "sqlite_storage_gb_per_object": 1,
+    "notes": "Free supports SQLite-backed Durable Objects via new_sqlite_classes. Quota exhaustion fails operations, with daily reset at 00:00 UTC. Other account workloads share the quotas."
+  },
+  "design_bounds": {
+    "scheduled_ticks_per_day": 288,
+    "external_requests_per_tick_max": 36,
+    "external_request_timeout_ms": 5000,
+    "external_io_budget_ms_per_tick": 90000,
+    "durable_tick_lease_ms": 120000,
+    "persistent_state_keys": 1,
+    "recent_events_retained": 48,
+    "note": "Metrics are cumulative counters beyond the event ring. No timers remain between ticks. Local tests do not prove production CPU usage or a live soak."
+  },
+  "official_sources": [
+    "https://developers.cloudflare.com/durable-objects/platform/pricing/",
+    "https://developers.cloudflare.com/durable-objects/platform/limits/",
+    "https://developers.cloudflare.com/workers/platform/limits/",
+    "https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/",
+    "https://developers.cloudflare.com/changelog/product/durable-objects/",
+    "https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28",
+    "https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api",
+    "https://supabase.com/docs/guides/getting-started/api-keys",
+    "https://core.telegram.org/bots/api#responseparameters"
+  ]
+}

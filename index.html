@@ -176,6 +176,25 @@
               <strong id="pending-status">-</strong>
             </article>
           </div>
+          <section class="monitor-operations" aria-label="CT operations">
+            <p class="monitor-scheduler"><strong>Scheduler</strong> <span id="ct-scheduler">Checking</span></p>
+            <p class="monitor-cadence">15-minute target, timing not guaranteed. GitHub cron: 7,22,37,52 * * * * (UTC).</p>
+            <dl class="monitor-metrics">
+              <div><dt>Last start</dt><dd id="ct-last-start">Not reported</dd></div>
+              <div><dt>Last success</dt><dd id="ct-last-success">Not reported</dd></div>
+              <div><dt>Next due (15-min target)</dt><dd id="ct-next-due">Not reported</dd></div>
+              <div><dt>Runtime</dt><dd id="ct-runtime">Not reported</dd></div>
+              <div><dt>Scan state</dt><dd id="ct-run-state">Pending</dd></div>
+              <div><dt>Success freshness</dt><dd id="ct-freshness">Not reported</dd></div>
+              <div><dt>Measured cursor lag</dt><dd id="ct-cursor-lag">Not measured</dd></div>
+              <div><dt>Run / trigger</dt><dd id="ct-run">Not reported</dd></div>
+              <div><dt>Notification queue</dt><dd id="notification-state">Not reported</dd></div>
+              <div><dt>Pending notifications</dt><dd id="notification-pending">Not reported</dd></div>
+              <div><dt>Dead-letter notifications</dt><dd id="notification-dead">Not reported</dd></div>
+              <div><dt>Oldest pending</dt><dd id="notification-oldest">Not reported</dd></div>
+            </dl>
+            <p class="monitor-cadence">Notification status checked: <span id="notification-checked">Not reported</span></p>
+          </section>
           <details class="source-details">
             <summary>Latest CT scan run details</summary>
             <div class="source-list" id="source-list"></div>

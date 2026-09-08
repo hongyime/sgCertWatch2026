@@ -24,7 +24,7 @@ function evidence(domain, extra = {}) {
     details: {}, ...extra };
 }
 
-function mockDatabase(t, { findings = [], evidence: evidenceRows = [], states = {}, runs = [], fail = null } = {}) {
+function mockDatabase(t, { findings = [], evidence: evidenceRows = [], states = {}, runs = [], logs = [], publicCursorState = false, fail = null } = {}) {
   const calls = [];
   t.mock.method(globalThis, "fetch", async (input, options = {}) => {
     const url = new URL(input);
@@ -68,8 +68,11 @@ function mockDatabase(t, { findings = [], evidence: evidenceRows = [], states = 
       }
     } else if (table === "ingest_state") {
       const key = url.searchParams.get("key").slice(3);
-      if (key === "intel_source_state" && options.headers.apikey !== "test-service") rows = [];
+      if ((key === "intel_source_state" || (key === "ct_source_state" && !publicCursorState))
+        && options.headers.apikey !== "test-service") rows = [];
       else if (states[key]) rows = [states[key]];
+    } else if (table === "ct_logs") {
+      rows = logs;
     } else if (table === "ct_source_runs") {
       const source = url.searchParams.get("source");
       rows = runs.filter((run) => !source || (source.startsWith("eq.")
@@ -215,6 +218,154 @@ test("an absent CT heartbeat is pending, never healthy by default", async (t) =>
   mockDatabase(t, { states: {} });
   const { body } = await invoke(statusHandler);
   assert.equal(body.health, "pending");
+  assert.equal(body.operations.last_success_at, null);
+  assert.equal(body.operations.next_due_at, null);
+  assert.equal(body.cursor_lag.lag_entries, null);
+});
+
+test("CT freshness uses last success with strict warning/critical thresholds even while running", async (t) => {
+  t.mock.method(Date, "now", () => now);
+  const states = ctState();
+  const poll = states.ct_poll_status.value;
+  Object.assign(poll, { state: "running", last_started_at: at(-1 / 60), duration_ms: 123,
+    run_id: "test-run-123", trigger: "workflow_dispatch", scheduler_trigger: "cloudflare" });
+  mockDatabase(t, { states, runs: [{ source: "direct_ct", ok: true, checked_at: at() }] });
+  for (const [minutes, freshness, health] of [[15, "fresh", "healthy"], [30, "fresh", "healthy"],
+    [30.01, "warning", "stale"], [60, "warning", "stale"], [60.01, "critical", "stale"]]) {
+    poll.last_success_at = at(-minutes / 60);
+    const { statusCode, body } = await invoke(statusHandler);
+    assert.equal(statusCode, 200);
+    assert.equal(body.health, health);
+    assert.equal(body.operations.freshness, freshness);
+    assert.equal(body.operations.state, "running");
+    assert.equal(body.operations.runtime_ms, 60000, "Running runtime never reuses the previous duration");
+    assert.equal(body.operations.checked_at, poll.checked_at);
+    assert.equal(body.operations.last_success_at, poll.last_success_at);
+    assert.equal(body.operations.next_due_at, at(14 / 60));
+    assert.equal(body.operations.run_id, poll.run_id);
+    assert.equal(body.operations.trigger, "workflow_dispatch");
+    assert.equal(body.operations.target_interval_minutes, 15);
+  }
+});
+
+test("legacy fallback requires a successful health and never uses row updates or explicit missing successes", async (t) => {
+  t.mock.method(Date, "now", () => now);
+  const states = ctState();
+  mockDatabase(t, { states });
+  for (const health of ["healthy", "partial", "down", "pending", "degraded"]) {
+    states.ct_poll_status.value = { checked_at: at(-0.1), health };
+    const { body } = await invoke(statusHandler);
+    assert.equal(body.operations.last_success_at, ["healthy", "partial"].includes(health) ? at(-0.1) : null);
+  }
+  for (const value of [null, "invalid"]) {
+    states.ct_poll_status.value = { checked_at: at(), health: "healthy", last_success_at: value };
+    const { body } = await invoke(statusHandler);
+    assert.equal(body.health, "pending");
+    assert.equal(body.operations.last_success_at, null);
+  }
+  states.ct_poll_status.value = { health: "healthy", state: "running", last_started_at: at() };
+  const { body } = await invoke(statusHandler);
+  assert.equal(body.health, "pending");
+  assert.equal(body.operations.freshness, "unknown");
+  assert.equal(body.operations.last_success_at, null);
+});
+
+test("a failed CT run stays down after freshness expires and completed runtime stays fixed", async (t) => {
+  t.mock.method(Date, "now", () => now);
+  const states = ctState(at(-2));
+  Object.assign(states.ct_poll_status.value, { state: "failed", health: "down", last_success_at: at(-3),
+    last_started_at: at(-2.1), duration_ms: 120000 });
+  mockDatabase(t, { states, runs: [{ source: "direct_ct", ok: true, checked_at: at() }] });
+  const { body } = await invoke(statusHandler);
+  assert.equal(body.health, "down");
+  assert.equal(body.operations.freshness, "critical");
+  assert.equal(body.operations.runtime_ms, 120000);
+  Object.assign(states.ct_poll_status.value, { state: "completed", health: "partial", last_success_at: at() });
+  const completed = (await invoke(statusHandler)).body;
+  assert.equal(completed.health, "partial");
+  assert.equal(completed.operations.runtime_ms, 120000);
+});
+
+test("scheduler observation requires its actual persisted timestamp and preserves fallback history", async (t) => {
+  const states = ctState();
+  const poll = states.ct_poll_status.value;
+  Object.assign(poll, { scheduler_trigger: "cloudflare", last_started_at: at() });
+  mockDatabase(t, { states });
+  let body = (await invoke(statusHandler)).body;
+  assert.equal(body.schedule.last_external_trigger_at, null);
+  assert.equal(body.schedule.cron, "7,22,37,52 * * * *");
+  assert.equal(body.intel_schedule.cron, "7 * * * *");
+  Object.assign(poll, { scheduler_trigger: "github", last_external_trigger_at: at(-24) });
+  body = (await invoke(statusHandler)).body;
+  assert.equal(body.schedule.last_external_trigger_at, at(-24));
+  poll.last_external_trigger_at = "invalid";
+  assert.equal((await invoke(statusHandler)).body.schedule.last_external_trigger_at, null);
+});
+
+const cursorLogs = Array.from({ length: 5 }, (_, i) => ({ log_id: `test-log-${i}`, state: "usable", protocol: "rfc6962" }));
+function cursorStates() {
+  return { ...ctState(), ct_source_state: { value: { direct_ct: { cursors: {
+    "test-log-0": { tree_size: 1000, next_index: 750, checked_at: at() },
+    "test-log-1": { treeSize: 500, next: 500, checked_at: at() },
+    "test-log-2": { tree_size: 100 },
+    "test-log-3": { tree_size: null, next_index: null },
+    "test-log-4": { tree_size: 10, next_index: 11 }
+  } } } } };
+}
+
+test("RLS-hidden cursors never become measured zero-lag sources", async (t) => {
+  const calls = mockDatabase(t, { states: cursorStates(), logs: cursorLogs });
+  const { body } = await invoke(statusHandler);
+  assert.equal(body.health, "healthy");
+  assert.deepEqual(body.cursor_lag, { measured_logs: 0, lag_entries: null, max_lag_entries: null });
+  assert.ok(body.sources.every((row) => row.lag_entries === null));
+  assert.ok(calls.every((call) => call.headers.apikey === "test-anon"));
+});
+
+test("cursor lag includes only valid measured tree sizes and positions, including actual zero", async (t) => {
+  mockDatabase(t, { states: cursorStates(), logs: cursorLogs, publicCursorState: true });
+  const { body } = await invoke(statusHandler);
+  assert.deepEqual(body.cursor_lag, { measured_logs: 2, lag_entries: 250, max_lag_entries: 250 });
+  assert.deepEqual(body.sources.filter((row) => row.protocol === "rfc6962").map((row) => row.lag_entries), [250, 0]);
+});
+
+test("notification status exposes only safe aggregates, with missing counts distinct from zero", async (t) => {
+  const states = { ...ctState(), notifications_poll_status: { value: { state: "partial", checked_at: at(),
+    pending: 80, dead: 3, oldest_pending_at: at(-4), payload: { token: "fake-secret-must-not-leak" },
+    errors: [{ id: "private-job", message: "fake-secret-must-not-leak" }] } } };
+  const calls = mockDatabase(t, { states });
+  const { body } = await invoke(statusHandler);
+  assert.equal(body.health, "healthy");
+  assert.deepEqual(body.notifications, { state: "partial", checked_at: at(), pending: 80, dead: 3, oldest_pending_at: at(-4) });
+  assert.doesNotMatch(JSON.stringify(body), /fake-secret|private-job/);
+  assert.ok(calls.some((call) => call.url.searchParams.get("key") === "eq.notifications_poll_status"));
+  assert.ok(calls.every((call) => call.headers.apikey === "test-anon"));
+  states.notifications_poll_status.value = { state: "unconfigured", checked_at: at(), pending: 0, dead: 0 };
+  const unconfigured = (await invoke(statusHandler)).body;
+  assert.equal(unconfigured.health, "healthy");
+  assert.equal(unconfigured.notifications.state, "unconfigured");
+  assert.equal(unconfigured.notifications.pending, 0);
+  assert.equal(unconfigured.notifications.dead, 0);
+  states.notifications_poll_status.value = { state: "idle", pending: -1, dead: "0", checked_at: "invalid" };
+  const invalid = (await invoke(statusHandler)).body;
+  assert.equal(invalid.notifications.pending, null);
+  assert.equal(invalid.notifications.dead, null);
+  assert.equal(invalid.notifications.checked_at, null);
+});
+
+test("missing, failed or inaccessible notification/cursor state does not break CT health", async (t) => {
+  let failing = false;
+  mockDatabase(t, { states: ctState(), fail: (table, url) => failing && table === "ingest_state"
+    && ["eq.notifications_poll_status", "eq.ct_source_state"].includes(url.searchParams.get("key"))
+    ? "fake-private-error" : null });
+  for (const fail of [false, true]) {
+    failing = fail;
+    const { statusCode, body } = await invoke(statusHandler);
+    assert.equal(statusCode, 200);
+    assert.equal(body.health, "healthy");
+    assert.deepEqual(body.notifications, { state: "unavailable", checked_at: null, pending: null, dead: null, oldest_pending_at: null });
+    assert.doesNotMatch(JSON.stringify(body), /fake-private-error/);
+  }
 });
 
 test("crt.sh cooldown exposes real attempt/retry times without refreshing the last check", async (t) => {

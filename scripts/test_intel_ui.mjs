@@ -51,6 +51,12 @@ const low = finding("stored-low.example.test", 10);
 const watchFindings = [promoted, baseline, ctOnly, observedOnly];
 const allFindings = [...watchFindings, low];
 const sourcePayload = {
+  operations: { state: "completed", last_started_at: iso(-600000), last_success_at: iso(-420000),
+    checked_at: iso(-420000), next_due_at: iso(300000), target_interval_minutes: 15,
+    runtime_ms: 180000, duration_ms: 180000, freshness: "fresh", run_id: "test-run-123", trigger: "schedule" },
+  schedule: { runner: "github-actions", cron: "7,22,37,52 * * * *", last_external_trigger_at: null },
+  cursor_lag: { measured_logs: 0, lag_entries: null, max_lag_entries: null },
+  notifications: { state: "partial", checked_at: iso(), pending: 80, dead: 3, oldest_pending_at: iso(-7200000) },
   health: "partial", display_sources: [
     { source: "direct_ct", ok: true, label: "Direct CT logs", checked_at: iso() },
     { source: "static_ct", ok: true, label: "Static CT logs", checked_at: iso(), scanned_entries: 100, details: { budget_exhausted: true, next_retry_at: iso(3600000) } },
@@ -72,7 +78,7 @@ async function checkLayout(page) {
     if (document.documentElement.scrollWidth > innerWidth + 1) issues.push("Page overflows horizontally");
     const dialog = document.querySelector("dialog[open]");
     if (dialog && dialog.scrollWidth > dialog.clientWidth + 1) issues.push("Dialog overflows horizontally");
-    const selectors = ".view.active .watch-card-head, .view.active .triage-toolbar, .view.active .source-row, dialog[open] .dialog-header, dialog[open] .evidence-heading, dialog[open] .evidence-links";
+    const selectors = ".view.active .watch-card-head, .view.active .triage-toolbar, .view.active .source-row, .view.active .monitor-metrics, .view.active .monitor-metrics > div, .view.active .status-grid, .view.active .status-tile, dialog[open] .dialog-header, dialog[open] .evidence-heading, dialog[open] .evidence-links";
     for (const parent of document.querySelectorAll(selectors)) {
       const rects = [...parent.children].filter((child) => child.getClientRects().length).map((child) => child.getBoundingClientRect());
       for (let i = 0; i < rects.length; i++) {
@@ -85,6 +91,9 @@ async function checkLayout(page) {
         }
       }
     }
+    for (const element of document.querySelectorAll('.view.active .monitor-operations dd, .view.active .monitor-scheduler')) {
+      if (element.scrollWidth > element.clientWidth + 1) issues.push("Monitor text overflows its container");
+    }
     return issues;
   });
   assert.deepEqual(problems, []);
@@ -95,7 +104,9 @@ const base = `http://127.0.0.1:${server.address().port}`;
 let browser;
 const screenshots = await mkdtemp(join(tmpdir(), "sgcertwatch-intel-ui-"));
 try {
-  browser = await chromium.launch({ headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || undefined });
+  const isCi = Boolean(process.env.CI && !["false", "0"].includes(process.env.CI.toLowerCase()));
+  const channel = isCi ? undefined : process.env.PLAYWRIGHT_CHANNEL || undefined;
+  browser = await chromium.launch({ headless: true, channel });
   for (const width of [1440, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 900 } });
     const page = await context.newPage();
@@ -106,6 +117,7 @@ try {
     let currentFindings = allFindings;
     let currentHealth = sourcePayload;
     let failFindings = false;
+    let failStatus = false;
     let holdWatch = false;
     let heldRoute;
     let notifyHeldWatch;
@@ -128,7 +140,8 @@ try {
         const findings = url.searchParams.get("view") === "watch" ? watchFindings : currentFindings;
         return route.fulfill({ json: { storage_configured: true, findings } });
       }
-      if (url.pathname === "/api/source-status") return route.fulfill({ json: currentHealth });
+      if (url.pathname === "/api/source-status") return failStatus
+        ? route.fulfill({ status: 503, body: "Unavailable" }) : route.fulfill({ json: currentHealth });
       return route.continue();
     });
     const cards = page.locator("#finding-list [data-finding-index]");
@@ -138,9 +151,21 @@ try {
       await page.selectOption("#severity-filter", filter);
       await waitForFeed();
     };
+    const displayedTime = (value) => page.evaluate((timestamp) => new Date(timestamp).toLocaleString("en-SG", {
+      day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+    }), value);
+    const reloadMonitor = async (payload) => {
+      currentHealth = payload;
+      await page.reload();
+      await page.click('[data-view="monitor"]');
+      await page.waitForFunction(() => document.getElementById("ct-scheduler").textContent !== "Checking");
+    };
 
     await page.goto(base);
     await waitForFeed();
+    assert.equal(await page.locator('.view.active').getAttribute('data-view-panel'), "alerts");
+    assert.equal(await page.locator('.view.active h2').first().innerText(), "Domains to watch now");
+    assert.equal(await page.locator('.monitor-operations').isVisible(), false);
     assert.equal(requests[0].search, "?limit=50&view=watch");
     assert.deepEqual(await cards.locator(".watch-card-head strong").allTextContents(), [ctOnly.registrable, promoted.registrable, baseline.registrable]);
     assert.match(await cards.nth(1).innerText(), /CT MEDIUM 68/);
@@ -214,6 +239,18 @@ try {
     assert.match(await page.locator('[data-intel-source="urlscan"]').innerText(), /Next poll: Not scheduled/);
     assert.equal(await page.locator(".source-details").evaluate((el) => el.open), false);
     assert.equal(await page.locator("#source-status").innerText(), "Primary sources active");
+    assert.equal(await page.locator("#ct-scheduler").innerText(), "GitHub Actions fallback; external trigger not observed");
+    assert.match(await page.locator(".monitor-cadence").first().innerText(), /15-minute target, timing not guaranteed.*7,22,37,52/);
+    assert.equal(await page.locator("#ct-last-start").innerText(), await displayedTime(sourcePayload.operations.last_started_at));
+    assert.equal(await page.locator("#ct-last-success").innerText(), await displayedTime(sourcePayload.operations.last_success_at));
+    assert.equal(await page.locator("#ct-next-due").innerText(), await displayedTime(sourcePayload.operations.next_due_at));
+    assert.equal(await page.locator("#ct-runtime").innerText(), "3m 0s");
+    assert.equal(await page.locator("#ct-run").innerText(), "test-run-123 / schedule");
+    assert.equal(await page.locator("#ct-cursor-lag").innerText(), "Not measured");
+    assert.equal(await page.locator("#notification-pending").innerText(), "80");
+    assert.equal(await page.locator("#notification-dead").innerText(), "3");
+    assert.equal(await page.locator("#notification-oldest").innerText(), await displayedTime(sourcePayload.notifications.oldest_pending_at));
+    assert.equal(await page.locator("#notification-checked").innerText(), await displayedTime(sourcePayload.notifications.checked_at));
     await page.locator(".source-details summary").click();
     assert.match(await page.locator("#source-list").innerText(), /crt\.sh backup\ncooldown\n.*HTTP 502/);
     assert.match(await page.locator("#source-list").innerText(), /Last check:.*\nNext attempt:/);
@@ -263,26 +300,94 @@ try {
     holdWatch = false;
     await page.fill("#finding-search", "");
 
-    currentHealth = { health: "down", display_sources: [{ source: "direct_ct", ok: true, status: "ok" }] };
-    await page.reload();
-    await page.click('[data-view="monitor"]');
-    await page.locator("#source-status").filter({ hasText: "Scan failed" }).waitFor();
+    for (const [runState, freshness, minutes, label] of [
+      ["running", "fresh", 10, "Scan running"],
+      ["running", "warning", 40, "Scan overdue (warning)"],
+      ["running", "critical", 80, "Scan overdue (critical)"],
+      ["completed", "warning", 40, "Scan overdue (warning)"],
+      ["completed", "critical", 80, "Scan overdue (critical)"],
+      ["failed", "critical", 120, "Scan failed"],
+      ["running", "unknown", null, "Scan running"]
+    ]) {
+      const success = minutes === null ? null : iso(-minutes * 60000);
+      await reloadMonitor({ ...sourcePayload,
+        health: runState === "failed" ? "down" : ["warning", "critical"].includes(freshness) ? "stale"
+          : freshness === "unknown" ? "pending" : "healthy",
+        operations: { ...sourcePayload.operations, state: runState, freshness, last_success_at: success,
+          last_started_at: iso(-60000), runtime_ms: runState === "running" ? 60000 : 180000 }
+      });
+      assert.equal(await page.locator("#source-status").innerText(), label);
+      assert.equal(await page.locator("#ct-run-state").innerText(), runState[0].toUpperCase() + runState.slice(1));
+      assert.equal(await page.locator("#ct-freshness").getAttribute("data-level"), freshness);
+      assert.equal(await page.locator("#ct-last-success").innerText(), success ? await displayedTime(success) : "Not reported");
+      assert.equal(await page.locator("#ct-runtime").innerText(), runState === "running" ? "1m 0s elapsed" : "3m 0s");
+      if (minutes === null) assert.equal(await page.locator("#ct-freshness").innerText(), "No successful scan reported");
+      await checkLayout(page);
+      if (runState === "running" && freshness === "critical") {
+        await page.screenshot({ path: join(screenshots, `monitor-running-stale-${width}.png`), fullPage: true });
+      }
+    }
 
-    currentHealth = { health: "stale", display_sources: [{ source: "direct_ct", ok: false, status: "stale" }] };
-    await page.reload();
-    await page.click('[data-view="monitor"]');
+    await reloadMonitor({ ...sourcePayload,
+      schedule: { ...sourcePayload.schedule, last_external_trigger_at: iso(-86400000) },
+      cursor_lag: { measured_logs: 2, lag_entries: 250, max_lag_entries: 250 },
+      operations: { ...sourcePayload.operations, scheduler_trigger: "github", run_id: hostileText }
+    });
+    assert.equal(await page.locator("#ct-scheduler").innerText(), `GitHub Actions; external trigger observed ${await displayedTime(iso(-86400000))}`);
+    assert.equal(await page.locator("#ct-cursor-lag").innerText(), "250 entries across 2 measured logs");
+    assert.ok((await page.locator("#ct-run").innerText()).includes(hostileText));
+    assert.equal(await page.locator(".monitor-operations img, .monitor-operations [onerror]").count(), 0);
+    await checkLayout(page);
+    await page.screenshot({ path: join(screenshots, `monitor-observed-${width}.png`), fullPage: true });
+
+    for (const [queueState, pending, dead] of [["unconfigured", 0, 0], ["disabled", 0, 0], ["unavailable", null, null], ["failed", 80, 3]]) {
+      await reloadMonitor({ ...sourcePayload, health: "healthy", notifications: {
+        state: queueState, pending, dead, checked_at: null, oldest_pending_at: null
+      } });
+      assert.equal(await page.locator("#source-status").innerText(), "Monitoring active");
+      assert.equal(await page.locator("#notification-state").innerText(), queueState[0].toUpperCase() + queueState.slice(1));
+      assert.equal(await page.locator("#notification-pending").innerText(), pending === null ? "Not reported" : String(pending));
+      assert.equal(await page.locator("#notification-dead").innerText(), dead === null ? "Not reported" : String(dead));
+      assert.equal(await page.locator("#notification-oldest").innerText(), "Not reported");
+      await checkLayout(page);
+    }
+
+    currentHealth = { ...sourcePayload, health: "healthy", cursor_lag: { measured_logs: 1, lag_entries: 0 },
+      notifications: { state: "unconfigured", pending: null, dead: null } };
+    await page.clock.fastForward(60000);
+    await page.locator("#notification-state").filter({ hasText: "Unconfigured" }).waitFor();
+    assert.equal(await page.locator("#notification-pending").innerText(), "Not reported");
+    assert.equal(await page.locator("#ct-cursor-lag").innerText(), "0 entries across 1 measured log");
+    assert.equal(await page.locator("#source-status").innerText(), "Monitoring active");
+
+    failStatus = true;
+    await page.clock.fastForward(60000);
+    await page.locator("#ct-scheduler").filter({ hasText: "Unavailable" }).waitFor();
+    assert.equal(await page.locator("#ct-last-success").innerText(), "Not reported");
+    assert.equal(await page.locator("#ct-runtime").innerText(), "Not reported");
+    assert.equal(await page.locator("#ct-cursor-lag").innerText(), "Not measured");
+    assert.equal(await page.locator("#notification-state").innerText(), "Unavailable");
+    await checkLayout(page);
+    failStatus = false;
+
+    await reloadMonitor({ health: "down", display_sources: [{ source: "direct_ct", ok: true, status: "ok" }] });
+    await page.locator("#source-status").filter({ hasText: "Scan failed" }).waitFor();
+    await reloadMonitor({ health: "stale", display_sources: [{ source: "direct_ct", ok: false, status: "stale" }] });
     await page.locator("#source-status").filter({ hasText: "Scan overdue" }).waitFor();
 
-    currentHealth = {};
-    await page.reload();
-    await page.click('[data-view="monitor"]');
+    await reloadMonitor({});
     await page.locator('[data-intel-source="threatfox"]').waitFor();
     assert.deepEqual(await page.locator("#intel-source-list strong").allTextContents(), ["pending", "pending", "pending", "pending"]);
     assert.match(await page.locator("#intel-schedule").innerText(), /not reported/);
+    assert.equal(await page.locator("#ct-scheduler").innerText(), "GitHub Actions fallback; external trigger not observed");
+    assert.equal(await page.locator("#ct-last-start").innerText(), "Not reported");
+    assert.equal(await page.locator("#ct-next-due").innerText(), "Not reported");
+    assert.equal(await page.locator("#notification-pending").innerText(), "Not reported");
+    await checkLayout(page);
     assert.deepEqual(externalRequests, [], "Rendering never requests a suspected host or provider screenshot");
     assert.deepEqual(errors, []);
     await context.close();
-    console.log(`PASS intel UI at ${width}px: priority, filters, response race, evidence safety, health and layout`);
+    console.log(`PASS intel UI at ${width}px: priority, filters, response race, evidence safety, Monitor freshness/running/queues/scheduler, refresh and layout`);
   }
   console.log(`Screenshots: ${screenshots}`);
 } finally {

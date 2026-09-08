@@ -3,6 +3,7 @@ import { isLogSelected } from "../lib/ct/loglist.js";
 import { compileSourceHealth } from "../lib/ct/source-health.js";
 
 const HOUR_MS = 60 * 60 * 1000;
+const CT_TARGET_MS = 15 * 60 * 1000;
 const CT_SOURCES = ["direct_ct", "static_ct", "certstream", "crtsh"];
 const INTEL_SOURCES = [
   { source: "openphish", label: "OpenPhish", freshness: 13 * HOUR_MS },
@@ -79,6 +80,62 @@ function intelSourceRows(pollStatus, now) {
   });
 }
 
+function timestamp(value) {
+  return typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : null;
+}
+
+function count(value) {
+  return Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+
+function ctOperations(poll, now) {
+  const started = timestamp(poll?.last_started_at);
+  const checked = timestamp(poll?.checked_at);
+  // A legacy successful completion is evidence; a start or row update is not.
+  const success = timestamp(poll?.last_success_at) || (!Object.hasOwn(poll || {}, "last_success_at")
+    && ["healthy", "partial"].includes(poll?.health) ? checked : null);
+  const age = success ? Math.max(0, now - Date.parse(success)) : null;
+  const freshness = age === null ? "unknown" : age > HOUR_MS ? "critical" : age > 2 * CT_TARGET_MS ? "warning" : "fresh";
+  const state = ["running", "completed", "failed"].includes(poll?.state) ? poll.state
+    : poll?.health === "down" ? "failed" : checked ? "completed" : "pending";
+  const duration = count(poll?.duration_ms);
+  const anchor = started || checked;
+  return {
+    state,
+    last_started_at: started,
+    last_success_at: success,
+    checked_at: checked,
+    next_due_at: anchor ? new Date(Date.parse(anchor) + CT_TARGET_MS).toISOString() : null,
+    target_interval_minutes: 15,
+    duration_ms: duration,
+    runtime_ms: state === "running" ? (started ? Math.max(0, now - Date.parse(started)) : null) : duration,
+    success_age_ms: age,
+    freshness,
+    run_id: typeof poll?.run_id === "string" ? poll.run_id : null,
+    trigger: typeof poll?.trigger === "string" ? poll.trigger : null,
+    scheduler_trigger: typeof poll?.scheduler_trigger === "string" ? poll.scheduler_trigger : null
+  };
+}
+
+function measuredCursor(log, cursors) {
+  const cursor = cursors[log.log_id] || cursors[log.submission_url] || cursors[log.monitoring_url];
+  const tree = count(cursor?.tree_size ?? cursor?.treeSize);
+  const next = count(cursor?.next_index ?? cursor?.next);
+  return tree !== null && next !== null && next <= tree;
+}
+
+function notificationSummary(result) {
+  const value = result.row?.value;
+  const states = ["idle", "running", "drained", "completed", "partial", "failed", "lease_lost", "unconfigured", "disabled"];
+  return {
+    state: result.error || !value ? "unavailable" : states.includes(value.state) ? value.state : "unavailable",
+    checked_at: timestamp(value?.checked_at),
+    pending: count(value?.pending),
+    dead: count(value?.dead),
+    oldest_pending_at: timestamp(value?.oldest_pending_at)
+  };
+}
+
 export default async function handler(request, response) {
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
@@ -87,22 +144,24 @@ export default async function handler(request, response) {
   }
 
   try {
-    const [pollStatusRow, sourceRuns, sourceStateRow, intelResult, logsResult] = await Promise.all([
+    const [pollStatusRow, sourceRuns, sourceStateRow, intelResult, logsResult, notificationsResult] = await Promise.all([
       getState("ct_poll_status"),
       listSourceRuns(24, CT_SOURCES),
-      getState("ct_source_state"),
+      getState("ct_source_state").catch(() => null),
       getState("intel_poll_status").then((row) => ({ row }), (error) => ({ error })),
-      listCtLogs().then((rows) => rows.filter((log) => isLogSelected(log)), () => [])
+      listCtLogs().then((rows) => rows.filter((log) => isLogSelected(log)), () => []),
+      getState("notifications_poll_status").then((row) => ({ row }), (error) => ({ error }))
     ]);
     const sourceState = sourceStateRow?.value || {};
     const now = Date.now();
 
+    const cursors = {
+      ...(sourceState?.direct_ct?.cursors || {}),
+      ...(sourceState?.static_ct?.cursors || {})
+    };
     const healthSummary = compileSourceHealth({
-      ctLogs: logsResult,
-      cursors: {
-        ...(sourceState?.direct_ct?.cursors || {}),
-        ...(sourceState?.static_ct?.cursors || {})
-      },
+      ctLogs: logsResult.filter((log) => measuredCursor(log, cursors)),
+      cursors,
       sourceRuns,
       pollStatus: pollStatusRow?.value || null
     });
@@ -111,9 +170,12 @@ export default async function handler(request, response) {
       ? latestRuns.map((run) => displaySourceForRun(run, now))
       : [];
     const latestPoll = pollStatusRow?.value || null;
-    const pollTime = Date.parse(latestPoll?.checked_at || pollStatusRow?.updated_at);
-    const stalePoll = latestPoll && (!Number.isFinite(pollTime) || now - pollTime > HOUR_MS);
-    const health = stalePoll ? "stale" : latestPoll?.health || "pending";
+    const operations = ctOperations(latestPoll, now);
+    const health = operations.state === "failed" || latestPoll?.health === "down" ? "down"
+      : ["warning", "critical"].includes(operations.freshness) ? "stale"
+      : operations.freshness === "unknown" ? "pending" : latestPoll?.health || "pending";
+    const measured = healthSummary.sources.filter((row) => Number.isFinite(row.lag_entries));
+    const externalTrigger = timestamp(latestPoll?.last_external_trigger_at);
     const intelSources = intelSourceRows(intelResult.row?.value, now);
     if (intelResult.error) {
       for (const row of intelSources) {
@@ -126,6 +188,13 @@ export default async function handler(request, response) {
       storage_configured: configured(),
       ...healthSummary,
       health,
+      operations,
+      cursor_lag: {
+        measured_logs: measured.length,
+        lag_entries: measured.length ? measured.reduce((total, row) => total + row.lag_entries, 0) : null,
+        max_lag_entries: measured.length ? Math.max(...measured.map((row) => row.lag_entries)) : null
+      },
+      notifications: notificationSummary(notificationsResult),
       display_sources: displaySources,
       intel_sources: intelSources,
       intel_schedule: {
@@ -138,7 +207,9 @@ export default async function handler(request, response) {
         runner: "github-actions",
         workflow: "ingest.yml",
         cron: "7,22,37,52 * * * *",
-        script: "scripts/run-ingest.mjs"
+        script: "scripts/run-ingest.mjs",
+        target_interval_minutes: 15,
+        last_external_trigger_at: externalTrigger
       },
       source_runs: sourceRuns,
       updated_at: pollStatusRow?.updated_at || new Date().toISOString()

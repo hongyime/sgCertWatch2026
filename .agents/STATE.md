@@ -1,6 +1,24 @@
 # Agent State
 
-Current task: crt.sh diagnosis and CT resilience deployed; independent scheduler setup remains pending (2026-09-08).
+Current task: resume reliability completion goal after action-plan delivery (2026-09-08). Finish integrated verification, release reviewed runtime, and verify production; external scheduler activation and live soak remain required.
+
+Current implementation:
+- Final browser gate passes in CI-mode bundled Chromium at 1440x900 and 390x900; ten screenshots inspected without layout issues. All local test processes and disposable containers stopped. Preparing reviewed reliability commit/push, then hosted PostgreSQL 17 CI, production deployment and actual workflow verification.
+- Final integrated core, intel, reliability and release-data suites pass; dependency audit reports zero vulnerabilities. Independent PostgreSQL 16.15 verification passes all 15 outbox mock + 15 SQL checks, 20-contender locks and four blocked-expiry regressions. Release security review reports no blockers. Production smoke coverage now includes default Domains, exports, Watchlist search and Review, pending rollout.
+- CI now covers new .mjs/SQL tests, verification scripts and frontend assets, and runs desktop/mobile fixtures with installed Chromium. Independent agents are verifying final PostgreSQL scenarios, browser compatibility and release security; parent runs integrated suites and handles deployment.
+- Parent owns atomic owner-checked database leases, runner integration, operational status, deployment and live verification.
+- Provider worker owns direct/static CT cooldown consistency and regression tests; scheduler worker owns the free Cloudflare dispatcher/watchdog; notification worker owns durable outbox SQL and delivery/retry tests.
+- Required gates: concurrency/expiry tests, persistent provider cooldown validation, durable overflow/retry verification, independent scheduler activation, proactive failure/recovery alerts, desktop/mobile checks and a measured 24-hour soak.
+- Cloudflare and notification credentials are not present in the process environment; check existing CLI authorization before asking user for setup. Never copy broad credentials into new services.
+- No JWT rotation, Google Cloud, paid services or Vercel scanning. Goal remains active until deployment and runtime evidence satisfy all five plan items.
+- Atomic lock migration applied additively; live REST test passed 20 simultaneous contenders/exactly one winner, nonowner release rejection and anonymous RPC rejection. SQL rollback tests cover lease expiry, renewal and service-only grants. CT/Intel runners now use fenced state writes and duplicate-trigger timing gates; runtime not deployed yet.
+- Wrangler is authenticated. Requested repo-scoped scheduler GitHub token and operational alert destination through ignored `.env.scheduler`; no new secrets installed yet. Provider agent completed direct operator cooldowns and 35 tests, now independently reviewing lock safety. Monitor worker is adding operational timestamps and queue visibility.
+- Outbox migration applied after live rolled-back 100-job/expiry/dedupe/RLS verification. Enqueue precedes CT checkpoints only with configured Telegram; delivery runs in its own workflow and public counts are aggregate-only. CI now provisions disposable PostgreSQL 17 for SQL tests, including real lock contention.
+- Independent review reproduced expiry-before-row-lock-wait races, status-read history loss, and writes continuing after known lease loss. Parent fixed all three and reapplied lock SQL; live 20-contender REST check still passes. Reviewer is adding blocked-past-expiry SQL regressions. Both desktop/mobile Monitor fixture flows pass after Playwright upgrade; final full suites and deployment pending.
+- Added independent 24-hour soak verifier using Worker metrics plus committed CT run metadata. Scheduler cadence and uncertain alert retries are still under independent review. Existing ws/Playwright audit advisories were patched; final audit pending. No production scanner runtime push yet.
+- Final dependency audit now reports zero vulnerabilities (ws 8.21.3, Playwright 1.63.0; pg 8.23.0 for CI SQL tests). Real local workerd verified bearer auth, persisted SQLite tick status and zero external requests with missing credentials. Worker is not deployed/activated remotely yet.
+- Final independent reviews approve the scheduler heartbeat isolation, retained recovery notices and stalled-body Retry-After fixes. Scheduler worker reports 74/74 tests, local SQLite restart/concurrency smoke and Wrangler dry-run passing; these are not a production soak. Notification worker reports 15 mock checks passing; final 15 SQL checks still need verification against PostgreSQL. Lock reviewer stopped its disposable test container successfully.
+- Remaining release gates: push/deploy reviewed runtime; verify hosted CI, actual CT/intel/notification runs and both public desktop/mobile flows. Final combined local suites, independent SQL tests and browser fixtures now pass. External scheduler and real alerts still need a repo-scoped token and destination in ignored configuration; .env.scheduler is absent. No broad token reuse. Complete the measured 24-hour soak only after activation.
 
 Current investigation:
 - Official crt.sh root `/?identity=...&output=json` is supported. Upstream May 28, 2026 notice attributes recurring 50x failures to overloaded/frozen database replicas and inefficient result sorting.
@@ -189,12 +207,12 @@ Next steps:
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-08 16:16:25 +08:00
+- Updated: 2026-09-08 17:18:59 +08:00
 - Machine: PRAWN-E14
 - Harness: codex
 - Event: session-start
 - Branch: main
-- HEAD: 8027e6e
+- HEAD: 4b82220
 - Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->

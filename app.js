@@ -532,6 +532,40 @@ function renderIntelSourceStatus(source) {
   }).join("");
 }
 
+function renderMonitorOperations(source, unavailable = false) {
+  const operations = source.operations || {};
+  const notifications = source.notifications || {};
+  const time = (value) => typeof value === "string" && Number.isFinite(Date.parse(value)) ? formatTime(value) : "Not reported";
+  const count = (value) => Number.isSafeInteger(value) && value >= 0 ? value.toLocaleString() : "Not reported";
+  const external = source.schedule?.last_external_trigger_at;
+  $("ct-scheduler").textContent = unavailable ? "Unavailable"
+    : time(external) !== "Not reported" ? `GitHub Actions; external trigger observed ${time(external)}`
+    : "GitHub Actions fallback; external trigger not observed";
+  $("ct-last-start").textContent = time(operations.last_started_at);
+  $("ct-last-success").textContent = time(operations.last_success_at);
+  $("ct-next-due").textContent = time(operations.next_due_at);
+  const runtime = operations.runtime_ms;
+  $("ct-runtime").textContent = Number.isFinite(runtime) && runtime >= 0
+    ? `${Math.floor(runtime / 60000)}m ${Math.floor(runtime / 1000) % 60}s${operations.state === "running" ? " elapsed" : ""}` : "Not reported";
+  $("ct-run-state").textContent = unavailable ? "Unavailable"
+    : ({ running: "Running", completed: "Completed", failed: "Failed" })[operations.state] || "Pending";
+  $("ct-freshness").textContent = unavailable ? "Unavailable" : ({
+    fresh: "Fresh", warning: "Warning (>30 min)", critical: "Critical (>60 min)"
+  })[operations.freshness] || "No successful scan reported";
+  $("ct-freshness").dataset.level = operations.freshness || "unknown";
+  const lag = source.cursor_lag;
+  $("ct-cursor-lag").textContent = lag?.measured_logs > 0 && count(lag.lag_entries) !== "Not reported"
+    ? `${count(lag.lag_entries)} entries across ${count(lag.measured_logs)} measured ${lag.measured_logs === 1 ? "log" : "logs"}` : "Not measured";
+  $("ct-run").textContent = [operations.run_id, operations.trigger].filter(Boolean).join(" / ") || "Not reported";
+  $("notification-state").textContent = ({ idle: "Idle", running: "Running", drained: "Drained", completed: "Completed",
+    partial: "Partial", failed: "Failed", lease_lost: "Lease lost", unconfigured: "Unconfigured", disabled: "Disabled" })[notifications.state] || "Unavailable";
+  $("notification-pending").textContent = count(notifications.pending);
+  $("notification-dead").textContent = count(notifications.dead);
+  $("notification-dead").dataset.level = notifications.dead > 0 ? "critical" : "unknown";
+  $("notification-oldest").textContent = time(notifications.oldest_pending_at);
+  $("notification-checked").textContent = time(notifications.checked_at);
+}
+
 async function renderSourceStatus() {
   try {
     const response = await fetch(CT_SOURCE_STATUS_URL);
@@ -541,17 +575,24 @@ async function renderSourceStatus() {
     const source = status.status && typeof status.status === "object" ? status.status : status;
     const sources = (source.display_sources || source.sources || []).filter((item) => !Object.hasOwn(INTEL_SOURCES, item.source));
     renderIntelSourceStatus(source);
+    renderMonitorOperations(source);
     const okCount = sources.filter((item) => item.ok || item.status === "ok").length;
     const health = source.health || source.overall;
     const primaryActive = sources.some((item) => item.source === "direct_ct" && item.ok)
       || sources.some((item) => item.source === "static_ct" && item.ok);
 
-    if (health === "healthy") {
-      $("source-status").textContent = "Monitoring active";
-    } else if (health === "stale") {
-      $("source-status").textContent = "Scan overdue";
-    } else if (health === "down") {
+    $("source-status").dataset.level = health === "down" ? "critical" : source.operations?.freshness || "unknown";
+    if (health === "down" || source.operations?.state === "failed") {
       $("source-status").textContent = "Scan failed";
+    } else if (health === "stale") {
+      $("source-status").textContent = source.operations?.freshness === "critical" ? "Scan overdue (critical)"
+        : source.operations?.freshness === "warning" ? "Scan overdue (warning)" : "Scan overdue";
+    } else if (source.operations?.state === "running") {
+      $("source-status").textContent = "Scan running";
+    } else if (health === "pending") {
+      $("source-status").textContent = "waiting for scan";
+    } else if (health === "healthy") {
+      $("source-status").textContent = "Monitoring active";
     } else if (primaryActive) {
       $("source-status").textContent = "Primary sources active";
     } else if (health === "partial" || okCount > 0) {
@@ -579,6 +620,8 @@ async function renderSourceStatus() {
       }).join("")
       : '<div class="source-row"><span>Waiting for first scan</span><strong>pending</strong><small>No CT scan details reported</small></div>';
   } catch (_error) {
+    renderMonitorOperations({}, true);
+    $("source-status").dataset.level = "unknown";
     $("source-status").textContent = "scan status unknown";
     $("source-list").innerHTML = '<div class="source-row bad"><span>Status API</span><strong>unavailable</strong><small>Could not load source health</small></div>';
     $("intel-schedule").textContent = "Intel schedule unavailable";

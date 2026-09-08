@@ -12,7 +12,7 @@ sgCertWatch2026 is a Singapore-focused Certificate Transparency monitoring dashb
 - `lib/ct/` contains the CertStream, direct CT log, and `crt.sh` source adapters.
 - `api/findings.js` exposes recent stored findings for the dashboard.
 - `api/source-status.js` exposes source health for the dashboard.
-- `.github/workflows/ingest.yml` polls CT sources on GitHub Actions every 15 minutes.
+- `.github/workflows/ingest.yml` polls CT sources on GitHub Actions with a 15-minute target.
 ## Usage
 
 Validate the seed data and scoring engine:
@@ -21,6 +21,7 @@ Validate the seed data and scoring engine:
 npm run validate
 npm run test:unit
 npm run test:intel
+npm run test:reliability
 ```
 
 ## Ingestion
@@ -29,19 +30,30 @@ CT polling runs on GitHub Actions (`scripts/run-ingest.mjs`), which executes the
 orchestrator directly against Supabase using repository secrets - no HTTP hop through Vercel.
 Cursors stay in Supabase `ingest_state`, so a delayed or skipped run catches up on the next tick.
 
-The schedule targets `:07`, `:22`, `:37`, and `:52` UTC each hour. It is active, but a September 8 audit found scheduled gaps of several hours. Offsetting the cron reduces peak-time contention, not GitHub's underlying delays or dropped triggers. The dashboard marks scans older than an hour overdue. Reliable timing needs an independent scheduler to dispatch this same workflow; any extra trigger must retain the `ct-ingest` GitHub concurrency group, not run a competing scanner. See [GitHub's schedule limitations](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+GitHub's fallback schedule targets `:07`, `:22`, `:37`, and `:52` UTC each hour. A September 8 audit found gaps of several hours. The optional independent Cloudflare dispatcher in `scheduler/` targets the same workflow every 15 minutes, with hourly intelligence and independent notification delivery. It only dispatches and watches jobs; scanning never runs on Cloudflare or Vercel. GitHub runner queues can still delay starts. See [GitHub's schedule limitations](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
 
 Required repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Optional alerting secrets:
-`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `DISCORD_WEBHOOK_URL`, `ALERT_WEBHOOK_URL`,
-`ALERT_WEBHOOK_SECRET`. The dashboard functions need `SUPABASE_URL` and `SUPABASE_ANON_KEY` only, with the schema in `supabase/schema.sql`.
+`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. The dashboard functions need `SUPABASE_URL` and `SUPABASE_ANON_KEY` only. Apply `supabase/schema.sql` for a new database, then `supabase/run-locks.sql` and `supabase/notification-outbox.sql` before deploying the reliability runners.
 
 The poller samples CertStream, tails a rotating set of direct RFC6962 CT logs, reads Let's Encrypt logs through the Static CT API tile reader, and keeps `crt.sh` as a fallback comparison source. Findings and source health are stored in Supabase so the dashboard can show partial coverage instead of treating one source outage as a total outage.
 
-The Actions job polls six direct logs with up to 128 entries each, and permits 30 tiles per static log within a 90-second static-source budget. Static logs rotate across runs so later logs are not starved. Tile framing and bundle counts are validated before cursor advancement; malformed or truncated responses retain the failed tile for retry, while earlier completed tiles are retained. HTTP 429 from a static operator pauses its sibling logs for at least one hour, honoring longer `Retry-After` values. These cooldowns are saved before scoring and survive restarts or later write failures without advancing unsaved cursors. Other operators continue. Findings and CT sightings are saved in batches of 200 rows. These are sampling limits, not full CT coverage; GitHub scheduled runs can be delayed.
+The Actions job polls six direct logs with up to 128 entries each, and permits 30 tiles per static log within a 90-second static-source budget. Logs rotate across runs so later logs are not starved. Malformed responses retain the failed range for retry, while earlier completed static tiles are retained. HTTP 429 pauses sibling logs for at least one hour within each adapter, honoring longer `Retry-After` values. Cooldowns are saved before scoring and survive restarts or later write failures without advancing unsaved cursors. Other operators continue. Findings and CT sightings are saved in batches of 200 rows. These are sampling limits, not full CT coverage.
 
-Primary health comes from direct/static CT, so an idle WebSocket or backup cannot hide a primary outage. Findings and sightings are committed before cursors, with failed-write ranges replayed next run; completed cursors and scan status are committed before optional notifications. Failed stages are recorded when the database is reachable. Telegram delivery is best-effort, capped at 20 sends/30 seconds per scan, with only delivered domains added to alert deduplication history.
+Primary health comes from direct/static CT, so an idle WebSocket or backup cannot hide a primary outage. Atomic service-only database leases supplement GitHub concurrency. Renewal/release are owner-checked, and cursor/status writes validate and lock the lease row in the same transaction. Database or lease failure stops checkpoint advancement. CT has a 13-minute execution deadline within its 15-minute lease; intel has seven minutes within ten. Recent-start gates prevent fallback dispatches from repeating expensive work.
 
-Unsent notifications are not durably queued for retry. The Domains view remains the authoritative list of stored findings, including anything not delivered through an optional alert channel.
+Findings and sightings are saved before durable notification enqueue and cursor advancement. With Telegram configured, all eligible alerts enter the service-only outbox before cursors commit; a failed enqueue leaves the range replayable. With no configured channel, no jobs accumulate. `.github/workflows/notifications.yml` drains independently, including after CT runs fail. Owner-checked claims survive process crashes; confirmed Telegram receipts and dedupe history commit together. HTTP 429 pauses the channel using Retry-After. Delivery is at least once: a send succeeding just before an acknowledgement crash can cause a duplicate.
+
+Unfinished jobs are capped at 10,000; exhausted jobs remain visible for manual retry and terminal identity tombstones prevent replay duplicates. Use the notification workflow's `retry_ids` input for explicit dead-letter IDs (obtain them through service-only database access). Monitor displays aggregate queue health without recipients or payloads. The Domains view remains the authoritative findings list.
+
+### Independent Scheduler Setup
+
+Use the existing Cloudflare account's free Workers plan. The scheduler uses one cron and one SQLite Durable Object for dispatch reservations, cooldowns and deduplicated incidents. Do not change its Worker name, binding or migration tag after activation without migrating state. No paid plan is required for this small dispatcher; usage shares account limits.
+
+Create a fine-grained GitHub token restricted to this repository with Actions read/write. Place setup values in ignored `.env.scheduler`, never tracked files or chat. Install it as Worker `GITHUB_TOKEN`, not the machine's broad GitHub token. Install a random `STATUS_TOKEN` of at least 32 characters. Configure `SUPABASE_URL` and an anon/publishable `SUPABASE_PUBLISHABLE_KEY` for actual pipeline heartbeats; never install a service-role database key in the Worker. Add Telegram credentials or private HTTPS `ALERT_WEBHOOK_URL` (optional bearer `ALERT_WEBHOOK_SECRET`) for operational incidents and recovery messages.
+
+Validate with `wrangler deploy --dry-run --config scheduler/wrangler.jsonc`, then deploy with the same config after tests and workflow rollout. The protected `GET /status` requires `Authorization: Bearer <STATUS_TOKEN>`; public requests cannot dispatch scans. Missing credentials/channel must remain explicit, not reported as a verified deployment. Monitor shows external triggering only after the scanner records an actual Cloudflare-origin dispatch. A full release requires live recovery checks and a measured 24-hour soak, not only unit-test success.
+
+Run `node scripts/verify_soak.mjs` with `SCHEDULER_STATUS_URL`, `SCHEDULER_STATUS_TOKEN`, `SUPABASE_URL` and `SUPABASE_ANON_KEY` in the local environment. It requires 24 observed hours, fresh successful heartbeats, cadence counters, no scheduler gaps and independent committed CT run history. An unfinished soak exits nonzero. CI uses disposable PostgreSQL 17 for outbox concurrency and lease fencing; never point the disposable-database tests at production.
 
 ### crt.sh Backup
 

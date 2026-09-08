@@ -48,6 +48,17 @@ try {
       ? new Response("database unavailable", { status: 503 }) : Response.json(JSON.parse(options.body));
     await assert.rejects(save(inputs), /503/);
     assert.equal(calls, 2, "Stop on failed batch so the ingest cursor cannot advance");
+    let owned = true;
+    calls = 0;
+    globalThis.fetch = async (_url, options) => {
+      calls++;
+      owned = false;
+      return Response.json(JSON.parse(options.body));
+    };
+    await assert.rejects(save(inputs, { assertOwned: () => {
+      if (!owned) throw new Error("lease lost");
+    } }), /lease lost/);
+    assert.equal(calls, 1, "Known lease loss stops remaining write batches");
   }
 } finally {
   globalThis.fetch = originalFetch;

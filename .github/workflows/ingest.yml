@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
+    inputs:
+      scheduler:
+        description: "Dispatch origin"
+        type: choice
+        options: [manual, cloudflare]
+        default: manual
 
 concurrency:
   group: ct-ingest
@@ -42,4 +48,6 @@ jobs:
           DIRECT_CT_ENTRIES_PER_LOG: 128
           STATIC_CT_MAX_TILES_PER_LOG: 30
           STATIC_CT_MAX_RUN_MS: 90000
+          CT_MIN_INTERVAL_MS: 840000
+          SCHEDULER_TRIGGER: ${{ inputs.scheduler || 'github' }}
         run: node scripts/run-ingest.mjs

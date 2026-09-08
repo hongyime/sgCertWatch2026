@@ -1,10 +1,11 @@
 import { loadData } from "../lib/data.js";
 import { scoreCertificate } from "../lib/scoring.js";
 import { mergeSourceState, runSources } from "../lib/ct/orchestrator.js";
-import { dispatchNotifications } from "../lib/notify.js";
+import { enqueueNotificationAlerts } from "../lib/notification-outbox.js";
 import { summarizePrimaryHealth } from "../lib/ct/source-health.js";
 import * as storage from "../lib/supabase.js";
 import { pathToFileURL } from "node:url";
+import { acquireRunLease } from "../lib/run-lease.js";
 
 function uniqueFindings(findings) {
   const map = new Map();
@@ -65,7 +66,7 @@ function sourceRowsFor(scored) {
   }, new Map()).values()];
 }
 
-function summarizeRun(run, matched, persisted) {
+function summarizeRun(run, matched, persisted, startedAt) {
   return {
     source: run.source,
     label: run.label,
@@ -76,40 +77,60 @@ function summarizeRun(run, matched, persisted) {
     persisted,
     duration_ms: run.duration_ms,
     errors: run.errors,
-    details: run.details || {}
+    details: { ...run.details, run_started_at: startedAt, run_id: process.env.GITHUB_RUN_ID || null }
   };
 }
 
 export async function runIngest({ store = storage, scan = runSources, score = scoreCertificate,
-  notify = dispatchNotifications, readData = loadData } = {}) {
-  const { getRecentAlertRegistrables, getServiceState, insertSourceRuns, recordAlerts,
-    releaseRunLock, setState, tryAcquireRunLock, upsertFindingSources, upsertFindings } = store;
+  enqueue = enqueueNotificationAlerts, readData = loadData, now = Date.now,
+  notificationsEnabled = Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+  minIntervalMs = Number(process.env.CT_MIN_INTERVAL_MS || 0), leaseOptions = {} } = {}) {
+  const { getServiceState, insertSourceRuns, upsertFindingSources, upsertFindings } = store;
   if (!store.configured("service")) throw new Error("Supabase service credentials are required");
-  // GitHub's ct-ingest concurrency group is the serialization boundary.
-  const lockAcquired = await tryAcquireRunLock("ct_poll_run", 15 * 60);
-  if (!lockAcquired) {
+  const lease = await acquireRunLease(store, leaseOptions);
+  if (!lease) {
     console.log(JSON.stringify({ skipped: "run_in_progress" }));
     return;
   }
 
   let status;
-  let stage = "sources";
+  let previous = {};
+  let statusLoaded = false;
+  const startedAt = new Date(now()).toISOString();
+  const setState = (key, value) => lease.setState(key, value);
+  let stage = "status_read";
   try {
+    previous = (await getServiceState("ct_poll_status"))?.value || {};
+    statusLoaded = true;
+    const previousStart = Date.parse(previous.last_started_at || previous.checked_at);
+    if (Number.isFinite(previousStart) && now() - previousStart < minIntervalMs) {
+      console.log(JSON.stringify({ skipped: "scan_not_due", last_started_at: previous.last_started_at || previous.checked_at }));
+      return;
+    }
+    await setState("ct_poll_status", { ...previous, state: "running", last_started_at: startedAt,
+      run_id: process.env.GITHUB_RUN_ID || null, trigger: process.env.GITHUB_EVENT_NAME || "local",
+      scheduler_trigger: process.env.SCHEDULER_TRIGGER || "github",
+      last_external_trigger_at: process.env.SCHEDULER_TRIGGER === "cloudflare" ? startedAt : previous.last_external_trigger_at || null });
+    stage = "sources";
     const data = readData();
     const stateRow = await getServiceState("ct_source_state");
     const sourceState = stateRow?.value || {};
     const runs = await scan({ data, state: sourceState });
+    lease.assertOwned();
     console.log(JSON.stringify({ stage: "sources_fetched", sources: runs.map((run) => ({
       source: run.source, entries: run.entries.length, scanned: run.scanned_entries, duration_ms: run.duration_ms
     })) }));
 
     const backupFailure = runs.find((run) => run.source === "crtsh" && !run.ok);
-    const staticCooldowns = runs.find((run) => run.source === "static_ct")?.statePatch?.static_ct?.cooldowns;
-    if (backupFailure?.statePatch || Object.keys(staticCooldowns || {}).length) {
+    const primaryPauses = runs.filter((run) => ["static_ct", "direct_ct"].includes(run.source)
+      && Object.keys(run.statePatch?.[run.source]?.cooldowns || {}).length);
+    if (backupFailure?.statePatch || primaryPauses.length) {
       stage = "source_backoff";
       // Persist the provider pause even if scoring or later writes fail; do not advance CT cursors.
       const pausedState = mergeSourceState(sourceState, backupFailure ? [backupFailure] : []);
-      if (staticCooldowns) pausedState.static_ct = { ...sourceState.static_ct, cooldowns: staticCooldowns };
+      for (const run of primaryPauses) {
+        pausedState[run.source] = { ...sourceState[run.source], cooldowns: run.statePatch[run.source].cooldowns };
+      }
       await setState("ct_source_state", pausedState);
     }
 
@@ -136,61 +157,73 @@ export async function runIngest({ store = storage, scan = runSources, score = sc
     }
 
     const findings = uniqueFindings(scorable.map((item) => item.finding));
+    lease.assertOwned();
     console.log(JSON.stringify({ stage: "persisting", findings: findings.length }));
     stage = "findings";
-    const persistedFindings = await upsertFindings(findings);
+    const persistedFindings = await upsertFindings(findings, { assertOwned: lease.assertOwned });
+    lease.assertOwned();
     const sourceRows = sourceRowsFor(scorable);
     stage = "sightings";
-    const persistedSources = await upsertFindingSources(sourceRows);
+    const persistedSources = await upsertFindingSources(sourceRows, { assertOwned: lease.assertOwned });
+    lease.assertOwned();
+    stage = "notification_enqueue";
+    const notifications = notificationsEnabled
+      ? { state: "queued", ...await enqueue(persistedFindings, {
+        minScore: data.scoring?.thresholds?.alert_min ?? 70, assertOwned: lease.assertOwned }) }
+      : { state: "unconfigured", queued: 0 };
+    lease.assertOwned();
 
     const sourceSummaries = runs.map((run) => summarizeRun(
       run,
       matchedBySource.get(run.source) || 0,
-      sourceRows.filter((row) => row.source === run.source).length
+      sourceRows.filter((row) => row.source === run.source).length,
+      startedAt
     ));
     stage = "checkpoint";
     const nextSourceState = mergeSourceState(sourceState, runs);
     await setState("ct_source_state", nextSourceState);
+    lease.assertOwned();
     await insertSourceRuns(sourceSummaries);
 
     status = {
       ...summarizePrimaryHealth(sourceSummaries),
       source: "multi-source CT polling",
       runner: "github-actions",
+      state: "completed",
+      last_started_at: startedAt,
+      last_success_at: previous.last_success_at || (previous.ok ? previous.checked_at : null),
+      duration_ms: Math.max(0, now() - Date.parse(startedAt)),
+      run_id: process.env.GITHUB_RUN_ID || null,
+      trigger: process.env.GITHUB_EVENT_NAME || "local",
+      scheduler_trigger: process.env.SCHEDULER_TRIGGER || "github",
+      last_external_trigger_at: process.env.SCHEDULER_TRIGGER === "cloudflare" ? startedAt : previous.last_external_trigger_at || null,
       checked_at: new Date().toISOString(),
       scanned_entries: sourceSummaries.reduce((total, run) => total + run.scanned_entries, 0),
       matched: findings.length,
       persisted: persistedFindings.length,
       persisted_source_sightings: persistedSources.length,
-      notifications: { state: "pending", telegram: 0, errors: [] },
+      notifications,
       sources: sourceSummaries,
       errors: sourceSummaries.flatMap((run) => run.errors.map((error) => ({
         source: run.source,
         ...error
       })))
     };
+    if (status.ok) status.last_success_at = status.checked_at;
 
     await setState("ct_poll_status", status);
-    // Notification failures must never hold completed CT progress hostage.
-    try {
-      const alerted72h = await getRecentAlertRegistrables(72);
-      status.notifications = await notify(persistedFindings, {
-        alertedWithin72h: alerted72h, minScore: data.scoring?.thresholds?.alert_min ?? 70
-      });
-      await recordAlerts(status.notifications.delivered_registrables || []);
-    } catch (_error) {
-      status.notifications = { state: "failed", telegram: 0, errors: [{ message: "Notification delivery failed" }] };
-    }
-    try {
-      await setState("ct_poll_status", status);
-    } catch (_error) {
-      console.error("Notification summary save failed; completed CT checkpoint retained");
-    }
+    // Delivery runs independently; only durable enqueue participates in the checkpoint.
     console.log(JSON.stringify(status));
   } catch (error) {
     try {
+      if (!statusLoaded) throw new Error("Previous scan status unavailable; preserve stored history");
       await setState("ct_poll_status", {
         ok: false, health: "down", runner: "github-actions", checked_at: new Date().toISOString(),
+        state: "failed", last_started_at: startedAt,
+        last_success_at: previous.last_success_at || (previous.ok ? previous.checked_at : null),
+        duration_ms: Math.max(0, now() - Date.parse(startedAt)), run_id: process.env.GITHUB_RUN_ID || null,
+        trigger: process.env.GITHUB_EVENT_NAME || "local", scheduler_trigger: process.env.SCHEDULER_TRIGGER || "github",
+        last_external_trigger_at: process.env.SCHEDULER_TRIGGER === "cloudflare" ? startedAt : previous.last_external_trigger_at || null,
         failed_stage: stage, errors: [{ message: `CT ingest failed during ${stage}; see Actions logs` }]
       });
     } catch (_statusError) {
@@ -198,7 +231,7 @@ export async function runIngest({ store = storage, scan = runSources, score = sc
     }
     throw error;
   } finally {
-    await releaseRunLock("ct_poll_run");
+    await lease.close();
   }
 
   return status;

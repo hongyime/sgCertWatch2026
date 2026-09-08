@@ -1,0 +1,54 @@
+name: Notification Outbox
+
+on:
+  schedule:
+    - cron: "9,24,39,54 * * * *"
+  workflow_run:
+    workflows: [CT Ingest]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      scheduler:
+        description: "Dispatch origin"
+        type: choice
+        options: [manual, cloudflare]
+        default: manual
+      retry_ids:
+        description: "Optional space-separated dead-letter IDs to requeue"
+        type: string
+        required: false
+
+concurrency:
+  group: notification-outbox
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Drain durable notification queue
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RETRY_IDS: ${{ inputs.retry_ids }}
+        run: |
+          if [ -n "$RETRY_IDS" ]; then
+            read -ra ids <<< "$RETRY_IDS"
+            node scripts/run-notifications.mjs retry "${ids[@]}"
+          fi
+          node scripts/run-notifications.mjs
