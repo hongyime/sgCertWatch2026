@@ -1,6 +1,18 @@
 # Agent State
 
-Current task: Approved free threat-intelligence enrichment implemented and deployed (2026-09-08).
+Current task: Diagnose crt.sh degradation and harden autonomous CT monitoring (2026-09-08).
+
+Current investigation:
+- Official crt.sh root `/?identity=...&output=json` is supported. Upstream May 28, 2026 notice attributes recurring 50x failures to overloaded/frozen database replicas and inefficient result sorting.
+- Local root and narrow domain probes both returned HTML HTTP 404; previous Actions run returned 502. Existing adapter incorrectly treats 404 as an empty successful search.
+- Local defects: process-only breaker resets each Actions run; up to eight requests per scan; common fetch timeout stops at headers, leaving response-body reads unbounded.
+- Implement bounded optional-backup polling with persisted cooldown, accurate errors/retry time, and regression tests. Primary direct/static CT stays on GitHub Actions, with no Vercel scans or new paid services.
+- A read-only sidecar is auditing scheduler history and ingest recovery. See `.agents/handoffs/2026-09-08-crtsh-resilience.md`.
+- crt.sh cooldown/body/error tests and all existing unit/intel tests pass. Dashboard fixture checks pass desktop/mobile with visible provider error and retry times.
+- Audit found active GitHub schedules arriving hours apart (latest scheduled run 34194312243 succeeded 14:21-14:28 SGT). Offset cron is only a mitigation; asked user about free Cloudflare trigger for reliable timing.
+- Implemented primary-only availability, persisted ingest failure stages, checkpoint-before-notification ordering, bounded alert delivery and regression tests. Worker is fixing static tile error propagation and fair log rotation in its dedicated files.
+- Static CT now retains partial progress, propagates tile errors, rotates logs and strictly validates tile framing before advancing. All 24 static resilience scenarios pass, including non-DNS certificates and malformed/truncated 200 responses.
+- Core/unit, 18 storage/API tests, intel quota/provenance tests, release data validation and desktop/mobile fixture checks pass. Failed backup cooldown is saved before scoring without advancing primary cursors. Ready for push, deployment and a live Actions scan; independent scheduler is not configured yet.
 
 Active continuation:
 - CT remains discovery on GitHub Actions; widen polling budgets. No Vercel scans.
@@ -169,12 +181,12 @@ Next steps:
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-08 09:42:12 +08:00
+- Updated: 2026-09-08 16:16:25 +08:00
 - Machine: PRAWN-E14
 - Harness: codex
 - Event: session-start
 - Branch: main
-- HEAD: 8970fca
+- HEAD: 8027e6e
 - Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->

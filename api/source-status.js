@@ -26,18 +26,26 @@ function latestSourceRuns(sourceRuns) {
 function displaySourceForRun(run, now) {
   const checkedAt = Date.parse(run.checked_at);
   const stale = !Number.isFinite(checkedAt) || now - checkedAt > HOUR_MS;
+  const details = run.details || {};
+  const status = stale ? "stale" : details.state === "cooldown" ? "cooldown"
+    : details.state === "unconfigured" ? "unconfigured"
+    : run.ok ? (details.state === "scheduled" || details.state === "standby" ? "standby" : "ok") : "degraded";
+  const lastAttempt = run.source === "crtsh" && Object.hasOwn(details, "last_attempt_at")
+    ? details.last_attempt_at : run.checked_at || null;
   return {
     source: run.source,
     label: run.label || run.source,
     ok: Boolean(run.ok) && !stale,
-    status: stale ? "stale" : run.ok ? "ok" : "degraded",
+    status,
     scanned_entries: run.scanned_entries || 0,
     matched: run.matched || 0,
     persisted: run.persisted || 0,
-    checked_at: run.checked_at || null,
-    last_checked_at: run.checked_at || null,
+    checked_at: lastAttempt,
+    last_checked_at: lastAttempt,
+    next_poll_at: details.next_poll_at || null,
+    last_success_at: details.last_success_at || null,
     errors: run.errors || [],
-    details: run.details || {}
+    details
   };
 }
 
@@ -104,8 +112,8 @@ export default async function handler(request, response) {
       : [];
     const latestPoll = pollStatusRow?.value || null;
     const pollTime = Date.parse(latestPoll?.checked_at || pollStatusRow?.updated_at);
-    const stalePoll = Number.isFinite(pollTime) && now - pollTime > HOUR_MS;
-    const health = stalePoll ? "stale" : latestPoll?.health || healthSummary.overall;
+    const stalePoll = latestPoll && (!Number.isFinite(pollTime) || now - pollTime > HOUR_MS);
+    const health = stalePoll ? "stale" : latestPoll?.health || "pending";
     const intelSources = intelSourceRows(intelResult.row?.value, now);
     if (intelResult.error) {
       for (const row of intelSources) {
@@ -129,7 +137,7 @@ export default async function handler(request, response) {
       schedule: {
         runner: "github-actions",
         workflow: "ingest.yml",
-        cron: "*/15 * * * *",
+        cron: "7,22,37,52 * * * *",
         script: "scripts/run-ingest.mjs"
       },
       source_runs: sourceRuns,

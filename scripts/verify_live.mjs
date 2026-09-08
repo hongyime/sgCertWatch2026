@@ -23,6 +23,7 @@ try {
     assert.deepEqual(health.intel_sources.map((row) => row.source).sort(), ["openphish", "threatfox", "urlhaus", "urlscan"]);
     assert.equal(health.intel_schedule.runner, "github-actions");
     assert.equal(health.schedule.runner, "github-actions");
+    assert.equal(health.schedule.cron, "7,22,37,52 * * * *");
     assert.equal((await fetch(`${base}/favicon.svg`)).status, 200);
     for (const width of [1440, 390]) {
       const page = await browser.newPage({ viewport: { width, height: width === 390 ? 844 : 1000 } });
@@ -42,6 +43,10 @@ try {
       await page.click('[data-view="monitor"]');
       assert.equal(await page.locator("[data-intel-source]").count(), 4);
       assert.ok((await page.locator("#intel-schedule").innerText()).includes("GitHub Actions"));
+      await page.locator(".source-details summary").click();
+      assert.match(await page.locator("#source-list").innerText(), /Last check:/);
+      const backup = health.display_sources.find((row) => row.source === "crtsh");
+      if (backup?.next_poll_at) assert.match(await page.locator("#source-list").innerText(), /Next attempt:/);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
       await page.screenshot({ path: join(screenshots, `${new URL(base).hostname}-monitor-${width}.png`), fullPage: true });
       await page.click('[data-view="watch"]');

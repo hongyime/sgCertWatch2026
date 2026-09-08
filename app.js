@@ -179,7 +179,8 @@ function sourceDetail(item) {
   const checked = `${item.scanned_entries || 0} checked`;
   const matched = `${item.matched || 0} matches`;
   const persisted = Number.isFinite(item.persisted) ? ` - ${item.persisted} stored` : "";
-  const note = item.details?.note || item.errors?.[0]?.message || "";
+  const error = item.errors?.[0];
+  const note = [typeof error === "string" ? error : error?.message, item.details?.note].filter(Boolean).join(" - ");
   return note ? `${checked} - ${matched}${persisted} - ${note}` : `${checked} - ${matched}${persisted}`;
 }
 
@@ -545,6 +546,10 @@ async function renderSourceStatus() {
 
     if (health === "healthy") {
       $("source-status").textContent = "Monitoring active";
+    } else if (health === "stale") {
+      $("source-status").textContent = "Scan overdue";
+    } else if (health === "down") {
+      $("source-status").textContent = "Scan failed";
     } else if (primaryActive) {
       $("source-status").textContent = "Primary sources active";
     } else if (health === "partial" || okCount > 0) {
@@ -564,6 +569,8 @@ async function renderSourceStatus() {
           <span>${escapeHtml(label)}</span>
           <strong>${escapeHtml(state.label)}</strong>
           <small>${escapeHtml(sourceDetail(item))}</small>
+          <small>Last check: ${escapeHtml(formatTime(item.last_checked_at || item.checked_at))}</small>
+          ${item.next_poll_at ? `<small>Next attempt: ${escapeHtml(formatTime(item.next_poll_at))}</small>` : ""}
         </div>
       `;
       }).join("")

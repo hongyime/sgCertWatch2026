@@ -143,3 +143,6 @@
 - 2026-08-30: Monitor tab now uses latest source-run summaries instead of raw CT log cursor IDs; scans remain GitHub Actions scheduled via `ingest.yml` every 15 minutes plus manual dispatch, not Vercel Edge/Cron.
 - 2026-08-30: Monitor cleanup deployed as `dpl_3TzKC8PNGhgYjRnGj1vqnh7xhHwP`; production aliases now show primary CT sources active and hide raw CT log IDs.
 - 2026-09-08 09:42:12 +08:00 [PRAWN-E14/codex/session-start] branch=main head=8970fca dirty=0
+- 2026-09-08 16:16:25 +08:00 [PRAWN-E14/codex/session-start] branch=main head=8027e6e dirty=0
+- 2026-09-08: crt.sh root JSON route is valid; provider failures must not become empty successes. Persist optional-backup cooldown across Actions runs and bound full response reads; keep primary CT independent of crt.sh availability.
+- 2026-09-08: Primary CT availability must exclude idle backups. Commit saved findings/sightings before cursors and cursors before best-effort notifications. Active GitHub cron showed multi-hour delivery gaps; offset schedule is a mitigation only, with independent free trigger awaiting user preference.

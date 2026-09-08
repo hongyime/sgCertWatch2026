@@ -211,6 +211,27 @@ function ctState(checkedAt = at()) {
     ct_source_state: { value: {} } };
 }
 
+test("an absent CT heartbeat is pending, never healthy by default", async (t) => {
+  mockDatabase(t, { states: {} });
+  const { body } = await invoke(statusHandler);
+  assert.equal(body.health, "pending");
+});
+
+test("crt.sh cooldown exposes real attempt/retry times without refreshing the last check", async (t) => {
+  const run = { source: "crtsh", checked_at: at(), ok: false, errors: [{ message: "crt.sh HTTP 502" }],
+    details: { state: "cooldown", last_attempt_at: at(-3), last_success_at: at(-4), next_poll_at: at(1) } };
+  mockDatabase(t, { states: ctState(), runs: [run] });
+  const { body } = await invoke(statusHandler);
+  const row = body.display_sources[0];
+  assert.equal(row.status, "cooldown");
+  assert.equal(row.ok, false);
+  assert.equal(row.last_checked_at, run.details.last_attempt_at);
+  assert.equal(row.next_poll_at, run.details.next_poll_at);
+  run.checked_at = at(-2);
+  const stale = await invoke(statusHandler);
+  assert.equal(stale.body.display_sources[0].status, "stale");
+});
+
 test("intel status has four explicit rows, provider freshness and independent CT health", async (t) => {
   const states = { ...ctState(), intel_poll_status: { value: { checked_at: at(), sources: [
     { source: "openphish", status: "ok", ok: true, checked_at: at(-8), scanned_entries: 25, matched: 2, persisted: 2 },

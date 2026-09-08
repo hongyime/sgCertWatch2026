@@ -29,13 +29,25 @@ CT polling runs on GitHub Actions (`scripts/run-ingest.mjs`), which executes the
 orchestrator directly against Supabase using repository secrets - no HTTP hop through Vercel.
 Cursors stay in Supabase `ingest_state`, so a delayed or skipped run catches up on the next tick.
 
+The schedule targets `:07`, `:22`, `:37`, and `:52` UTC each hour. It is active, but a September 8 audit found scheduled gaps of several hours. Offsetting the cron reduces peak-time contention, not GitHub's underlying delays or dropped triggers. The dashboard marks scans older than an hour overdue. Reliable timing needs an independent scheduler to dispatch this same workflow; any extra trigger must retain the `ct-ingest` GitHub concurrency group, not run a competing scanner. See [GitHub's schedule limitations](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+
 Required repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Optional alerting secrets:
 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `DISCORD_WEBHOOK_URL`, `ALERT_WEBHOOK_URL`,
 `ALERT_WEBHOOK_SECRET`. The dashboard functions need `SUPABASE_URL` and `SUPABASE_ANON_KEY` only, with the schema in `supabase/schema.sql`.
 
 The poller samples CertStream, tails a rotating set of direct RFC6962 CT logs, reads Let's Encrypt logs through the Static CT API tile reader, and keeps `crt.sh` as a fallback comparison source. Findings and source health are stored in Supabase so the dashboard can show partial coverage instead of treating one source outage as a total outage.
 
-The Actions job polls six direct logs with up to 128 entries each, and permits 30 tiles per static log within a 90-second static-source budget. Findings and CT sightings are saved in batches of 200 rows. These are sampling limits, not full CT coverage; GitHub scheduled runs can be delayed.
+The Actions job polls six direct logs with up to 128 entries each, and permits 30 tiles per static log within a 90-second static-source budget. Static logs rotate across runs so later logs are not starved. Tile framing and bundle counts are validated before cursor advancement; malformed or truncated responses retain the failed tile for retry, while earlier completed tiles are retained. Findings and CT sightings are saved in batches of 200 rows. These are sampling limits, not full CT coverage; GitHub scheduled runs can be delayed.
+
+Primary health comes from direct/static CT, so an idle WebSocket or backup cannot hide a primary outage. Findings and sightings are committed before cursors, with failed-write ranges replayed next run; completed cursors and scan status are committed before optional notifications. Failed stages are recorded when the database is reachable. Telegram delivery is best-effort, capped at 20 sends/30 seconds per scan, with only delivered domains added to alert deduplication history.
+
+### crt.sh Backup
+
+The supported endpoint is `https://crt.sh/?identity=<encoded-token>&output=json&exclude=expired`, not `/api` or a CT log `/ct/v1` path. Identity search uses the provider's text index; it is not complete substring discovery. Expired certificates are excluded upstream, while the 14-day observation filter and newest-15 limit are applied locally. `minNotBefore` is not a date filter for identity queries. See the [operator's implementation](https://github.com/crtsh/certwatch_db/blob/master/fnc/web_apis.fnc).
+
+The [operator's May 2026 notice](https://groups.google.com/g/crtsh/c/PsNhy2WVXhg) documents overloaded replicas, recurring HTTP 50x failures and inefficient result sorting. This optional comparison source cannot be an availability dependency for the monitor.
+
+By default, one rotating token is queried at most hourly. The entire request/body has a 20-second deadline and a 4 MiB response cap. There are no immediate retries: failures pause for 1, 2, 4, 8, 16, then 24 hours; HTTP 429 pauses for at least 24 hours, honoring longer `Retry-After` values. The cursor, last attempt, last success and next poll are persisted in Supabase across Actions runs. A valid JSON `[]` means no results; HTTP 404, HTML errors and malformed JSON never count as successful empty searches. Monitor shows the error and retry time while direct/static CT continue separately.
 
 ## Threat Intelligence
 

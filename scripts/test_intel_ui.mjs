@@ -51,7 +51,11 @@ const low = finding("stored-low.example.test", 10);
 const watchFindings = [promoted, baseline, ctOnly, observedOnly];
 const allFindings = [...watchFindings, low];
 const sourcePayload = {
-  health: "healthy", display_sources: [{ source: "direct_ct", ok: true, label: "Direct CT logs" }],
+  health: "partial", display_sources: [
+    { source: "direct_ct", ok: true, label: "Direct CT logs", checked_at: iso() },
+    { source: "crtsh", ok: false, status: "cooldown", label: "crt.sh backup", checked_at: iso(-3600000), next_poll_at: iso(3600000),
+      errors: [{ message: "crt.sh HTTP 502" }], details: { state: "cooldown", note: "Optional backup unavailable; direct and static CT polling continue independently." } }
+  ],
   intel_schedule: { runner: "github-actions", cron: "7 * * * *", workflow: "intel.yml", script: "scripts/run-intel.mjs" },
   intel_sources: [
     { source: "openphish", status: "pending", ok: false, checked_at: null, last_checked_at: null, next_poll_at: null, details: { interval_hours: 12 } },
@@ -208,6 +212,10 @@ try {
     assert.match(await page.locator('[data-intel-source="openphish"]').innerText(), /Provider interval: 12 hr/);
     assert.match(await page.locator('[data-intel-source="urlscan"]').innerText(), /Next poll: Not scheduled/);
     assert.equal(await page.locator(".source-details").evaluate((el) => el.open), false);
+    assert.equal(await page.locator("#source-status").innerText(), "Primary sources active");
+    await page.locator(".source-details summary").click();
+    assert.match(await page.locator("#source-list").innerText(), /crt\.sh backup\ncooldown\n.*HTTP 502/);
+    assert.match(await page.locator("#source-list").innerText(), /Last check:.*\nNext attempt:/);
     assert.doesNotMatch(await page.locator("#source-list").innerText(), /OpenPhish|urlscan|URLhaus|ThreatFox/);
     assert.doesNotMatch(await page.locator("#intel-source-list").innerText(), /PhishTank|Google/);
     await checkLayout(page);
@@ -251,6 +259,16 @@ try {
     await waitForFeed();
     holdWatch = false;
     await page.fill("#finding-search", "");
+
+    currentHealth = { health: "down", display_sources: [{ source: "direct_ct", ok: true, status: "ok" }] };
+    await page.reload();
+    await page.click('[data-view="monitor"]');
+    await page.locator("#source-status").filter({ hasText: "Scan failed" }).waitFor();
+
+    currentHealth = { health: "stale", display_sources: [{ source: "direct_ct", ok: false, status: "stale" }] };
+    await page.reload();
+    await page.click('[data-view="monitor"]');
+    await page.locator("#source-status").filter({ hasText: "Scan overdue" }).waitFor();
 
     currentHealth = {};
     await page.reload();

@@ -73,5 +73,26 @@ assert.equal(summary.candidates, 1, "Only score >= 70 candidate considered");
 assert.equal(summary.telegram, 1, "Dispatched to Telegram once");
 assert.equal(summary.discord, undefined, "Discord channel removed per DECISION-01/16R");
 assert.equal(summary.webhook, undefined, "Generic webhook channel removed per DECISION-01/16R");
+assert.deepEqual(summary.delivered_registrables, [sampleFinding.registrable]);
+
+// A provider outage stops the batch and never marks unsent alerts delivered.
+let failedCalls = 0;
+const failed = await dispatchNotifications([sampleFinding, sampleFinding], {
+  env: { TELEGRAM_BOT_TOKEN: "tok", TELEGRAM_CHAT_ID: "chat" },
+  fetch: async (_url, options) => {
+    assert.ok(options.signal instanceof AbortSignal);
+    failedCalls++;
+    return { ok: false, status: 503 };
+  }
+});
+assert.equal(failedCalls, 1);
+assert.equal(failed.telegram, 0);
+assert.deepEqual(failed.delivered_registrables, []);
+assert.equal(failed.deferred, 2);
+const capped = await dispatchNotifications(Array.from({ length: 30 }, () => sampleFinding), {
+  env: { TELEGRAM_BOT_TOKEN: "tok", TELEGRAM_CHAT_ID: "chat" }, fetch: async () => ({ ok: true })
+});
+assert.equal(capped.telegram, 20);
+assert.equal(capped.deferred, 10);
 
 console.log("Notification dispatcher tests passed.");

@@ -2,17 +2,9 @@ import { loadData } from "../lib/data.js";
 import { scoreCertificate } from "../lib/scoring.js";
 import { mergeSourceState, runSources } from "../lib/ct/orchestrator.js";
 import { dispatchNotifications } from "../lib/notify.js";
-import {
-  getRecentAlertRegistrables,
-  getState,
-  insertSourceRuns,
-  recordAlerts,
-  releaseRunLock,
-  setState,
-  tryAcquireRunLock,
-  upsertFindingSources,
-  upsertFindings
-} from "../lib/supabase.js";
+import { summarizePrimaryHealth } from "../lib/ct/source-health.js";
+import * as storage from "../lib/supabase.js";
+import { pathToFileURL } from "node:url";
 
 function uniqueFindings(findings) {
   const map = new Map();
@@ -88,23 +80,37 @@ function summarizeRun(run, matched, persisted) {
   };
 }
 
-async function runIngest() {
-  const lockAcquired = await tryAcquireRunLock("ct_poll_run", 300);
+export async function runIngest({ store = storage, scan = runSources, score = scoreCertificate,
+  notify = dispatchNotifications, readData = loadData } = {}) {
+  const { getRecentAlertRegistrables, getServiceState, insertSourceRuns, recordAlerts,
+    releaseRunLock, setState, tryAcquireRunLock, upsertFindingSources, upsertFindings } = store;
+  if (!store.configured("service")) throw new Error("Supabase service credentials are required");
+  // GitHub's ct-ingest concurrency group is the serialization boundary.
+  const lockAcquired = await tryAcquireRunLock("ct_poll_run", 15 * 60);
   if (!lockAcquired) {
     console.log(JSON.stringify({ skipped: "run_in_progress" }));
     return;
   }
 
   let status;
+  let stage = "sources";
   try {
-    const data = loadData();
-    const stateRow = await getState("ct_source_state");
+    const data = readData();
+    const stateRow = await getServiceState("ct_source_state");
     const sourceState = stateRow?.value || {};
-    const runs = await runSources({ data, state: sourceState });
+    const runs = await scan({ data, state: sourceState });
     console.log(JSON.stringify({ stage: "sources_fetched", sources: runs.map((run) => ({
       source: run.source, entries: run.entries.length, scanned: run.scanned_entries, duration_ms: run.duration_ms
     })) }));
 
+    const backupFailure = runs.find((run) => run.source === "crtsh" && !run.ok);
+    if (backupFailure?.statePatch) {
+      stage = "source_backoff";
+      // Persist the provider pause even if scoring or later writes fail; do not advance CT cursors.
+      await setState("ct_source_state", mergeSourceState(sourceState, [backupFailure]));
+    }
+
+    stage = "scoring";
     const scored = [];
     const matchedBySource = new Map();
     for (const run of runs) {
@@ -113,7 +119,7 @@ async function runIngest() {
       for (const entry of run.entries) {
         checked++;
         if (checked % 10000 === 0) console.log(JSON.stringify({ stage: "scoring", source: run.source, checked, matched }));
-        const finding = scoreCertificate(entry, data);
+        const finding = score(entry, data);
         if (!finding) continue;
         matched += 1;
         scored.push({ finding, entry, source: run.source });
@@ -128,36 +134,24 @@ async function runIngest() {
 
     const findings = uniqueFindings(scorable.map((item) => item.finding));
     console.log(JSON.stringify({ stage: "persisting", findings: findings.length }));
+    stage = "findings";
     const persistedFindings = await upsertFindings(findings);
     const sourceRows = sourceRowsFor(scorable);
+    stage = "sightings";
     const persistedSources = await upsertFindingSources(sourceRows);
-
-    let notifySummary = { candidates: 0, suppressed_by_dedupe: 0, telegram: 0, errors: [] };
-    try {
-      const alerted72h = await getRecentAlertRegistrables(72);
-      notifySummary = await dispatchNotifications(persistedFindings, { alertedWithin72h: alerted72h });
-      const alertedNow = persistedFindings
-        .filter((f) => f.score >= (data.scoring?.thresholds?.alert_min ?? 70))
-        .map((f) => f.registrable);
-      await recordAlerts(alertedNow);
-    } catch (_err) {
-      // Keep going even if notification fails
-    }
 
     const sourceSummaries = runs.map((run) => summarizeRun(
       run,
       matchedBySource.get(run.source) || 0,
       sourceRows.filter((row) => row.source === run.source).length
     ));
-    await insertSourceRuns(sourceSummaries);
-
+    stage = "checkpoint";
     const nextSourceState = mergeSourceState(sourceState, runs);
     await setState("ct_source_state", nextSourceState);
+    await insertSourceRuns(sourceSummaries);
 
-    const okSources = sourceSummaries.filter((run) => run.ok);
     status = {
-      ok: okSources.length > 0,
-      health: okSources.length === sourceSummaries.length ? "healthy" : (okSources.length ? "partial" : "down"),
+      ...summarizePrimaryHealth(sourceSummaries),
       source: "multi-source CT polling",
       runner: "github-actions",
       checked_at: new Date().toISOString(),
@@ -165,7 +159,7 @@ async function runIngest() {
       matched: findings.length,
       persisted: persistedFindings.length,
       persisted_source_sightings: persistedSources.length,
-      notifications: notifySummary,
+      notifications: { state: "pending", telegram: 0, errors: [] },
       sources: sourceSummaries,
       errors: sourceSummaries.flatMap((run) => run.errors.map((error) => ({
         source: run.source,
@@ -174,17 +168,44 @@ async function runIngest() {
     };
 
     await setState("ct_poll_status", status);
+    // Notification failures must never hold completed CT progress hostage.
+    try {
+      const alerted72h = await getRecentAlertRegistrables(72);
+      status.notifications = await notify(persistedFindings, {
+        alertedWithin72h: alerted72h, minScore: data.scoring?.thresholds?.alert_min ?? 70
+      });
+      await recordAlerts(status.notifications.delivered_registrables || []);
+    } catch (_error) {
+      status.notifications = { state: "failed", telegram: 0, errors: [{ message: "Notification delivery failed" }] };
+    }
+    try {
+      await setState("ct_poll_status", status);
+    } catch (_error) {
+      console.error("Notification summary save failed; completed CT checkpoint retained");
+    }
     console.log(JSON.stringify(status));
+  } catch (error) {
+    try {
+      await setState("ct_poll_status", {
+        ok: false, health: "down", runner: "github-actions", checked_at: new Date().toISOString(),
+        failed_stage: stage, errors: [{ message: `CT ingest failed during ${stage}; see Actions logs` }]
+      });
+    } catch (_statusError) {
+      console.error("Failed to persist ingest failure status; dashboard freshness will expire");
+    }
+    throw error;
   } finally {
     await releaseRunLock("ct_poll_run");
   }
 
-  if (status && status.health === "down") {
-    process.exitCode = 1;
-  }
+  return status;
 }
 
-runIngest().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  runIngest().then((status) => {
+    if (status && !status.ok) process.exitCode = 1;
+  }).catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
