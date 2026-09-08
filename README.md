@@ -19,7 +19,8 @@ Validate the seed data and scoring engine:
 
 ```bash
 npm run validate
-npm test
+npm run test:unit
+npm run test:intel
 ```
 
 ## Ingestion
@@ -33,6 +34,27 @@ Required repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Option
 `ALERT_WEBHOOK_SECRET`. The dashboard functions need `SUPABASE_URL` and `SUPABASE_ANON_KEY` only, with the schema in `supabase/schema.sql`.
 
 The poller samples CertStream, tails a rotating set of direct RFC6962 CT logs, reads Let's Encrypt logs through the Static CT API tile reader, and keeps `crt.sh` as a fallback comparison source. Findings and source health are stored in Supabase so the dashboard can show partial coverage instead of treating one source outage as a total outage.
+
+The Actions job polls six direct logs with up to 128 entries each, and permits 50 tiles per static log within a three-minute static-source budget. These are sampling limits, not full CT coverage; GitHub scheduled runs can be delayed.
+
+## Threat Intelligence
+
+Apply `supabase/intel.sql` to an existing database before deploying this feature. New installations also include its definitions in `supabase/schema.sql`.
+
+`.github/workflows/intel.yml` runs hourly at minute 7 and supports manual dispatch from GitHub's Actions tab. Supabase stores the next permitted request time before each provider call, so manual runs and restarts respect the same limits. Add repository secrets `ABUSECH_AUTH_KEY` and `URLSCAN_API_KEY`; these are not Vercel environment variables.
+
+| Source | Requests | Evidence |
+| --- | --- | --- |
+| [OpenPhish](https://openphish.com/phishing_feeds.html) | One community feed download per 12 hours | Phishing host, feed fingerprint |
+| [URLhaus](https://urlhaus-api.abuse.ch/) | One recent-URLs request per 6 hours | Malware report and online/offline state |
+| [ThreatFox](https://threatfox.abuse.ch/api/) | One recent-IOCs request per 6 hours | Domain/URL IOC, confidence and malware family |
+| [urlscan](https://urlscan.io/docs/api/) | Up to three searches and three result reads per 6 hours | Existing public scan, title, report and screenshot link |
+
+URLhaus and ThreatFox share an account cooldown: HTTP 429 pauses both for at least 72 hours (longer when requested by the provider). Authentication failures pause for 24 hours. urlscan respects quota response headers. No automatic URL submissions, paid tiers, PhishTank, Google Cloud or Vercel scanning are used.
+
+Feed results are matched locally against a bounded set of stored, unsuppressed CT candidates scoring at least 60. Exact certificate hostnames must match; sibling hosts, shared IPs and parent domains do not inherit evidence. OpenPhish's community feed is limited and updates every 12 hours; URLhaus's recent endpoint returns at most 1,000 entries from three days. This enrichment is supplementary and incomplete.
+
+Expiring observations live in `intel_evidence`. The CT score and training corpus remain unchanged. A fresh OpenPhish hit, online URLhaus report, ThreatFox confidence >=75, or explicit urlscan phishing/malware verdict adds at most 10 review-priority points when the CT score is >=60. An ordinary urlscan sighting adds context only. The Domains view uses review priority for Watch now; evidence details link to provider reports. Monitor displays intelligence health separately from CT health.
 
 ## Licence
 

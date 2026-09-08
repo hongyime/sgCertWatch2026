@@ -1,5 +1,7 @@
 # Agent Journal
 
+- 2026-09-08: Approved free-source enrichment uses OpenPhish, urlscan, URLhaus and ThreatFox only; exact-host expiring evidence affects review priority without mutating CT scores or positive-corpus labels. Persist conservative polling and shared abuse.ch cooldowns across Actions runs.
+
 - 2026-08-14: Began repository understanding pass; no prior shared agent state existed, so `.agents/STATE.md` was created for cross-agent handoff.
 - 2026-08-14: Started first implementation phase as a core JSON data validation gate before manual allowlist/scheme verification.
 - 2026-08-14: Completed Phase 1 structural validation and Phase 2 release-readiness enforcement gate; strict mode intentionally fails until all seeded allowlist and scheme entries are verified.
@@ -138,3 +140,4 @@
 - 2026-08-30: Production rollout verified on both public aliases after deploy `dpl_D7MPbmgXi6hqpnQET8UALidj8o3E`; default Domains view shows only score >=70 review domains and no CT log hashes on first view.
 - 2026-08-30: Monitor tab now uses latest source-run summaries instead of raw CT log cursor IDs; scans remain GitHub Actions scheduled via `ingest.yml` every 15 minutes plus manual dispatch, not Vercel Edge/Cron.
 - 2026-08-30: Monitor cleanup deployed as `dpl_3TzKC8PNGhgYjRnGj1vqnh7xhHwP`; production aliases now show primary CT sources active and hide raw CT log IDs.
+- 2026-09-08 09:42:12 +08:00 [PRAWN-E14/codex/session-start] branch=main head=8970fca dirty=0

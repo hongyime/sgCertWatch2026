@@ -6,6 +6,13 @@ const files = {
 };
 
 const CT_SOURCE_STATUS_URL = "/api/source-status";
+const INTEL_SOURCES = {
+  openphish: "OpenPhish",
+  urlscan: "urlscan.io",
+  urlhaus: "URLhaus",
+  threatfox: "ThreatFox"
+};
+const SCAN_ID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 const state = {
   data: null,
@@ -15,7 +22,11 @@ const state = {
   category: "",
   findings: [],
   findingQuery: "",
-  findingSeverity: "watch"
+  findingSeverity: "watch",
+  findingsRequest: 0,
+  feedConfigured: false,
+  feedLoading: false,
+  feedError: false
 };
 
 const $ = (id) => document.getElementById(id);
@@ -49,9 +60,107 @@ function sourceLabel(source) {
   const labels = {
     certstream: "Live stream",
     direct_ct: "Direct CT logs",
-    crtsh: "crt.sh backup"
+    static_ct: "Static CT logs",
+    crtsh: "crt.sh backup",
+    ...INTEL_SOURCES
   };
   return labels[source] || source;
+}
+
+function intelEvidence(finding) {
+  return Array.isArray(finding.intel_evidence)
+    ? finding.intel_evidence.filter((item) => item && Object.hasOwn(INTEL_SOURCES, item.source))
+    : [];
+}
+
+function intelHitCount(finding) {
+  return Number.isInteger(finding.intel_hit_count) && finding.intel_hit_count >= 0
+    ? finding.intel_hit_count : new Set(intelEvidence(finding).map((item) => item.source)).size;
+}
+
+function priorityScore(finding) {
+  const score = Number(finding.priority_score ?? finding.score ?? 0);
+  return Number.isFinite(score) ? score : 0;
+}
+
+function renderPriority(finding) {
+  const boost = finding.intel_priority_boost === 10 ? 10 : 0;
+  const promoted = boost > 0 && Number(finding.score) < 70 && priorityScore(finding) >= 70;
+  return `<div class="finding-priority${promoted ? " promoted" : ""}">
+    <span>CT score ${escapeHtml(finding.score ?? 0)} + intel ${boost} = priority <b>${priorityScore(finding)}</b></span>
+    ${promoted ? '<span class="promotion-label">Promoted to Watch</span>' : ""}
+  </div>`;
+}
+
+function intelVerdict(item) {
+  if (item.verdict === "phishing" || item.verdict === "malware" || item.verdict === "observed") return item.verdict;
+  return "unknown";
+}
+
+function renderIntelBadges(finding) {
+  const badges = unique(intelEvidence(finding).map((item) => `${sourceLabel(item.source)}: ${intelVerdict(item)}`));
+  return `<div class="intel-badges"><span class="intel-count">Intel hits: ${intelHitCount(finding)}</span>
+    ${badges.map((label) => `<span class="intel-source-badge">${escapeHtml(label)}</span>`).join("")}
+  </div>`;
+}
+
+// Provider report paths only. Never turn an IOC or an arbitrary provider redirect into a link.
+function intelProviderUrl(value, source, screenshot = false) {
+  if (typeof value !== "string" || !/^https:\/\//i.test(value) || /[\s\\\u0000-\u001f\u007f]/.test(value)) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.username || url.password || url.port || url.search || url.hash) return null;
+    let allowed = false;
+    if (source === "urlscan" && url.hostname === "urlscan.io") {
+      const path = screenshot ? `^/screenshots/${SCAN_ID}\\.png$` : `^/result/${SCAN_ID}/?$`;
+      allowed = new RegExp(path, "i").test(url.pathname);
+    } else if (!screenshot && source === "openphish" && url.hostname === "openphish.com") {
+      allowed = /^\/(?:feed\.txt|phishing_feeds\.html)?$/.test(url.pathname);
+    } else if (!screenshot && source === "openphish" && url.hostname === "raw.githubusercontent.com") {
+      allowed = url.pathname === "/openphish/public_feed/refs/heads/main/feed.txt";
+    } else if (!screenshot && source === "urlhaus" && url.hostname === "urlhaus.abuse.ch") {
+      allowed = /^\/url\/\d+\/?$/.test(url.pathname);
+    } else if (!screenshot && source === "threatfox" && url.hostname === "threatfox.abuse.ch") {
+      allowed = /^\/ioc\/\d+\/?$/.test(url.pathname);
+    }
+    return allowed ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function intelProviderLink(value, source, screenshot = false) {
+  const url = intelProviderUrl(value, source, screenshot);
+  const label = screenshot ? "Provider screenshot" : source === "openphish" ? "Provider feed" : "Provider report";
+  return url
+    ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${label}</a>`
+    : `<span class="muted-text">${label} unavailable</span>`;
+}
+
+function renderIntelEvidence(finding) {
+  const evidence = intelEvidence(finding);
+  return `<section class="dialog-section intel-evidence" aria-labelledby="intel-evidence-heading">
+    <h3 id="intel-evidence-heading">Intel evidence (${intelHitCount(finding)} sources)</h3>
+    ${evidence.length ? `<ul class="evidence-list">${evidence.map((item) => {
+      const verdict = intelVerdict(item);
+      const expired = Date.parse(item.expires_at) <= Date.now();
+      const details = item.details || {};
+      return `<li class="evidence-row">
+        <div class="evidence-heading"><strong>${escapeHtml(sourceLabel(item.source))}</strong>
+          <span class="intel-verdict ${verdict}">${verdict}</span>${expired ? '<span class="muted-text">Expired</span>' : ""}</div>
+        <dl class="evidence-facts">
+          <div><dt>Matched host</dt><dd><code>${escapeHtml(item.domain || "Unknown")}</code></dd></div>
+          <div><dt>Observed</dt><dd>${escapeHtml(formatTime(item.observed_at))}</dd></div>
+          <div><dt>Expires</dt><dd>${escapeHtml(formatTime(item.expires_at))}</dd></div>
+          ${details.title != null ? `<div><dt>Page title</dt><dd>${escapeHtml(details.title)}</dd></div>` : ""}
+          ${details.confidence != null ? `<div><dt>Provider confidence</dt><dd>${escapeHtml(details.confidence)}</dd></div>` : ""}
+        </dl>
+        ${verdict === "observed" ? '<p class="muted-text">Observed only; no phishing or malware verdict.</p>' : ""}
+        <div class="evidence-links">${intelProviderLink(item.source_ref, item.source)}
+          ${details.screenshot_url ? intelProviderLink(details.screenshot_url, item.source, true) : ""}</div>
+      </li>`;
+    }).join("")}</ul>` : '<p class="muted-text">No current intel evidence recorded.</p>'}
+  </section>`;
 }
 
 function sourceState(item) {
@@ -115,15 +224,17 @@ function renderFindingCard(finding, index) {
   const domains = (finding.domains || []).slice(0, 3).join(", ");
   const sources = (finding.sources || []).map(sourceLabel).join(", ") || "unknown";
   return `
-    <li class="watch-card finding-card interactive-card" data-finding-index="${index}">
+    <li class="watch-card finding-card interactive-card" data-finding-index="${index}" tabindex="0" role="button" aria-label="Review ${escapeHtml(finding.registrable)}">
       <div class="watch-card-head">
         <strong>${escapeHtml(finding.registrable)}</strong>
-        <span class="severity ${escapeHtml(finding.severity)}">${escapeHtml(finding.severity)} ${escapeHtml(finding.score)}</span>
+        <span class="severity ${escapeHtml(finding.severity)}">CT ${escapeHtml(finding.severity)} ${escapeHtml(finding.score)}</span>
       </div>
       <p>${escapeHtml(domains || "No domain names stored")}</p>
+      ${renderPriority(finding)}
+      ${renderIntelBadges(finding)}
       ${renderReasons(finding.signals)}
       <div class="watch-meta">
-        <span>${escapeHtml(finding.source_count || 0)} source${finding.source_count === 1 ? "" : "s"}: ${escapeHtml(sources)}</span>
+        <span>${escapeHtml(finding.source_count || 0)} CT source${finding.source_count === 1 ? "" : "s"}: ${escapeHtml(sources)}</span>
         <span>Cert seen ${escapeHtml(formatTime(finding.observed_at))}</span>
       </div>
     </li>
@@ -196,12 +307,12 @@ function filteredRows() {
 function filteredFindings() {
   return (state.findings || []).filter((f) => {
     const sevMatch = state.findingSeverity === "watch"
-      ? Number(f.score || 0) >= 70
+      ? priorityScore(f) >= 70
       : (!state.findingSeverity || f.severity === state.findingSeverity);
     const searchTarget = `${f.registrable} ${(f.domains || []).join(" ")} ${(f.matched_brands || []).join(" ")} ${(f.matched_schemes || []).join(" ")}`.toLowerCase();
     const queryMatch = !state.findingQuery || searchTarget.includes(state.findingQuery);
     return sevMatch && queryMatch;
-  });
+  }).sort((a, b) => priorityScore(b) - priorityScore(a));
 }
 
 function renderCategories() {
@@ -320,34 +431,102 @@ function renderSummary() {
 }
 
 function renderFindingList() {
+  if (state.feedError || (state.feedLoading && !state.findings.length)) return;
   const findings = filteredFindings();
+  $("feed-status").textContent = !state.feedConfigured ? "Database not connected"
+    : findings.length ? `${findings.length} domains need review`
+      : state.findingSeverity === "watch" ? "No domains at priority 70 or above" : "No matching stored findings";
   $("finding-list").innerHTML = findings.length
     ? findings.map((f, idx) => renderFindingCard(f, idx)).join("")
     : '<li class="watch-card finding-card"><div class="watch-card-head"><strong>No matching findings</strong><span class="review-badge ok">clear</span></div><p>No alerts match current search/filter criteria.</p></li>';
 }
 
 async function renderFindings() {
+  const request = ++state.findingsRequest;
+  const view = state.findingSeverity === "watch" ? "&view=watch" : "";
+  state.feedLoading = true;
+  state.feedError = false;
+  $("finding-list").setAttribute("aria-busy", "true");
+  $("export-json-btn").disabled = true;
+  $("export-csv-btn").disabled = true;
   try {
-    const response = await fetch("/api/findings?limit=50");
+    const response = await fetch(`/api/findings?limit=50${view}`);
     if (!response.ok) throw new Error("Feed unavailable");
     const payload = await response.json();
-    const findings = payload.findings || [];
+    // A slow response from an earlier filter must not replace the current view.
+    if (request !== state.findingsRequest) return;
+    const findings = Array.isArray(payload.findings) ? payload.findings : [];
     state.findings = findings;
-
-    $("feed-status").textContent = payload.storage_configured
-      ? (filteredFindings().length ? `${filteredFindings().length} domains need review` : "No high-score domains need review")
-      : "Database not connected";
+    state.feedConfigured = Boolean(payload.storage_configured);
+    state.feedLoading = false;
     $("feed-health").textContent = payload.storage_configured ? "Live database connected" : "Database not connected";
     $("feed-count").textContent = findings.length;
     $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
 
     renderFindingList();
   } catch (error) {
+    if (request !== state.findingsRequest) return;
+    state.findings = [];
+    state.feedLoading = false;
+    state.feedError = true;
     $("feed-status").textContent = error.message;
     $("feed-health").textContent = "Feed check failed";
     $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
     $("finding-list").innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>Could not load alerts</strong><span class="review-badge">unavailable</span></div><p>The findings API did not respond on this page load. The next automatic refresh will check again.</p></li>';
+  } finally {
+    if (request === state.findingsRequest) {
+      $("finding-list").setAttribute("aria-busy", "false");
+      $("export-json-btn").disabled = state.feedError;
+      $("export-csv-btn").disabled = state.feedError;
+    }
   }
+}
+
+function intelSourceState(item) {
+  const status = item.status || item.details?.state;
+  if (item.configured === false || status === "not_configured" || status === "unconfigured") return { label: "unconfigured", className: "standby" };
+  if (status === "pending") return { label: "pending", className: "standby" };
+  if (status === "cooldown" || status === "rate_limited") return { label: "cooldown", className: "warn" };
+  if (status === "stale") return { label: "stale", className: "warn" };
+  if (status === "failed" || status === "error") return { label: "failed", className: "bad" };
+  if (status === "auth_error") return { label: "auth error", className: "bad" };
+  if (status === "ok" || (!status && item.ok)) return { label: "ok", className: "ok" };
+  return { label: status || "pending", className: "warn" };
+}
+
+function formatPeriod(milliseconds) {
+  if (!Number.isFinite(milliseconds) || milliseconds <= 0) return "";
+  if (milliseconds >= 3600000) return `${Number((milliseconds / 3600000).toFixed(1))} hr`;
+  return `${Number((milliseconds / 60000).toFixed(1))} min`;
+}
+
+function renderIntelSourceStatus(source) {
+  const sources = Array.isArray(source.intel_sources) ? source.intel_sources : [];
+  const schedule = source.intel_schedule;
+  const hourly = String(schedule?.cron || "").match(/^([0-5]?\d) \* \* \* \*$/);
+  $("intel-schedule").textContent = schedule
+    ? `${hourly ? `Hourly at :${hourly[1].padStart(2, "0")} UTC` : schedule.cron ? `Cron ${schedule.cron} (UTC)` : "Scheduled"} via ${schedule.runner === "github-actions" ? "GitHub Actions" : schedule.runner || "reported scheduler"}${schedule.workflow ? ` (${schedule.workflow})` : ""}`
+    : "Intel schedule not reported";
+  $("intel-source-list").innerHTML = Object.keys(INTEL_SOURCES).map((key) => {
+    const item = sources.find((entry) => entry?.source === key) || { source: key, status: "pending" };
+    const health = intelSourceState(item);
+    const details = item.details || {};
+    const checked = item.last_checked_at || item.checked_at || details.last_checked_at;
+    const next = item.next_poll_at || details.next_poll_at;
+    const cooldown = item.cooldown_until || details.cooldown_until;
+    const period = formatPeriod(details.interval_hours != null ? Number(details.interval_hours) * 3600000
+      : Number(details.period_ms ?? details.poll_interval_ms ?? details.interval_ms));
+    const error = item.errors?.[0];
+    const note = details.note || (typeof error === "string" ? error : error?.message) || "";
+    return `<div class="source-row ${health.className}" data-intel-source="${key}">
+      <span>${escapeHtml(sourceLabel(key))}</span><strong>${escapeHtml(health.label)}</strong>
+      <small>Last check: ${checked ? escapeHtml(formatTime(checked)) : "Not reported"}</small>
+      <small>Next poll: ${next ? escapeHtml(formatTime(next)) : health.label === "unconfigured" ? "Not scheduled" : "Not reported"}</small>
+      ${cooldown ? `<small>Cooldown until: ${escapeHtml(formatTime(cooldown))}</small>` : ""}
+      ${period ? `<small>Provider interval: ${escapeHtml(period)}</small>` : ""}
+      ${note ? `<small>${escapeHtml(note)}</small>` : ""}
+    </div>`;
+  }).join("");
 }
 
 async function renderSourceStatus() {
@@ -356,8 +535,9 @@ async function renderSourceStatus() {
     if (!response.ok) throw new Error("source check failed");
     const status = await response.json();
 
-    const source = status.status || status;
-    const sources = source.display_sources || source.sources || [];
+    const source = status.status && typeof status.status === "object" ? status.status : status;
+    const sources = (source.display_sources || source.sources || []).filter((item) => !Object.hasOwn(INTEL_SOURCES, item.source));
+    renderIntelSourceStatus(source);
     const okCount = sources.filter((item) => item.ok || item.status === "ok").length;
     const health = source.health || source.overall;
     const primaryActive = sources.some((item) => item.source === "direct_ct" && item.ok)
@@ -387,10 +567,12 @@ async function renderSourceStatus() {
         </div>
       `;
       }).join("")
-      : '<div class="source-row"><span>Waiting for first scan</span><strong>pending</strong><small>Runs every 5 minutes</small></div>';
+      : '<div class="source-row"><span>Waiting for first scan</span><strong>pending</strong><small>No CT scan details reported</small></div>';
   } catch (_error) {
     $("source-status").textContent = "scan status unknown";
     $("source-list").innerHTML = '<div class="source-row bad"><span>Status API</span><strong>unavailable</strong><small>Could not load source health</small></div>';
+    $("intel-schedule").textContent = "Intel schedule unavailable";
+    $("intel-source-list").innerHTML = '<div class="source-row bad"><span>Intel status API</span><strong>unavailable</strong><small>Could not load intel source health</small></div>';
   }
 }
 
@@ -411,14 +593,14 @@ function openFindingDetails(finding) {
     <div class="dialog-header">
       <div>
         <p class="eyebrow dark">Triage Investigation</p>
-        <h2>${escapeHtml(finding.registrable)}</h2>
+        <h2 id="finding-dialog-title">${escapeHtml(finding.registrable)}</h2>
       </div>
-      <button type="button" class="btn-close" id="close-dialog-btn">&times;</button>
+      <button type="button" class="btn-close" id="close-dialog-btn" aria-label="Close finding details">&times;</button>
     </div>
 
     <div class="dialog-summary">
       <div class="summary-badge severity ${escapeHtml(finding.severity)}">
-        ${escapeHtml(finding.severity).toUpperCase()} (${escapeHtml(finding.score)} pts)
+        CT ${escapeHtml(finding.severity).toUpperCase()} (${escapeHtml(finding.score)} pts)
       </div>
       <div class="summary-info">
         <span>Observed: ${escapeHtml(formatTime(finding.observed_at))}</span>
@@ -426,6 +608,9 @@ function openFindingDetails(finding) {
         <span>SANs: ${escapeHtml((finding.domains || []).length)}</span>
       </div>
     </div>
+
+    ${renderPriority(finding)}
+    ${renderIntelEvidence(finding)}
 
     <section class="dialog-section">
       <h3>Analyst Actions</h3>
@@ -461,7 +646,10 @@ function openFindingDetails(finding) {
 
 
   $("copy-triage-btn").onclick = () => {
-    const report = `# Triage Report: ${finding.registrable}\n- Score: ${finding.score} (${finding.severity})\n- Issuer: ${finding.issuer}\n- Observed: ${finding.observed_at}\n- Signals:\n${(finding.signals || []).map((s) => `  * ${s.type} (+${s.points})`).join("\n")}`;
+    const evidence = intelEvidence(finding).map((item) =>
+      `  * ${sourceLabel(item.source)}: ${intelVerdict(item)}; host ${item.domain}; observed ${item.observed_at}; expires ${item.expires_at}; ${intelProviderUrl(item.source_ref, item.source) || "Provider reference unavailable"}`
+    ).join("\n");
+    const report = `# Triage Report: ${finding.registrable}\n- CT score: ${finding.score} (${finding.severity})\n- Priority: ${priorityScore(finding)} (intel +${finding.intel_priority_boost === 10 ? 10 : 0})\n- Intel hits: ${intelHitCount(finding)}\n${evidence}\n- Issuer: ${finding.issuer}\n- Observed: ${finding.observed_at}\n- Signals:\n${(finding.signals || []).map((s) => `  * ${s.type} (+${s.points})`).join("\n")}`;
     navigator.clipboard.writeText(report);
     $("copy-triage-btn").textContent = "Copied!";
     setTimeout(() => { $("copy-triage-btn").textContent = "Copy Triage Report"; }, 2000);
@@ -541,7 +729,10 @@ $("finding-search").addEventListener("input", (event) => {
 
 $("severity-filter").addEventListener("change", (event) => {
   state.findingSeverity = event.target.value;
-  renderFindingList();
+  state.findings = [];
+  $("feed-status").textContent = "Loading feed";
+  $("finding-list").innerHTML = '<li class="watch-card finding-card">Loading findings</li>';
+  renderFindings();
 });
 
 $("export-json-btn").addEventListener("click", exportFindingsJson);
@@ -554,6 +745,13 @@ $("finding-list").addEventListener("click", (event) => {
   const findings = filteredFindings();
   if (findings[idx]) {
     openFindingDetails(findings[idx]);
+  }
+});
+
+$("finding-list").addEventListener("keydown", (event) => {
+  if ((event.key === "Enter" || event.key === " ") && event.target.matches("[data-finding-index]")) {
+    event.preventDefault();
+    event.target.click();
   }
 });
 

@@ -298,6 +298,7 @@ label span {
 
 .watch-card-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: start;
   justify-content: space-between;
   gap: 10px;
@@ -606,11 +607,19 @@ tbody tr:hover {
 
 .triage-input {
   flex: 1 1 180px;
+  min-width: 0;
+}
+
+.triage-select {
+  flex: 0 1 240px;
+  width: auto;
+  max-width: 100%;
 }
 
 .btn-primary,
 .btn-secondary {
   padding: 6px 12px;
+  min-height: 40px;
   font-size: 13px;
   font-weight: 600;
   border-radius: 6px;
@@ -647,13 +656,105 @@ tbody tr:hover {
   transform: translateY(-1px);
 }
 
+.interactive-card:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.finding-priority {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin: 10px 0;
+  color: #405064;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.finding-priority.promoted {
+  color: var(--blue);
+}
+
+.promotion-label {
+  font-weight: 700;
+}
+
+.intel-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.intel-count {
+  margin-right: 4px;
+  color: #405064;
+  font-weight: 700;
+}
+
+.intel-source-badge,
+.intel-verdict {
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: #405064;
+  background: #edf3f7;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.intel-verdict.phishing,
+.intel-verdict.malware {
+  color: #902b37;
+  border-color: #ecc4ca;
+  background: #fff1f3;
+}
+
+.intel-health {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.intel-health h3 {
+  font-size: 16px;
+}
+
+.intel-health .source-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.source-row > *,
+.watch-meta > *,
+.summary-info > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.source-row.bad strong {
+  color: var(--red);
+}
+
+.source-row.standby strong {
+  color: var(--muted);
+}
+
 /* Triage Dialog */
 .triage-dialog {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 0;
   max-width: 650px;
   width: 90vw;
+  max-height: 90dvh;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
@@ -664,15 +765,25 @@ tbody tr:hover {
 
 .dialog-content {
   padding: 24px;
+  overflow-wrap: anywhere;
 }
 
 .dialog-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 12px;
   margin-bottom: 16px;
   border-bottom: 1px solid var(--line);
   padding-bottom: 12px;
+}
+
+.dialog-header > div {
+  min-width: 0;
+}
+
+.dialog-header h2 {
+  font-size: 22px;
 }
 
 .btn-close {
@@ -681,6 +792,9 @@ tbody tr:hover {
   font-size: 24px;
   cursor: pointer;
   color: var(--muted);
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
 }
 
 .btn-close:hover {
@@ -689,6 +803,7 @@ tbody tr:hover {
 
 .dialog-summary {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
   margin-bottom: 20px;
@@ -709,7 +824,7 @@ tbody tr:hover {
 .dialog-section h3 {
   font-size: 14px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0;
   color: var(--navy);
   margin-bottom: 8px;
 }
@@ -747,6 +862,7 @@ tbody tr:hover {
 
 .signals-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -758,8 +874,71 @@ tbody tr:hover {
   text-align: left;
 }
 
+.signals-table th:nth-child(1) {
+  width: 32%;
+}
+
+.signals-table th:nth-child(2) {
+  width: 18%;
+}
+
+.evidence-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.evidence-row {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.evidence-heading,
+.evidence-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 13px;
+}
+
+.evidence-links {
+  margin-top: 10px;
+}
+
+.evidence-links a {
+  color: var(--blue);
+  text-underline-offset: 3px;
+}
+
+.evidence-facts {
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.evidence-facts > div {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 4px 12px;
+  margin-top: 4px;
+}
+
+.evidence-facts dt,
+.muted-text {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.evidence-facts dd {
+  margin: 0;
+  min-width: 0;
+}
+
 .dialog-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -769,4 +948,25 @@ tbody tr:hover {
   border-top: 1px solid rgba(128,128,128,.25);
   font-size: 13px;
   color: #888;
+}
+
+@media (max-width: 760px) {
+  .intel-health .source-list {
+    grid-template-columns: 1fr;
+  }
+
+  .triage-select {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .dialog-content {
+    padding: 16px;
+  }
+
+  .evidence-facts > div {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-top: 8px;
+  }
 }

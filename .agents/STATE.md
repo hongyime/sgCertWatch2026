@@ -1,6 +1,17 @@
 # Agent State
 
-Current task: Phase 6 real monitor implementation.
+Current task: Implement approved free threat-intelligence enrichment (2026-09-08).
+
+Active continuation:
+- CT remains discovery on GitHub Actions; widen polling budgets. No Vercel scans.
+- Approved: OpenPhish, urlscan, URLhaus, ThreatFox. PhishTank excluded (signups disabled); Google Cloud excluded by user. JWT rotation remains skipped.
+- Add separate expiring evidence with exact-host matches and capped review-priority boost, retaining original CT score and corpus labels.
+- Conservative persisted source intervals and shared abuse.ch rate-limit cooldown are required. Credentials belong only in Actions secrets/local ignored configuration.
+- Parallel ownership: storage/API/schema and dashboard workers; main agent owns adapters, runner, workflow, integration and verification.
+- Provider adapters, persistent request reservations/cooldowns, priority helper and hourly Actions workflow implemented. Parser/provenance/rate-limit tests pass; existing unit suite and release data validation pass.
+- ABUSECH_AUTH_KEY and URLSCAN_API_KEY configured in repository Actions secrets. Production database reachable (about 78k findings); storage worker optimizing bounded watch queries before migration/deployment.
+- Applied `supabase/intel.sql` successfully. Live checks confirm evidence RLS, public read/no write, private candidate function and 500 distinct candidate registrables. Public state excludes private cooldown/cursor state.
+- Desktop/mobile fixture browser checks pass for priority promotion, source badges, safe evidence links, filter refresh races and layout. Independent review fixes restart guards, quota reset retention, missing provider timestamps and wildcard exact-match handling.
 
 Progress:
 - No prior `.agents/STATE.md` existed at session start.
@@ -141,16 +152,20 @@ Next steps:
   - Updated Monitor top-line copy to `Primary sources active` when Direct CT or Static CT is ok, so a degraded `crt.sh` backup does not make the primary scan path look down.
   - Manual CT ingest workflow run 33286954335 succeeded. Production deploy `dpl_3TzKC8PNGhgYjRnGj1vqnh7xhHwP` succeeded from commit `a846f21` and is aliased to both public domains.
   - Production browser verification on both aliases: Monitor shows `Primary sources active`; details show grouped labels (`crt.sh backup`, `Direct CT logs`, `Live stream`, `Static CT logs`); no base64 CT log IDs render in the monitor detail text; `/api/source-status` includes `display_sources` and `schedule`.
+- 2026-08-30 source-expansion research:
+  - Best next source work is to widen the existing CT polling budget first: current workflow has a 14-minute job but defaults only `DIRECT_CT_LOGS_PER_RUN=2`, `DIRECT_CT_ENTRIES_PER_LOG=48`, and `STATIC_CT_MAX_TILES_PER_LOG=20`; the last successful ingest completed quickly, so there is room to increase coverage without returning to Vercel Edge/Cron.
+  - External sources are possible as enrichment/positive-corpus feeds: Cert Spotter CT Search/Firehose, urlscan.io, OpenPhish, PhishTank, URLhaus, ThreatFox, and Google Safe Browsing/Web Risk. They need provenance storage, API keys/rate-limit handling, and source-specific semantics because most are not SG-specific CT discovery feeds.
+  - SG-specific public machine-readable IOC sources still appear weak; previous MAS IAL, ScamShield, CSA/SingCERT, SPF, and GovTech research remains status-only unless partnership/API access appears.
 
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-08-28 21:34:58 +08:00
+- Updated: 2026-09-08 09:42:12 +08:00
 - Machine: PRAWN-E14
-- Harness: claude
-- Event: stop
+- Harness: codex
+- Event: session-start
 - Branch: main
-- HEAD: 3722759
-- Dirty files: 1
+- HEAD: 8970fca
+- Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->

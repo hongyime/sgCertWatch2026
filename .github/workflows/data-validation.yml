@@ -10,6 +10,10 @@ on:
       - "schemes.json"
       - "scripts/validate_data.py"
       - "scripts/test_scoring.js"
+      - "scripts/test_intel*"
+      - "api/**"
+      - "supabase/**"
+      - ".github/workflows/intel.yml"
       - "lib/**"
       - ".github/workflows/data-validation.yml"
   push:
@@ -21,6 +25,10 @@ on:
       - "schemes.json"
       - "scripts/validate_data.py"
       - "scripts/test_scoring.js"
+      - "scripts/test_intel*"
+      - "api/**"
+      - "supabase/**"
+      - ".github/workflows/intel.yml"
       - "lib/**"
       - ".github/workflows/data-validation.yml"
   workflow_dispatch:
@@ -55,6 +63,16 @@ jobs:
 
       - name: Test scoring engine
         run: node scripts/test_scoring.js
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Test intelligence contracts
+        run: npm run test:intel
 
   release-readiness:
     name: Check launch readiness

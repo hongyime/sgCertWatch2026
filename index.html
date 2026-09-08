@@ -104,18 +104,18 @@
               <p class="eyebrow dark">Live alerts</p>
               <h2>Domains to watch now</h2>
             </div>
-            <span id="feed-status">Loading feed</span>
+            <span id="feed-status" role="status">Loading feed</span>
           </div>
 
           <div class="triage-toolbar">
-            <input id="finding-search" type="search" placeholder="Filter findings (domain, brand)..." class="triage-input">
-            <select id="severity-filter" class="triage-select">
-              <option value="watch">Watch now (>=70)</option>
+            <input id="finding-search" type="search" placeholder="Filter findings (domain, brand)..." class="triage-input" aria-label="Filter findings">
+            <select id="severity-filter" class="triage-select" aria-label="Finding priority or CT severity">
+              <option value="watch">Watch now (priority >=70)</option>
               <option value="">All stored findings</option>
-              <option value="critical">Critical (>=90)</option>
-              <option value="high">High (70–89)</option>
-              <option value="medium">Medium (40–69)</option>
-              <option value="low">Low (1–39)</option>
+              <option value="critical">CT Critical (>=90)</option>
+              <option value="high">CT High (70–89)</option>
+              <option value="medium">CT Medium (40–69)</option>
+              <option value="low">CT Low (1–39)</option>
             </select>
             <button id="export-json-btn" type="button" class="btn-secondary">Export JSON</button>
             <button id="export-csv-btn" type="button" class="btn-secondary">Export CSV</button>
@@ -137,7 +137,7 @@
         </section>
       </section>
 
-      <dialog id="finding-dialog" class="triage-dialog">
+      <dialog id="finding-dialog" class="triage-dialog" aria-labelledby="finding-dialog-title">
         <div class="dialog-content" id="dialog-body"></div>
       </dialog>
 
@@ -156,11 +156,11 @@
               <strong id="feed-health">Checking</strong>
             </article>
             <article class="status-tile">
-              <span>Monitor</span>
+              <span>CT monitor</span>
               <strong id="source-status">checking</strong>
             </article>
             <article class="status-tile">
-              <span>Stored alerts</span>
+              <span>Loaded findings</span>
               <strong id="feed-count">0</strong>
             </article>
             <article class="status-tile">
@@ -177,16 +177,24 @@
             </article>
           </div>
           <details class="source-details">
-            <summary>Latest scan run details</summary>
+            <summary>Latest CT scan run details</summary>
             <div class="source-list" id="source-list"></div>
           </details>
+          <section class="intel-health" aria-labelledby="intel-health-heading">
+            <div class="section-heading">
+              <h3 id="intel-health-heading">Intel source health</h3>
+              <span id="intel-schedule">Checking intel schedule</span>
+            </div>
+            <div class="source-list" id="intel-source-list"></div>
+          </section>
         </section>
       </section>
     </main>
 
     <footer class="site-footer">
-      <p>sgCertWatch is a community threat-intel dashboard. Findings are heuristic leads, not proof of wrongdoing - verify before acting. Data source: public Certificate Transparency logs.</p>
+      <p>sgCertWatch is a community threat-intel dashboard. Findings are heuristic leads, not proof of wrongdoing - verify before acting. Data sources: public Certificate Transparency logs, OpenPhish, urlscan.io, URLhaus and ThreatFox.</p>
     </footer>
 
     <script src="/app.js" type="module"></script>
+  </body>
 </html>

@@ -9,7 +9,7 @@ export default async function handler(request, response) {
 
   try {
     const limit = request.query?.limit || 50;
-    const findings = await listFindings(limit);
+    const findings = await listFindings(limit, { view: request.query?.view });
     response.status(200).json({
       storage_configured: configured(),
       findings
