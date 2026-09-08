@@ -1,8 +1,9 @@
 # Agent State
 
-Current task: reliability runtime released and verified (2026-09-08); finish external scheduler activation, real notification/incident delivery and a measured 24-hour soak once scoped credentials and destination are provided. Goal remains active and incomplete.
+Current task: reliability runtime released and verified (2026-09-08). Goal blocked on user setup (2026-09-09): external scheduler activation, real notification/incident delivery and a measured 24-hour soak remain incomplete until scoped credentials and destination are provided.
 
 Current evidence and next steps:
+- Blocker revalidated across three consecutive goal turns: ignored `.env.scheduler` is absent, required setup variables are unset, and Actions secrets contain no scheduler/Telegram configuration. Cloudflare's deployment API returned Worker-not-found (10007). Resume when the repo-scoped Actions token and alert destination are available; do not repeat completed tests/scans merely to keep the goal running.
 - Runtime `7f853ba` is on main and deployed as `dpl_CYaZ3GNo5LDtPoyAHS2vWhbuFTgX`, READY on `sgcertwatch.vercel.app` and `sgcertwatch.hong-yi.me`. Vercel commit status confirms this deployment belongs to that SHA.
 - All local core/intel/reliability/release-data suites pass; audit reports zero vulnerabilities. CI `34246781888` passes PostgreSQL 17 (30 outbox checks, 20-way lock contention, four blocked-expiry regressions), 74 scheduler tests and desktop/mobile Chromium. CodeQL, Semgrep, TruffleHog and LFS checks pass. Independent database, scheduler, browser and release-security reviews are complete.
 - CT `34246820421` succeeded: 30,851 checked, 1,324 findings and 1,353 sightings saved, six direct logs successful. Static CT made progress despite a TrustAsia timeout and Geomys 429; crt.sh timed out. Live SQL confirms persisted Geomys pause until 16:46:33Z and crt.sh pause until 17:45:59Z. Partial coverage is accurate, not a total scanner outage.
