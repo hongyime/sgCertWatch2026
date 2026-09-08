@@ -1,6 +1,6 @@
 # Agent State
 
-Current task: Implement approved free threat-intelligence enrichment (2026-09-08).
+Current task: Approved free threat-intelligence enrichment implemented and deployed (2026-09-08).
 
 Active continuation:
 - CT remains discovery on GitHub Actions; widen polling budgets. No Vercel scans.
@@ -18,6 +18,9 @@ Active continuation:
 - Validation CI fixed and green in run `34179357817`. Both production domains pass live desktop/mobile flows, provider health, favicon and console checks. Findings API measured ~4.3s cold and ~0.4s warm.
 - Candidate SQL now alternates near-threshold and existing-alert registrables. Live verification: 500 distinct candidates, including 250 scoring 60-69. New migration applied; original CT scores remain unchanged.
 - Wider CT run `34179236340` failed after scoring at the large findings write (8-second DB timeout). Changed CT writes to 200-row batches with 30-second write timeouts, retaining short public read budgets; reduced static polling to 30 tiles/log and 90 seconds. Added ingest progress logs; retry required.
+- Final CT retry `34180182808` succeeded in ~6 minutes: 58,109 checked, 2,536 findings persisted, 2,556 source sightings. Direct CT (544) and Static CT (57,565) healthy; CertStream standby; optional crt.sh backup returned HTTP 502, so overall coverage is partial.
+- Final deployed code `7ca21b6`, deployment `dpl_C6Hsseo9c3X1bSCKSNamXFUT1NNq`. Both public domains passed desktop/mobile flows; latest public API checks pass. CI `34180169197` passes core and intel tests.
+- Intel replay run `34179738030` succeeded without advancing provider check times, confirming persisted schedules avoid repeated provider requests. Live DB verification exercises evidence insert/read, blocked anon writes and host lookup inside a rolled-back transaction; no synthetic evidence remains.
 
 Progress:
 - No prior `.agents/STATE.md` existed at session start.
