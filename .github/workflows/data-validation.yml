@@ -61,15 +61,15 @@ jobs:
       - name: Validate JSON data
         run: python scripts/validate_data.py
 
-      - name: Test scoring engine
-        run: node scripts/test_scoring.js
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - run: npm ci
+
+      - name: Test scoring engine
+        run: node scripts/test_scoring.js
 
       - name: Test intelligence contracts
         run: npm run test:intel

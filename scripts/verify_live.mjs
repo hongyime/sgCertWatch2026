@@ -37,7 +37,7 @@ try {
       await page.screenshot({ path: join(screenshots, `${new URL(base).hostname}-domains-${width}.png`), fullPage: true });
       await page.locator("#finding-list [data-finding-index]").first().click();
       assert.equal(await page.locator("#finding-dialog").isVisible(), true);
-      assert.ok((await page.locator("#finding-dialog").innerText()).includes("Intel evidence"));
+      assert.match(await page.locator("#finding-dialog").innerText(), /intel evidence/i);
       await page.locator("#close-dialog-btn").click();
       await page.click('[data-view="monitor"]');
       assert.equal(await page.locator("[data-intel-source]").count(), 4);

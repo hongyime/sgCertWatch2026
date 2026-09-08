@@ -12,6 +12,9 @@ Active continuation:
 - ABUSECH_AUTH_KEY and URLSCAN_API_KEY configured in repository Actions secrets. Production database reachable (about 78k findings); storage worker optimizing bounded watch queries before migration/deployment.
 - Applied `supabase/intel.sql` successfully. Live checks confirm evidence RLS, public read/no write, private candidate function and 500 distinct candidate registrables. Public state excludes private cooldown/cursor state.
 - Desktop/mobile fixture browser checks pass for priority promotion, source badges, safe evidence links, filter refresh races and layout. Independent review fixes restart guards, quota reset retention, missing provider timestamps and wildcard exact-match handling.
+- Main pushed through `e3e2660`; production deployment `dpl_2HcTE9UAPTDNfAg8Smw2ZFvuVtpj` ready. Restored deployment exclusions removed by automated config sync.
+- First live intel Actions run `34179236224` succeeded: OpenPhish 300 entries, URLhaus 623, ThreatFox 964, urlscan 3 searches, all four OK and zero exact-host matches in selected CT candidates. Persisted next polls: OpenPhish 12h, other sources 6h.
+- Validation CI exposed pre-existing scoring-before-install ordering; moving npm install before scoring tests. Wider CT run and live desktop/mobile checks in progress.
 
 Progress:
 - No prior `.agents/STATE.md` existed at session start.
