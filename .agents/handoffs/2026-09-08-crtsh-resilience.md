@@ -13,6 +13,13 @@ Do not add keys, rotate JWT, use Vercel scanning, or mark unavailable crt.sh hea
 
 ## Verified Outcome
 
+- Reliability release `7f853ba` is on main; Vercel auto-deployment `dpl_CYaZ3GNo5LDtPoyAHS2vWhbuFTgX` is READY on both public aliases and tied to the SHA by GitHub commit status. CI `34246781888` passes PostgreSQL 17, 30 outbox checks, 74 scheduler tests, lock contention/expiry regressions and Chromium desktop/mobile fixtures. All release security checks are green.
+- Live CT `34246820421` completed at 15:50:12Z: 30,851 checked, 1,324 findings and 1,353 sightings saved; all six direct logs successful. Geomys 429 pause is persisted until 16:46:33Z, crt.sh timeout pause until 17:45:59Z. TrustAsia timeout and partial static coverage remain real upstream limitations. Duplicate dispatch `34247623022` exited `scan_not_due` without changing the successful heartbeat or contacting sources.
+- Intel `34246843332` refreshed OpenPhish and retained the other three providers' schedules. Notification workflows ran successfully and published unconfigured/zero backlog; no Telegram delivery is claimed. Production `verify_live.mjs` passes both aliases at desktop/mobile sizes, including default Domains, evidence details, exports, Watchlist search, Review, Monitor, favicon, console and layout.
+- No remote scheduler activation or 24-hour soak yet: scoped GitHub token and operational alert destination remain absent. All local verification processes/containers are stopped and independent reviewers closed. Next action is user credential setup, not another scanner rewrite or repeat provider probes.
+
+Earlier deployed iterations:
+
 - Runtime `5d7e84c` is on main and deployed (`dpl_vorTJr2MUxJWSxNvfgQkKFHCbrp4`). Final data-validation CI run `34208305512` passes; both public aliases pass desktop/mobile read flows, favicon, console and layout checks.
 - Live run `34206246005`: 47,269 entries checked, 2,152 findings saved; crt.sh root JSON query succeeded in about six seconds. Direct/static timeouts did not stop saved findings.
 - Live resume `34207087100`: 27,797 checked, 1,074 findings saved; six direct logs successful; static rotation advanced beyond the previous first ten logs; crt.sh made zero requests and retained last-attempt/next-poll timestamps.
