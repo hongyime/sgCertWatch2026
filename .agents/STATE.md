@@ -1,6 +1,6 @@
 # Agent State
 
-Current task: Diagnose crt.sh degradation and harden autonomous CT monitoring (2026-09-08).
+Current task: crt.sh diagnosis and CT resilience deployed; independent scheduler setup remains pending (2026-09-08).
 
 Current investigation:
 - Official crt.sh root `/?identity=...&output=json` is supported. Upstream May 28, 2026 notice attributes recurring 50x failures to overloaded/frozen database replicas and inefficient result sorting.
@@ -19,6 +19,8 @@ Current investigation:
 - Follow-up `15aea1d` deployed as `dpl_8J9G1vVksDLAFh5Jfocpe5Ymtvfd`. All 26 static resilience scenarios and desktop/mobile fixtures pass. Live resume scan `34207087100` is running; baseline saved static index is 10 and crt.sh last attempt remains 08:45:54Z, next allowed 09:45:54Z.
 - Resume scan `34207087100` succeeded: 27,797 checked and 1,074 findings saved. All six direct logs succeeded; crt.sh skipped without changing its attempt/retry timestamps. Rotated static logs exposed genuine 429 responses from Geomys/IPng and a TrustAsia timeout, so partial coverage remains accurate.
 - Added static per-operator 429 cooldowns (minimum 1h, longer Retry-After honored), persisted before scoring while retaining unsaved primary cursors. Sibling logs pause immediately and other operators continue. All 29 static tests, seven runner recovery tests, core/intel suites and desktop/mobile fixtures pass. This final rate-limit addition is tested with mocked providers; two real scans above verified the main pipeline and restart behavior.
+- Final runtime `5d7e84c` pushed and deployed as `dpl_vorTJr2MUxJWSxNvfgQkKFHCbrp4`. CI `34208305512` passes. Both public aliases pass final desktop/mobile flows, API/favicons and console/layout checks. No third provider scan was needed for the rate-limit patch; its restart/Retry-After behavior is covered by regression tests.
+- Remaining: GitHub's active cron still has observed multi-hour delays; Cloudflare trigger preference/account setup is unanswered and no external scheduler was created. No Vercel scanning, Google Cloud, JWT rotation or new credentials were introduced. Some static operators remain degraded/rate-limited; direct CT is working and crt.sh is in scheduled standby.
 
 Active continuation:
 - CT remains discovery on GitHub Actions; widen polling budgets. No Vercel scans.
