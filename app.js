@@ -167,6 +167,7 @@ function sourceState(item) {
   if (item.ok && (item.details?.state === "standby" || item.status === "standby")) {
     return { label: "standby", className: "standby" };
   }
+  if (item.ok && item.details?.budget_exhausted) return { label: "budget limited", className: "standby" };
   if (item.ok || item.status === "ok") {
     return { label: "ok", className: "ok" };
   }
@@ -180,7 +181,8 @@ function sourceDetail(item) {
   const matched = `${item.matched || 0} matches`;
   const persisted = Number.isFinite(item.persisted) ? ` - ${item.persisted} stored` : "";
   const error = item.errors?.[0];
-  const note = [typeof error === "string" ? error : error?.message, item.details?.note].filter(Boolean).join(" - ");
+  const note = [typeof error === "string" ? error : error?.message, item.details?.note,
+    item.details?.budget_exhausted ? "Time budget reached; remaining logs resume next run." : ""].filter(Boolean).join(" - ");
   return note ? `${checked} - ${matched}${persisted} - ${note}` : `${checked} - ${matched}${persisted}`;
 }
 

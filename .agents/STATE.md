@@ -13,6 +13,9 @@ Current investigation:
 - Implemented primary-only availability, persisted ingest failure stages, checkpoint-before-notification ordering, bounded alert delivery and regression tests. Worker is fixing static tile error propagation and fair log rotation in its dedicated files.
 - Static CT now retains partial progress, propagates tile errors, rotates logs and strictly validates tile framing before advancing. All 24 static resilience scenarios pass, including non-DNS certificates and malformed/truncated 200 responses.
 - Core/unit, 18 storage/API tests, intel quota/provenance tests, release data validation and desktop/mobile fixture checks pass. Failed backup cooldown is saved before scoring without advancing primary cursors. Ready for push, deployment and a live Actions scan; independent scheduler is not configured yet.
+- Pushed `1546ae7`; deployed `dpl_AoUPiMmfZ8PgdUB14vRPKHYx1sGq`. CI `34206230379` passes. Both public aliases pass desktop/mobile flows.
+- Live scan `34206246005` succeeded: 47,269 entries checked, 2,152 findings and 2,170 sightings saved. crt.sh returned a valid empty JSON result in ~6s and persisted an hourly next poll. One TrustAsia timeout and the static 90s budget stop yielded partial coverage.
+- Follow-up distinguishes deliberate budget cancellation after progress from provider timeouts; malformed tiles and genuine timeouts remain errors. Independent review notes optional Telegram overflow has no durable notification retry queue; dashboard findings are retained, but alert delivery remains best-effort as documented.
 
 Active continuation:
 - CT remains discovery on GitHub Actions; widen polling budgets. No Vercel scans.

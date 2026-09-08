@@ -328,6 +328,34 @@ try {
     assert.equal(result.details.successful_log_count, 3);
     assert.equal(result.statePatch.static_ct.index, 2, "Normalize stored index against the current log list");
   });
+  await check(async () => {
+    let tiles = 0;
+    globalThis.fetch = async (url) => {
+      if (url.endsWith("checkpoint")) return checkpoint(512);
+      if (++tiles === 1) return new Response(tile);
+      now += 90000;
+      throw new DOMException("Run deadline reached", "TimeoutError");
+    };
+    const result = await runStaticCtSource({ staticLogs: logs, state: { cursors: { first: { next: 0 } } } });
+    assert.equal(result.ok, true, "An intentional budget stop after progress is not an upstream outage");
+    assert.equal(result.errors.length, 0);
+    assert.equal(result.entries.length, 256);
+    assert.equal(result.statePatch.static_ct.cursors.first.next, 256);
+    assert.equal(result.statePatch.static_ct.index, 1);
+    assert.equal(result.details.budget_exhausted, true);
+  });
+
+  await check(async () => {
+    globalThis.fetch = async (url) => {
+      if (url.endsWith("checkpoint")) return checkpoint(512);
+      now += 12000;
+      throw new DOMException("Provider timed out", "TimeoutError");
+    };
+    const result = await runStaticCtSource({ staticLogs: [logs[0]], state: { cursors: { first: { next: 0 } } } });
+    assert.equal(result.ok, false, "Provider timeouts before the run deadline remain errors");
+    assert.match(result.errors[0].message, /Provider timed out/);
+    assert.equal(result.statePatch.static_ct.cursors.first.next, 0);
+  });
 } finally {
   globalThis.fetch = originalFetch;
   Date.now = originalNow;
