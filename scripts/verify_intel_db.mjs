@@ -12,6 +12,9 @@ select
     'public.intel_findings_for_hosts(text[],integer)'::regprocedure) and prosecdef) as definer_functions,
   (select count(*) from public.intel_candidate_findings(500)) as candidates,
   (select count(distinct registrable) from public.intel_candidate_findings(500)) as distinct_candidates,
+  (select count(*) from public.intel_candidate_findings(500) where score < 70) as near_threshold_candidates,
+  exists (select 1 from public.findings where suppressed = false and score >= 60
+    group by registrable having max(score) < 70) as near_threshold_available,
   (select qual from pg_policies where tablename = 'ingest_state' and policyname = 'ingest_state_public_read') as public_state_policy;
 `;
 const started = Date.now();
@@ -30,6 +33,7 @@ assert.equal(row.public_host_lookup, true);
 assert.equal(row.definer_functions, 0);
 assert.equal(row.candidates, row.distinct_candidates);
 assert.ok(row.candidates <= 500);
+if (row.near_threshold_available) assert.ok(row.near_threshold_candidates > 0);
 assert.ok(row.public_state_policy.includes("intel_poll_status"));
 assert.equal(row.public_state_policy.includes("intel_source_state"), false);
 console.log(JSON.stringify({ ...row, duration_ms: Date.now() - started }));

@@ -15,6 +15,8 @@ Active continuation:
 - Main pushed through `e3e2660`; production deployment `dpl_2HcTE9UAPTDNfAg8Smw2ZFvuVtpj` ready. Restored deployment exclusions removed by automated config sync.
 - First live intel Actions run `34179236224` succeeded: OpenPhish 300 entries, URLhaus 623, ThreatFox 964, urlscan 3 searches, all four OK and zero exact-host matches in selected CT candidates. Persisted next polls: OpenPhish 12h, other sources 6h.
 - Validation CI exposed pre-existing scoring-before-install ordering; moving npm install before scoring tests. Wider CT run and live desktop/mobile checks in progress.
+- Validation CI fixed and green in run `34179357817`. Both production domains pass live desktop/mobile flows, provider health, favicon and console checks. Findings API measured ~4.3s cold and ~0.4s warm.
+- Candidate SQL now alternates near-threshold and existing-alert registrables. Live verification: 500 distinct candidates, including 250 scoring 60-69. New migration applied; original CT scores remain unchanged.
 
 Progress:
 - No prior `.agents/STATE.md` existed at session start.

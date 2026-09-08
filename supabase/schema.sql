@@ -285,7 +285,11 @@ language sql stable security invoker set search_path = ''
 as $$
   select f.*
   from (
-    select candidate.id, candidate.score, candidate.observed_at
+    select candidate.id, candidate.score, candidate.observed_at,
+      row_number() over (
+        partition by candidate.score >= 70
+        order by candidate.score desc, candidate.observed_at desc, candidate.id
+      ) as bucket_rank
     from (
       select distinct on (finding.registrable)
         finding.id, finding.registrable, finding.score, finding.observed_at
@@ -293,11 +297,11 @@ as $$
       where finding.suppressed = false and finding.score >= 60
       order by finding.registrable, finding.score desc, finding.observed_at desc, finding.id
     ) candidate
-    order by candidate.score desc, candidate.observed_at desc, candidate.id
+    order by bucket_rank, candidate.score desc, candidate.observed_at desc, candidate.id
     limit least(greatest(candidate_limit, 1), 1000)
   ) candidate
   join public.findings f on f.id = candidate.id
-  order by candidate.score desc, candidate.observed_at desc, candidate.id;
+  order by candidate.bucket_rank, candidate.score desc, candidate.observed_at desc, candidate.id;
 $$;
 revoke all on function public.intel_candidate_findings(integer) from public, anon, authenticated;
 grant execute on function public.intel_candidate_findings(integer) to service_role;

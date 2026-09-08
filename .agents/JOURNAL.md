@@ -1,6 +1,7 @@
 # Agent Journal
 
 - 2026-09-08: Approved free-source enrichment uses OpenPhish, urlscan, URLhaus and ThreatFox only; exact-host expiring evidence affects review priority without mutating CT scores or positive-corpus labels. Persist conservative polling and shared abuse.ch cooldowns across Actions runs.
+- 2026-09-08: Alternate near-threshold (60-69) and existing-alert candidates before the 500-domain enrichment limit; otherwise high-score findings would exclude the domains eligible for evidence-based promotion. Verified 250 near-threshold candidates live.
 
 - 2026-08-14: Began repository understanding pass; no prior shared agent state existed, so `.agents/STATE.md` was created for cross-agent handoff.
 - 2026-08-14: Started first implementation phase as a core JSON data validation gate before manual allowlist/scheme verification.

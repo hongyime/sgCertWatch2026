@@ -51,6 +51,7 @@ try {
         page.waitForResponse((response) => response.url().endsWith("/api/findings?limit=50")),
         page.selectOption("#severity-filter", "")
       ]);
+      await page.locator("#finding-list [data-finding-index]").first().waitFor();
       assert.equal(await page.locator("#finding-list [data-finding-index]").count() > 0, true);
       assert.deepEqual(errors, []);
       await page.close();
