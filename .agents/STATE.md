@@ -16,6 +16,9 @@ Current investigation:
 - Pushed `1546ae7`; deployed `dpl_AoUPiMmfZ8PgdUB14vRPKHYx1sGq`. CI `34206230379` passes. Both public aliases pass desktop/mobile flows.
 - Live scan `34206246005` succeeded: 47,269 entries checked, 2,152 findings and 2,170 sightings saved. crt.sh returned a valid empty JSON result in ~6s and persisted an hourly next poll. One TrustAsia timeout and the static 90s budget stop yielded partial coverage.
 - Follow-up distinguishes deliberate budget cancellation after progress from provider timeouts; malformed tiles and genuine timeouts remain errors. Independent review notes optional Telegram overflow has no durable notification retry queue; dashboard findings are retained, but alert delivery remains best-effort as documented.
+- Follow-up `15aea1d` deployed as `dpl_8J9G1vVksDLAFh5Jfocpe5Ymtvfd`. All 26 static resilience scenarios and desktop/mobile fixtures pass. Live resume scan `34207087100` is running; baseline saved static index is 10 and crt.sh last attempt remains 08:45:54Z, next allowed 09:45:54Z.
+- Resume scan `34207087100` succeeded: 27,797 checked and 1,074 findings saved. All six direct logs succeeded; crt.sh skipped without changing its attempt/retry timestamps. Rotated static logs exposed genuine 429 responses from Geomys/IPng and a TrustAsia timeout, so partial coverage remains accurate.
+- Added static per-operator 429 cooldowns (minimum 1h, longer Retry-After honored), persisted before scoring while retaining unsaved primary cursors. Sibling logs pause immediately and other operators continue. All 29 static tests, seven runner recovery tests, core/intel suites and desktop/mobile fixtures pass. This final rate-limit addition is tested with mocked providers; two real scans above verified the main pipeline and restart behavior.
 
 Active continuation:
 - CT remains discovery on GitHub Actions; widen polling budgets. No Vercel scans.

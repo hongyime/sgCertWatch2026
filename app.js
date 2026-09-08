@@ -573,6 +573,7 @@ async function renderSourceStatus() {
           <small>${escapeHtml(sourceDetail(item))}</small>
           <small>Last check: ${escapeHtml(formatTime(item.last_checked_at || item.checked_at))}</small>
           ${item.next_poll_at ? `<small>Next attempt: ${escapeHtml(formatTime(item.next_poll_at))}</small>` : ""}
+          ${item.details?.next_retry_at ? `<small>Paused logs retry after: ${escapeHtml(formatTime(item.details.next_retry_at))}</small>` : ""}
         </div>
       `;
       }).join("")

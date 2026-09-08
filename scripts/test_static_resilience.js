@@ -356,6 +356,50 @@ try {
     assert.match(result.errors[0].message, /Provider timed out/);
     assert.equal(result.statePatch.static_ct.cursors.first.next, 0);
   });
+  for (const rateLimitAt of ["checkpoint", "tile"]) {
+    await check(async () => {
+      const grouped = logs.map((log, i) => ({ ...log, operator: i < 2 ? "Shared operator" : "Other operator" }));
+      const requests = [];
+      const requestedDelay = rateLimitAt === "checkpoint" ? "7200" : new Date(now + 7200000).toUTCString();
+      globalThis.fetch = async (url) => {
+        const host = new URL(url).hostname;
+        requests.push(host);
+        if (host === "first.invalid") {
+          if (rateLimitAt === "tile" && url.endsWith("checkpoint")) return checkpoint(256);
+          return new Response("limited", { status: 429, headers: { "Retry-After": requestedDelay } });
+        }
+        return checkpoint(0);
+      };
+      const first = await runStaticCtSource({ staticLogs: grouped, state: { cursors: { first: { next: 0 } } } });
+      assert.equal(first.ok, false);
+      assert.equal(first.details.successful_log_count, 1, "Other operators still run");
+      assert.equal(first.details.cooldown_skipped_log_count, 1);
+      assert.equal(requests.includes("second.invalid"), false, "Do not retry against a sibling log");
+      assert.equal(first.statePatch.static_ct.cursors.first.next, 0);
+      const saved = JSON.parse(JSON.stringify(first.statePatch.static_ct));
+      assert.equal(Date.parse(saved.cooldowns["Shared operator"]), now + 7200000);
+
+      requests.length = 0;
+      const replay = await runStaticCtSource({ staticLogs: grouped, state: saved });
+      assert.deepEqual(requests, ["third.invalid"]);
+      assert.equal(replay.details.cooldown_skipped_log_count, 2);
+      assert.equal(replay.statePatch.static_ct.cooldowns["Shared operator"], saved.cooldowns["Shared operator"]);
+
+      now += 7200000;
+      requests.length = 0;
+      globalThis.fetch = async (url) => { requests.push(new URL(url).hostname); return checkpoint(0); };
+      const recovered = await runStaticCtSource({ staticLogs: grouped, state: saved });
+      assert.equal(recovered.ok, true);
+      assert.equal(recovered.details.cooldown_operator_count, 0);
+      assert.equal(requests.length, 3);
+    });
+  }
+
+  await check(async () => {
+    globalThis.fetch = async () => new Response("limited", { status: 429, headers: { "Retry-After": "1" } });
+    const result = await runStaticCtSource({ staticLogs: [logs[0]] });
+    assert.equal(Date.parse(result.details.next_retry_at), now + 3600000, "Rate limits pause at least one hour");
+  });
 } finally {
   globalThis.fetch = originalFetch;
   Date.now = originalNow;

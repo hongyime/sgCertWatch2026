@@ -53,7 +53,7 @@ const allFindings = [...watchFindings, low];
 const sourcePayload = {
   health: "partial", display_sources: [
     { source: "direct_ct", ok: true, label: "Direct CT logs", checked_at: iso() },
-    { source: "static_ct", ok: true, label: "Static CT logs", checked_at: iso(), scanned_entries: 100, details: { budget_exhausted: true } },
+    { source: "static_ct", ok: true, label: "Static CT logs", checked_at: iso(), scanned_entries: 100, details: { budget_exhausted: true, next_retry_at: iso(3600000) } },
     { source: "crtsh", ok: false, status: "cooldown", label: "crt.sh backup", checked_at: iso(-3600000), next_poll_at: iso(3600000),
       errors: [{ message: "crt.sh HTTP 502" }], details: { state: "cooldown", note: "Optional backup unavailable; direct and static CT polling continue independently." } }
   ],
@@ -218,6 +218,7 @@ try {
     assert.match(await page.locator("#source-list").innerText(), /crt\.sh backup\ncooldown\n.*HTTP 502/);
     assert.match(await page.locator("#source-list").innerText(), /Last check:.*\nNext attempt:/);
     assert.match(await page.locator("#source-list").innerText(), /Static CT logs\nbudget limited/);
+    assert.match(await page.locator("#source-list").innerText(), /Paused logs retry after:/);
     assert.doesNotMatch(await page.locator("#source-list").innerText(), /OpenPhish|urlscan|URLhaus|ThreatFox/);
     assert.doesNotMatch(await page.locator("#intel-source-list").innerText(), /PhishTank|Google/);
     await checkLayout(page);

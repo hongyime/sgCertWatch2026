@@ -37,9 +37,11 @@ Required repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Option
 
 The poller samples CertStream, tails a rotating set of direct RFC6962 CT logs, reads Let's Encrypt logs through the Static CT API tile reader, and keeps `crt.sh` as a fallback comparison source. Findings and source health are stored in Supabase so the dashboard can show partial coverage instead of treating one source outage as a total outage.
 
-The Actions job polls six direct logs with up to 128 entries each, and permits 30 tiles per static log within a 90-second static-source budget. Static logs rotate across runs so later logs are not starved. Tile framing and bundle counts are validated before cursor advancement; malformed or truncated responses retain the failed tile for retry, while earlier completed tiles are retained. Findings and CT sightings are saved in batches of 200 rows. These are sampling limits, not full CT coverage; GitHub scheduled runs can be delayed.
+The Actions job polls six direct logs with up to 128 entries each, and permits 30 tiles per static log within a 90-second static-source budget. Static logs rotate across runs so later logs are not starved. Tile framing and bundle counts are validated before cursor advancement; malformed or truncated responses retain the failed tile for retry, while earlier completed tiles are retained. HTTP 429 from a static operator pauses its sibling logs for at least one hour, honoring longer `Retry-After` values. These cooldowns are saved before scoring and survive restarts or later write failures without advancing unsaved cursors. Other operators continue. Findings and CT sightings are saved in batches of 200 rows. These are sampling limits, not full CT coverage; GitHub scheduled runs can be delayed.
 
 Primary health comes from direct/static CT, so an idle WebSocket or backup cannot hide a primary outage. Findings and sightings are committed before cursors, with failed-write ranges replayed next run; completed cursors and scan status are committed before optional notifications. Failed stages are recorded when the database is reachable. Telegram delivery is best-effort, capped at 20 sends/30 seconds per scan, with only delivered domains added to alert deduplication history.
+
+Unsent notifications are not durably queued for retry. The Domains view remains the authoritative list of stored findings, including anything not delivered through an optional alert channel.
 
 ### crt.sh Backup
 

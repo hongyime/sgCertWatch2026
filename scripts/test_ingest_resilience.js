@@ -92,3 +92,17 @@ test("missing service credentials prevent scans and a busy runner skips cleanly"
   store.tryAcquireRunLock = async () => false;
   assert.equal(await runIngest(options), undefined);
 });
+
+test("static operator cooldowns survive write failure without advancing unsaved tile cursors", async () => {
+  const { store, events, options } = harness();
+  store.getServiceState = async () => ({ value: { static_ct: { index: 2, cursors: { log: { next: 10 } } } } });
+  const run = source("static_ct", false, [{}]);
+  run.statePatch.static_ct = { index: 3, cursors: { log: { next: 256 } }, cooldowns: { operator: "2026-09-09T00:00:00Z" } };
+  options.scan = async () => [run];
+  store.upsertFindings = async () => { throw new Error("storage outage"); };
+  await assert.rejects(runIngest(options), /storage outage/);
+  const saved = events.find((e) => e.action === "ct_source_state").value.static_ct;
+  assert.equal(saved.index, 2);
+  assert.equal(saved.cursors.log.next, 10);
+  assert.deepEqual(saved.cooldowns, run.statePatch.static_ct.cooldowns);
+});

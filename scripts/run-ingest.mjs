@@ -104,10 +104,13 @@ export async function runIngest({ store = storage, scan = runSources, score = sc
     })) }));
 
     const backupFailure = runs.find((run) => run.source === "crtsh" && !run.ok);
-    if (backupFailure?.statePatch) {
+    const staticCooldowns = runs.find((run) => run.source === "static_ct")?.statePatch?.static_ct?.cooldowns;
+    if (backupFailure?.statePatch || Object.keys(staticCooldowns || {}).length) {
       stage = "source_backoff";
       // Persist the provider pause even if scoring or later writes fail; do not advance CT cursors.
-      await setState("ct_source_state", mergeSourceState(sourceState, [backupFailure]));
+      const pausedState = mergeSourceState(sourceState, backupFailure ? [backupFailure] : []);
+      if (staticCooldowns) pausedState.static_ct = { ...sourceState.static_ct, cooldowns: staticCooldowns };
+      await setState("ct_source_state", pausedState);
     }
 
     stage = "scoring";

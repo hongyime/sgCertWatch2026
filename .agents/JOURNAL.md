@@ -146,3 +146,4 @@
 - 2026-09-08 16:16:25 +08:00 [PRAWN-E14/codex/session-start] branch=main head=8027e6e dirty=0
 - 2026-09-08: crt.sh root JSON route is valid; provider failures must not become empty successes. Persist optional-backup cooldown across Actions runs and bound full response reads; keep primary CT independent of crt.sh availability.
 - 2026-09-08: Primary CT availability must exclude idle backups. Commit saved findings/sightings before cursors and cursors before best-effort notifications. Active GitHub cron showed multi-hour delivery gaps; offset schedule is a mitigation only, with independent free trigger awaiting user preference.
+- 2026-09-08: Live resumed polling confirmed correct crt.sh root JSON access and skipped repeated backup requests. Newly reached static operators returned 429; preserve per-operator pauses before scoring, respect Retry-After, and retain honest partial coverage instead of masking unavailable logs.
