@@ -9,7 +9,7 @@ on:
       - "allowlist.json"
       - "schemes.json"
       - "scripts/validate_data.py"
-      - "scripts/test_scoring.js"
+      - "scripts/test_*.js"
       - "scripts/test_intel*"
       - "api/**"
       - "supabase/**"
@@ -24,7 +24,7 @@ on:
       - "allowlist.json"
       - "schemes.json"
       - "scripts/validate_data.py"
-      - "scripts/test_scoring.js"
+      - "scripts/test_*.js"
       - "scripts/test_intel*"
       - "api/**"
       - "supabase/**"
@@ -68,8 +68,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Test scoring engine
-        run: node scripts/test_scoring.js
+      - name: Test core pipeline
+        run: npm run test:unit
 
       - name: Test intelligence contracts
         run: npm run test:intel

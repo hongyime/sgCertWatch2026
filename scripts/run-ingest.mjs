@@ -101,12 +101,18 @@ async function runIngest() {
     const stateRow = await getState("ct_source_state");
     const sourceState = stateRow?.value || {};
     const runs = await runSources({ data, state: sourceState });
+    console.log(JSON.stringify({ stage: "sources_fetched", sources: runs.map((run) => ({
+      source: run.source, entries: run.entries.length, scanned: run.scanned_entries, duration_ms: run.duration_ms
+    })) }));
 
     const scored = [];
     const matchedBySource = new Map();
     for (const run of runs) {
       let matched = 0;
+      let checked = 0;
       for (const entry of run.entries) {
+        checked++;
+        if (checked % 10000 === 0) console.log(JSON.stringify({ stage: "scoring", source: run.source, checked, matched }));
         const finding = scoreCertificate(entry, data);
         if (!finding) continue;
         matched += 1;
@@ -121,6 +127,7 @@ async function runIngest() {
     }
 
     const findings = uniqueFindings(scorable.map((item) => item.finding));
+    console.log(JSON.stringify({ stage: "persisting", findings: findings.length }));
     const persistedFindings = await upsertFindings(findings);
     const sourceRows = sourceRowsFor(scorable);
     const persistedSources = await upsertFindingSources(sourceRows);

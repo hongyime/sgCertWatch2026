@@ -28,3 +28,28 @@ assert.throws(
 );
 
 console.log("Supabase key scoping tests passed.");
+
+const { upsertFindings, upsertFindingSources } = await import("../lib/supabase.js");
+const originalFetch = globalThis.fetch;
+try {
+  const inputs = Array.from({ length: 451 }, (_, index) => ({ id: `batch-${index}` }));
+  for (const save of [upsertFindings, upsertFindingSources]) {
+    const sizes = [];
+    globalThis.fetch = async (_url, options) => {
+      const rows = JSON.parse(options.body);
+      sizes.push(rows.length);
+      assert.equal(options.headers.apikey, "service-role-key-67890");
+      return Response.json(rows);
+    };
+    assert.deepEqual(await save(inputs), inputs);
+    assert.deepEqual(sizes, [200, 200, 51]);
+    let calls = 0;
+    globalThis.fetch = async (_url, options) => ++calls === 2
+      ? new Response("database unavailable", { status: 503 }) : Response.json(JSON.parse(options.body));
+    await assert.rejects(save(inputs), /503/);
+    assert.equal(calls, 2, "Stop on failed batch so the ingest cursor cannot advance");
+  }
+} finally {
+  globalThis.fetch = originalFetch;
+}
+console.log("CT batch persistence tests passed.");

@@ -35,7 +35,7 @@ Required repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Option
 
 The poller samples CertStream, tails a rotating set of direct RFC6962 CT logs, reads Let's Encrypt logs through the Static CT API tile reader, and keeps `crt.sh` as a fallback comparison source. Findings and source health are stored in Supabase so the dashboard can show partial coverage instead of treating one source outage as a total outage.
 
-The Actions job polls six direct logs with up to 128 entries each, and permits 50 tiles per static log within a three-minute static-source budget. These are sampling limits, not full CT coverage; GitHub scheduled runs can be delayed.
+The Actions job polls six direct logs with up to 128 entries each, and permits 30 tiles per static log within a 90-second static-source budget. Findings and CT sightings are saved in batches of 200 rows. These are sampling limits, not full CT coverage; GitHub scheduled runs can be delayed.
 
 ## Threat Intelligence
 

@@ -17,6 +17,7 @@ Active continuation:
 - Validation CI exposed pre-existing scoring-before-install ordering; moving npm install before scoring tests. Wider CT run and live desktop/mobile checks in progress.
 - Validation CI fixed and green in run `34179357817`. Both production domains pass live desktop/mobile flows, provider health, favicon and console checks. Findings API measured ~4.3s cold and ~0.4s warm.
 - Candidate SQL now alternates near-threshold and existing-alert registrables. Live verification: 500 distinct candidates, including 250 scoring 60-69. New migration applied; original CT scores remain unchanged.
+- Wider CT run `34179236340` failed after scoring at the large findings write (8-second DB timeout). Changed CT writes to 200-row batches with 30-second write timeouts, retaining short public read budgets; reduced static polling to 30 tiles/log and 90 seconds. Added ingest progress logs; retry required.
 
 Progress:
 - No prior `.agents/STATE.md` existed at session start.
