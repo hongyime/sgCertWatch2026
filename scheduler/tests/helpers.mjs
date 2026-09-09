@@ -68,8 +68,10 @@ export function harness(options = {}) {
         .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
       return Response.json({ total_count: rows.length, workflow_runs: rows.slice(0, Number(url.searchParams.get("per_page"))) });
     }
-    if (url.hostname.endsWith(".supabase.co")) return Response.json(h.heartbeatRows);
-    if (url.hostname === "api.telegram.org") return Response.json({ ok: true, result: { message_id: 1 } });
+    if (url.hostname.endsWith(".supabase.co")) {
+      const keys = url.searchParams.get("key").slice(4, -1).split(",");
+      return Response.json(h.heartbeatRows.filter(row => keys.includes(row.key)));
+    }
     if (url.hostname === "alerts.example.test") return new Response("OK", { status: 200 });
     throw new Error("unexpected external destination");
   };
@@ -79,7 +81,7 @@ export function harness(options = {}) {
   h.state = () => h.storage.get(STATE_KEY);
   h.status = () => h.engine().status();
   h.dispatches = file => h.calls.filter(c => c.url.pathname.endsWith("/dispatches") && (!file || c.url.pathname.includes(file)));
-  h.alerts = () => h.calls.filter(c => c.url.hostname === "api.telegram.org" || c.url.hostname === "alerts.example.test");
+  h.alerts = () => h.calls.filter(c => c.url.hostname === "alerts.example.test");
   h.healthy = (minutesAgo = 1) => {
     for (const w of WORKFLOWS) h.rows[w.file] = [run(h.time, { id: h.nextId++,
       created_at: new Date(h.time - minutesAgo * MINUTE).toISOString(),

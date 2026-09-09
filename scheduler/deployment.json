@@ -1,6 +1,8 @@
 {
-  "schema_version": 1,
-  "deployment_performed": false,
+  "schema_version": 2,
+  "deployment_performed": true,
+  "deployment_state": "paused_pending_actions_write_permission",
+  "worker_url": "https://sgcertwatch-scheduler.hongyime.workers.dev",
   "worker_name": "sgcertwatch-scheduler",
   "config": "scheduler/wrangler.jsonc",
   "required_secrets": {
@@ -8,30 +10,31 @@
     "STATUS_TOKEN": "Random secret of at least 32 characters. Read-only GET /status uses Authorization: Bearer."
   },
   "optional_secrets": {
-    "TELEGRAM_BOT_TOKEN": "Pair with TELEGRAM_CHAT_ID for proactive alerts.",
-    "TELEGRAM_CHAT_ID": "Private alert destination, stored only as a Worker secret.",
-    "ALERT_WEBHOOK_URL": "Alternative HTTPS destination, Worker secret only. Telegram takes precedence when both are configured.",
+    "ALERT_WEBHOOK_URL": "Optional HTTPS operational-alert destination, Worker secret only. Explicitly opts into webhook mode; no outbound alert channel is required in default dashboard mode.",
     "ALERT_WEBHOOK_SECRET": "Optional Bearer credential for the private webhook.",
     "SUPABASE_URL": "Direct https://<project>.supabase.co origin, without path/query/credentials.",
     "SUPABASE_PUBLISHABLE_KEY": "Public publishable key or anon JWT. Privileged secret/service-role keys are rejected."
   },
   "integration": {
     "workflow_inputs": { "scheduler": "cloudflare" },
-    "workflows": { "ingest.yml": "15 minutes", "intel.yml": "60 minutes", "notifications.yml": "15 minutes" },
+    "workflows": { "ingest.yml": "15 minutes", "intel.yml": "60 minutes" },
     "watchdog_cron_utc": "*/5 * * * *",
-    "heartbeat_rows": ["ct_poll_status", "intel_poll_status", "notifications_poll_status"],
-    "heartbeat_access": "Parent grants anon SELECT of the three safe ingest_state rows. No outbox payload read, RPC call or service key is used.",
+    "heartbeat_rows": ["ct_poll_status", "intel_poll_status"],
+    "heartbeat_access": "Parent grants anon SELECT of the two safe ingest_state rows. No outbox payload read, RPC call or service key is used.",
     "heartbeat_isolation": "Per-workflow parse errors cannot gate valid sibling pipelines. Transport/JSON failures are global. A never-observed missing row bootstraps via GitHub recency and durable reservations; an established malformed/missing scan heartbeat gates only that scan.",
     "execution_lock": "Parent owns workflow concurrency and atomic DB lock with CT 14m / intel 55m minimum intervals. These protect the cross-provider dispatch race.",
     "public_routes": "Only protected GET /status. Cron calls the singleton object internally; no public mutation route.",
-    "alert_delivery": "Stable per-incident transition event_id; five attempts with >=5m exponential cooldown capped at 60m locally; longer Retry-After survives body stalls. Expired leases and unknown outcomes retry. Recovery retains the previous delivery record and queues a resolved-incident summary for attempted/rate-limited notices; pending recovery keeps status nonhealthy. At-least-once attempts can duplicate a delivered message after a lost response. Dead letters remain visible.",
+    "monitoring_mode": "Default config.monitoringMode=dashboard, alertChannel=none, proactiveAlerts=false. No notification service or outbound delivery is required. Incidents remain durable and unhealthy until observed recovery. Optional ALERT_WEBHOOK_URL opts into monitoringMode=webhook.",
+    "alert_delivery": "Dashboard notices use dashboard_only with zero attempts. Recovery preserves previousNotice and clears notice without a delivery receipt. Optional webhook uses stable event_id, five attempts with >=5m exponential cooldown capped at 60m locally, and longer Retry-After. Expired leases and unknown outcomes retry; pending recovery keeps webhook status nonhealthy. At-least-once attempts can duplicate delivery after a lost response. Historical outcomes remain visible without being rewritten.",
+    "state_migration": "State version 2 retains scheduler-v1 storage key and singleton identity. Transactional migration preserves CT/intel checkpoints, reservations, leases, cooldowns and incidents. Retired notification records move to retiredSubjects.notifications outside active health/soak. GET projects migration read-only. A qualified tick starts a fresh observed soak window after migration or mode changes.",
     "dispatch_ambiguity": "Reservation persists before POST. Accepted/unconfirmed outcomes wait up to two workflow intervals; observed runs use the 14m/55m minimum plus durable 15m/60m slot. Reservations record origin and correlation. No exactly-once claim across GitHub's API boundary.",
-    "soak": "No 24h pass is asserted. Parent verifier evaluates soak.active, observedActiveMs, unique actual start/success counts, maximum gaps, freshness and configured alert channel. An elapsed interval alone is insufficient."
+    "soak": "No 24h pass is asserted. Parent verifier evaluates soak.active, matching monitoringMode, observedActiveMs, CT/intel unique actual start/success counts, maximum gaps, freshness and independent pipeline evidence. Dashboard mode requires no notification workflow or delivery receipts. Webhook mode additionally checks delivery outcomes. An elapsed interval alone is insufficient."
   },
   "commands_for_parent": {
     "test": "node --test scheduler/tests/*.test.mjs",
     "validate": "wrangler deploy --dry-run --config scheduler/wrangler.jsonc --outdir scheduler/dist",
     "deploy_after_review": "wrangler deploy --config scheduler/wrangler.jsonc",
+    "activate_after_permission_verification": "wrangler deploy --config scheduler/wrangler.jsonc --var DISPATCH_ENABLED:true",
     "set_secret": "wrangler secret put <NAME> --config scheduler/wrangler.jsonc"
   },
   "free_plan_verified_at": "2026-09-08",
@@ -66,7 +69,6 @@
     "https://developers.cloudflare.com/changelog/product/durable-objects/",
     "https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28",
     "https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api",
-    "https://supabase.com/docs/guides/getting-started/api-keys",
-    "https://core.telegram.org/bots/api#responseparameters"
+    "https://supabase.com/docs/guides/getting-started/api-keys"
   ]
 }

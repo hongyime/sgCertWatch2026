@@ -68,7 +68,7 @@ test("HTTP 429 status and Retry-After survive a stalled body", { timeout: 10000 
   const result = await boundedJson(async (_, init) => {
     signal = init.signal;
     return new Response(new ReadableStream({ start() {} }), { status: 429, headers: { "Retry-After": "3600" } });
-  }, "https://api.telegram.org/bot-test/sendMessage", { method: "POST" }, 20, 131072, true, true);
+  }, "https://alerts.example.test/private", { method: "POST" }, 20, 131072, false);
   assert.equal(result.status, 429);
   assert.equal(result.headers.get("Retry-After"), "3600");
   assert.equal(result.data, null);

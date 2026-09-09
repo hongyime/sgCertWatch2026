@@ -124,18 +124,6 @@ function measuredCursor(log, cursors) {
   return tree !== null && next !== null && next <= tree;
 }
 
-function notificationSummary(result) {
-  const value = result.row?.value;
-  const states = ["idle", "running", "drained", "completed", "partial", "failed", "lease_lost", "unconfigured", "disabled"];
-  return {
-    state: result.error || !value ? "unavailable" : states.includes(value.state) ? value.state : "unavailable",
-    checked_at: timestamp(value?.checked_at),
-    pending: count(value?.pending),
-    dead: count(value?.dead),
-    oldest_pending_at: timestamp(value?.oldest_pending_at)
-  };
-}
-
 export default async function handler(request, response) {
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
@@ -144,16 +132,18 @@ export default async function handler(request, response) {
   }
 
   try {
-    const [pollStatusRow, sourceRuns, sourceStateRow, intelResult, logsResult, notificationsResult] = await Promise.all([
+    const [pollStatusRow, sourceRuns, sourceStateRow, intelResult, logsResult] = await Promise.all([
       getState("ct_poll_status"),
       listSourceRuns(24, CT_SOURCES),
       getState("ct_source_state").catch(() => null),
       getState("intel_poll_status").then((row) => ({ row }), (error) => ({ error })),
-      listCtLogs().then((rows) => rows.filter((log) => isLogSelected(log)), () => []),
-      getState("notifications_poll_status").then((row) => ({ row }), (error) => ({ error }))
+      listCtLogs().then((rows) => rows.filter((log) => isLogSelected(log)), () => [])
     ]);
     const sourceState = sourceStateRow?.value || {};
     const now = Date.now();
+    const latestPoll = pollStatusRow?.value ? { ...pollStatusRow.value } : null;
+    // Older CT heartbeats can still contain the retired enqueue summary.
+    if (latestPoll) delete latestPoll.notifications;
 
     const cursors = {
       ...(sourceState?.direct_ct?.cursors || {}),
@@ -163,13 +153,12 @@ export default async function handler(request, response) {
       ctLogs: logsResult.filter((log) => measuredCursor(log, cursors)),
       cursors,
       sourceRuns,
-      pollStatus: pollStatusRow?.value || null
+      pollStatus: latestPoll
     });
     const latestRuns = latestSourceRuns(sourceRuns);
     const displaySources = latestRuns.length
       ? latestRuns.map((run) => displaySourceForRun(run, now))
       : [];
-    const latestPoll = pollStatusRow?.value || null;
     const operations = ctOperations(latestPoll, now);
     const health = operations.state === "failed" || latestPoll?.health === "down" ? "down"
       : ["warning", "critical"].includes(operations.freshness) ? "stale"
@@ -194,7 +183,6 @@ export default async function handler(request, response) {
         lag_entries: measured.length ? measured.reduce((total, row) => total + row.lag_entries, 0) : null,
         max_lag_entries: measured.length ? Math.max(...measured.map((row) => row.lag_entries)) : null
       },
-      notifications: notificationSummary(notificationsResult),
       display_sources: displaySources,
       intel_sources: intelSources,
       intel_schedule: {

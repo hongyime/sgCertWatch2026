@@ -7,8 +7,7 @@ export const STATE_KEY = "scheduler-v1";
 export const ALERT_MAX_ATTEMPTS = 5;
 export const WORKFLOWS = Object.freeze([
   { name: "ingest", file: "ingest.yml", heartbeat: "ct_poll_status", interval: 15 * MINUTE, minimum: 14 * MINUTE, warning: 30 * MINUTE, critical: 60 * MINUTE },
-  { name: "intel", file: "intel.yml", heartbeat: "intel_poll_status", interval: 60 * MINUTE, minimum: 55 * MINUTE, warning: 90 * MINUTE, critical: 120 * MINUTE },
-  { name: "notifications", file: "notifications.yml", heartbeat: "notifications_poll_status", interval: 15 * MINUTE, minimum: 14 * MINUTE, warning: 30 * MINUTE, critical: 60 * MINUTE }
+  { name: "intel", file: "intel.yml", heartbeat: "intel_poll_status", interval: 60 * MINUTE, minimum: 55 * MINUTE, warning: 90 * MINUTE, critical: 120 * MINUTE }
 ]);
 const ACTIVE = ["queued", "in_progress", "waiting", "pending", "requested"];
 const CONCLUSIONS = ["success", "failure", "cancelled", "skipped", "neutral", "timed_out", "action_required", "stale", "startup_failure"];
@@ -32,7 +31,6 @@ export function configuration(env) {
   if (!env.GITHUB_TOKEN) errors.push("missing_github_token");
   if (!env.STATUS_TOKEN || env.STATUS_TOKEN.length < 32) errors.push("invalid_status_token");
   if (env.DISPATCH_ENABLED !== undefined && !["true", "false"].includes(env.DISPATCH_ENABLED)) errors.push("invalid_dispatch_enabled");
-  const telegram = Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID);
   let webhook = false;
   if (env.ALERT_WEBHOOK_URL) {
     try {
@@ -42,8 +40,8 @@ export function configuration(env) {
     if (!webhook) errors.push("invalid_alert_webhook_url");
   }
   if (env.ALERT_WEBHOOK_SECRET && !env.ALERT_WEBHOOK_URL) errors.push("incomplete_webhook_config");
-  if (!telegram && (env.TELEGRAM_BOT_TOKEN || env.TELEGRAM_CHAT_ID)) errors.push("incomplete_telegram_config");
-  const alertChannel = telegram ? "telegram" : webhook ? "webhook" : "none";
+  const alertChannel = webhook ? "webhook" : "none";
+  const monitoringMode = webhook ? "webhook" : "dashboard";
   let heartbeat = Boolean(env.SUPABASE_URL || env.SUPABASE_PUBLISHABLE_KEY);
   if (heartbeat) {
     let validUrl = false;
@@ -57,16 +55,37 @@ export function configuration(env) {
       heartbeat = false;
     }
   }
-  return { errors, telegram, webhook, alertChannel, heartbeat, heartbeatRequested: Boolean(env.SUPABASE_URL || env.SUPABASE_PUBLISHABLE_KEY),
+  return { errors, webhook, alertChannel, monitoringMode, heartbeat, heartbeatRequested: Boolean(env.SUPABASE_URL || env.SUPABASE_PUBLISHABLE_KEY),
     enabled: env.DISPATCH_ENABLED !== "false", target: `${env.GITHUB_OWNER}/${env.GITHUB_REPO}@${env.GITHUB_REF}` };
 }
 
 function initialState(now, target) {
-  return { version: 1, startedAt: now, target, lastTickAt: null, lastCompletedAt: null, lastScheduledAt: null,
+  return { version: 2, startedAt: now, target, lastTickAt: null, lastCompletedAt: null, lastScheduledAt: null,
     lastBucket: -1, lease: null, metrics: {}, github: { retryAt: 0, failures: 0 },
-    telegram: { retryAt: 0, failures: 0 }, webhook: { retryAt: 0, failures: 0 }, heartbeat: { retryAt: 0, failures: 0 },
+    webhook: { retryAt: 0, failures: 0 }, heartbeat: { retryAt: 0, failures: 0 },
     workflows: Object.fromEntries(WORKFLOWS.map(w => [w.name, { lastSuccessAt: null, lastObservedAt: null,
       reservation: null, decision: "not_started", metrics: {} }])), incidents: {}, events: [] };
+}
+
+function migrateState(state) {
+  if (state.version !== 1) return state;
+  // Keep the storage key, coordinator lease, scan checkpoints and delivery records.
+  // Retirement is not a recovery or a delivery acknowledgement.
+  if (state.workflows.notifications || state.incidents.notifications) {
+    state.retiredSubjects = { ...state.retiredSubjects, notifications: {
+      workflow: state.workflows.notifications || null, incident: state.incidents.notifications || null
+    } };
+  }
+  delete state.workflows.notifications;
+  delete state.incidents.notifications;
+  delete state.telegram;
+  if (state.soak) {
+    delete state.soak.workflows.notifications;
+    // Preserve earlier evidence for inspection; a new mode needs a new observed window.
+    state.soak.active = false;
+  }
+  state.version = 2;
+  return state;
 }
 
 function count(metrics, key, amount = 1) { metrics[key] = (metrics[key] || 0) + amount; }
@@ -125,6 +144,7 @@ export class SchedulerEngine {
       const now = this.now();
       const state = await txn.get(STATE_KEY) || initialState(now, this.config.target);
       if (fence && (state.lease?.id !== fence || state.lease.until <= now)) throw new SafeError("lease_lost");
+      migrateState(state);
       const result = callback(state, now);
       await txn.put(STATE_KEY, state);
       return result;
@@ -171,11 +191,10 @@ export class SchedulerEngine {
         s.configErrors = configErrors;
         s.configErrorSince = configErrors.length ? s.configErrorSince ?? now : null;
         if (!configErrors.length) s.configuredSince ??= now;
-        const qualified = !configErrors.length && this.config.enabled && this.config.heartbeat
-          && this.config.alertChannel !== "none";
-        if (qualified && (!s.soak?.active || s.soak.alertChannel !== this.config.alertChannel)) {
+        const qualified = !configErrors.length && this.config.enabled && this.config.heartbeat;
+        if (qualified && (!s.soak?.active || s.soak.monitoringMode !== this.config.monitoringMode)) {
           s.soak = { active: true, activeSince: now, lastActiveTickAt: now, observedActiveMs: 0,
-            maxTickGapMs: 0, unobservedGaps: 0, alertChannel: this.config.alertChannel,
+            maxTickGapMs: 0, unobservedGaps: 0, alertChannel: this.config.alertChannel, monitoringMode: this.config.monitoringMode,
             workflows: Object.fromEntries(WORKFLOWS.map(w => [w.name, {}])) };
         } else if (qualified) {
           const gap = now - s.soak.lastActiveTickAt;
@@ -215,7 +234,7 @@ export class SchedulerEngine {
         }
       }
       await this.updateIncidents();
-      for (const subject of ["ingest", "intel", "notifications", "control"]) {
+      for (const subject of ["ingest", "intel", "control"]) {
         try { await this.deliver(subject); }
         catch (error) { errors.push(safeCode(error)); }
       }
@@ -246,7 +265,7 @@ export class SchedulerEngine {
     let response;
     try {
       response = await boundedJson(this.fetcher, url, init, Math.min(this.timeoutMs, remaining), 131072,
-        scope !== "webhook", scope === "telegram");
+        scope !== "webhook");
     } catch (error) {
       await this.change((s, at) => {
         const policy = s[scope];
@@ -257,20 +276,19 @@ export class SchedulerEngine {
       }, this.fence);
       throw error;
     }
-    const failed = response.status < 200 || response.status >= 300
-      || (scope === "telegram" && response.data?.ok !== true);
-    const errorStatus = scope === "telegram" ? response.data?.error_code || response.status : response.status;
+    const failed = response.status < 200 || response.status >= 300;
+    const errorStatus = response.status;
     const code = `${scope}_http_${Number.isInteger(errorStatus) ? errorStatus : 0}`;
     await this.change((s, at) => {
       const policy = s[scope];
       count(s.metrics, `${scope}Requests`);
       if (failed) {
         policy.failures++;
-        // A missing/invalid individual workflow must not starve notifications.
+        // A missing/invalid individual workflow must not starve its sibling.
         // Authentication, server failures and rate limits affect the shared token.
         const sharedFailure = scope !== "github" || [401, 403, 429].includes(errorStatus) || errorStatus >= 500;
         policy.retryAt = sharedFailure
-          ? retryTime(response.headers, at, policy.failures, response.data?.parameters?.retry_after) : 0;
+          ? retryTime(response.headers, at, policy.failures) : 0;
         policy.lastError = code;
         count(s.metrics, `${scope}RequestFailures`);
       } else {
@@ -343,7 +361,7 @@ export class SchedulerEngine {
     if (!reason && recent.some(r => ACTIVE.includes(r.status))) reason = "active_run";
     const bootstrapMissing = current.heartbeatError === "missing_heartbeat_row"
       && !current.heartbeatObservedAt && !state.heartbeat.error;
-    const actualRecency = this.config.heartbeatRequested && workflow.name !== "notifications" && !bootstrapMissing;
+    const actualRecency = this.config.heartbeatRequested && !bootstrapMissing;
     if (!reason && actualRecency) {
       if (state.heartbeat.error || current.heartbeatError || !current.heartbeatObservedAt || current.heartbeatObservedAt < state.lastTickAt) {
         reason = "heartbeat_unavailable";
@@ -426,50 +444,33 @@ export class SchedulerEngine {
 
   async readHeartbeat() {
     const url = new URL("/rest/v1/ingest_state", this.env.SUPABASE_URL);
-    url.searchParams.set("key", "in.(ct_poll_status,intel_poll_status,notifications_poll_status)");
-    const fields = ["checked_at", "last_started_at", "started_at", "finished_at", "last_success_at", "last_external_trigger_at", "scheduler_trigger",
-      "ok", "health", "state", "pending", "processing", "dead", "oldest_pending_at"];
+    url.searchParams.set("key", "in.(ct_poll_status,intel_poll_status)");
+    const fields = ["checked_at", "last_started_at", "last_success_at", "last_external_trigger_at", "scheduler_trigger", "ok", "health"];
     url.searchParams.set("select", `key,${fields.map(field => `${field}:value->>${field}`).join(",")}`);
-    url.searchParams.set("limit", "3");
+    url.searchParams.set("limit", "2");
     const key = this.env.SUPABASE_PUBLISHABLE_KEY;
     const headers = { apikey: key, Accept: "application/json" };
     if (!key.startsWith("sb_publishable_")) headers.Authorization = `Bearer ${key}`;
     const { data } = await this.request("heartbeat", url, { headers });
-    if (!Array.isArray(data) || data.length > 3) throw new SafeError("invalid_heartbeat_response");
+    if (!Array.isArray(data) || data.length > 2) throw new SafeError("invalid_heartbeat_response");
     const summaries = WORKFLOWS.filter(w => w.heartbeat).map(w => {
       try {
         const rows = data.filter(row => row?.key === w.heartbeat);
         if (rows.length !== 1) throw new SafeError("missing_heartbeat_row");
         const row = rows[0];
-        let healthy = ![false, "false"].includes(row.ok) && !["down", "degraded"].includes(row.health);
+        const healthy = ![false, "false"].includes(row.ok) && !["down", "degraded"].includes(row.health);
         const checkedAt = timestamp(row.checked_at, this.now());
-        const startedAt = row.last_started_at || (w.name === "notifications" ? row.started_at : null);
-        let outbox = null;
-        if (w.name === "notifications") {
-          const counts = {};
-          for (const field of ["pending", "processing", "dead"]) {
-            if (row[field] === null || row[field] === undefined || row[field] === ""
-              || !Number.isSafeInteger(Number(row[field])) || Number(row[field]) < 0) throw new SafeError("invalid_outbox_counts");
-            counts[field] = Number(row[field]);
-          }
-          const pending = counts.pending + counts.processing;
-          const oldestPendingAt = row.oldest_pending_at ? timestamp(row.oldest_pending_at, this.now()) : null;
-          if (pending > 0 && !oldestPendingAt) throw new SafeError("missing_outbox_oldest_pending");
-          const channelUnavailable = ["unconfigured", "disabled"].includes(row.state);
-          outbox = { ...counts, oldestPendingAt, channelUnavailable };
-          healthy = healthy && counts.dead === 0 && row.state !== "failed" && !(pending > 0 && channelUnavailable);
-        }
+        const startedAt = row.last_started_at;
         // An explicitly null success is not equivalent to a legacy missing field.
         // PostgREST maps absent fields to null too, so a modern start disables fallback.
-        const modern = Boolean(row.last_started_at) || w.name === "notifications";
+        const modern = Boolean(row.last_started_at);
         const successAt = row.last_success_at ? timestamp(row.last_success_at, this.now())
-          : healthy && (!modern || w.name === "notifications") ? checkedAt : null;
+          : healthy && !modern ? checkedAt : null;
         const lastExternalTriggerAt = row.last_external_trigger_at ? timestamp(row.last_external_trigger_at, this.now()) : null;
         return { name: w.name, checkedAt, startedAt: startedAt ? timestamp(startedAt, this.now()) : null,
           successAt, healthy, lastExternalTriggerAt,
           origin: ["cloudflare", "github", "local"].includes(row.scheduler_trigger) ? row.scheduler_trigger : "unknown",
-          outbox, actualSuccessAt: row.last_success_at ? successAt
-            : w.name === "notifications" && healthy && row.finished_at ? timestamp(row.finished_at, this.now()) : null,
+          actualSuccessAt: healthy && row.last_success_at ? successAt : null,
           source: row.last_success_at ? "last_success_at" : "checked_at_legacy" };
       } catch (error) {
         return { name: w.name, error: safeCode(error) };
@@ -511,21 +512,16 @@ export class SchedulerEngine {
     const heartbeatAgeMs = useHeartbeat ? age(now, w.lastHeartbeatSuccessAt, baseline) : null;
     const latestFailed = w.latestRun?.status === "completed" && w.latestRun.conclusion !== "success"
       && w.latestRun.updatedAt >= (w.lastSuccessAt || 0);
-    const outbox = useHeartbeat ? w.heartbeat?.outbox : null;
-    const backlogAgeMs = outbox?.oldestPendingAt ? now - outbox.oldestPendingAt : 0;
     const level = Math.max(severity(successAgeMs, workflow.warning, workflow.critical),
       heartbeatAgeMs === null ? 0 : severity(heartbeatAgeMs, workflow.warning, workflow.critical),
       w.errorSince == null ? 0 : severity(now - w.errorSince),
       w.dispatchErrorSince == null ? 0 : severity(now - w.dispatchErrorSince),
       w.heartbeatErrorSince == null || !useHeartbeat ? 0 : severity(now - w.heartbeatErrorSince),
-      outbox?.dead > 0 ? 2 : severity(backlogAgeMs),
       state.heartbeat.errorSince == null || !useHeartbeat ? 0 : severity(now - state.heartbeat.errorSince));
     const healthy = ghFresh && heartbeatFresh && !latestFailed && !w.dispatchError && level === 0 && Boolean(w.lastSuccessAt)
       && (!useHeartbeat || (w.heartbeat?.healthy && w.lastHeartbeatSuccessAt));
     return { healthy: Boolean(healthy), level, successAgeMs, heartbeatAgeMs,
       activeRunAgeMs: w.activeRun ? now - w.activeRun.createdAt : null,
-      backlogAgeMs, backlogMonitoring: workflow.name !== "notifications" ? "not_applicable"
-        : useHeartbeat ? heartbeatFresh ? "current" : "unknown" : "unavailable",
       observation: ghFresh && heartbeatFresh ? "current" : "unknown", latestFailed: Boolean(latestFailed) };
   }
 
@@ -536,7 +532,7 @@ export class SchedulerEngine {
       assessments.control = { level: s.configErrorSince == null ? 0 : severity(at - s.configErrorSince), healthy: !s.configErrors?.length };
       for (const [subject, assessment] of Object.entries(assessments)) {
         let incident = s.incidents[subject];
-        if (incident?.notice?.state === "sending" && (incident.notice.leaseUntil || 0) <= at) {
+        if (this.config.webhook && incident?.notice?.state === "sending" && (incident.notice.leaseUntil || 0) <= at) {
           const notice = incident.notice;
           notice.state = notice.attempts >= ALERT_MAX_ATTEMPTS ? "dead_letter" : "unknown";
           notice.error = "delivery_unconfirmed_after_restart";
@@ -553,14 +549,15 @@ export class SchedulerEngine {
           if (assessment.level > incident.level) {
             incident.level = assessment.level;
             const kind = assessment.level === 2 ? "critical" : "warning";
-            incident.notice = { key: `${incident.id}:${kind}`, kind, state: "pending", attempts: 0, retryAt: 0 };
+            incident.notice = { key: `${incident.id}:${kind}`, kind,
+              state: this.config.webhook ? "pending" : "dashboard_only", attempts: 0, retryAt: 0 };
             count(s.metrics, `${kind}Transitions`);
             event(s, at, subject, kind);
           }
         } else if (assessment.healthy && incident?.active) {
           const prior = incident.notice;
-          const needsSummary = incident.announced || prior?.attempts > 0
-            || (prior && prior.state !== "channel_unconfigured");
+          const needsSummary = this.config.webhook && (incident.announced || prior?.attempts > 0
+            || (prior && !["channel_unconfigured", "dashboard_only"].includes(prior.state)));
           incident.active = false;
           incident.recoveredAt = at;
           incident.previousNotice = prior;
@@ -577,11 +574,11 @@ export class SchedulerEngine {
 
   async deliver(subject) {
     const channel = this.config.alertChannel;
+    if (!this.config.webhook || !["ingest", "intel", "control"].includes(subject)) return;
     const reserved = await this.change((s, at) => {
       const incident = s.incidents[subject];
       const notice = incident?.notice;
       if (!notice || ["sent", "dead_letter", "sending"].includes(notice.state)) return null;
-      if (channel === "none") { notice.state = "channel_unconfigured"; return null; }
       if (notice.retryAt > at || s[channel].retryAt > at) return null;
       const announcedBefore = incident.announced;
       notice.state = "sending";
@@ -597,24 +594,12 @@ export class SchedulerEngine {
     try {
       const webhookHeaders = { "Content-Type": "application/json" };
       if (this.env.ALERT_WEBHOOK_SECRET) webhookHeaders.Authorization = `Bearer ${this.env.ALERT_WEBHOOK_SECRET}`;
-      const telegramRequest = {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: this.env.TELEGRAM_CHAT_ID,
-          text: `sgCertWatch scheduler ${reserved.kind.toUpperCase()}: ${subject}. ${reserved.summary
-            ? "Outage already resolved; earlier warning was not confirmed delivered. " : ""}Incident ${reserved.key}. Check protected scheduler status and GitHub Actions.`,
-          link_preview_options: { is_disabled: true } })
-      };
       const webhookRequest = { method: "POST", headers: webhookHeaders,
         body: JSON.stringify({ schema_version: 1, source: "sgcertwatch-scheduler", event_id: reserved.key,
           subject, kind: reserved.kind, observed_at: new Date(this.now()).toISOString(),
           resolved_before_delivery: reserved.summary, prior_delivery_state: reserved.priorDeliveryState,
           recovered_at: reserved.recoveredAt ? new Date(reserved.recoveredAt).toISOString() : null }) };
-      const receipt = await this.request(channel, channel === "telegram"
-        ? `https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/sendMessage` : this.env.ALERT_WEBHOOK_URL,
-      channel === "telegram" ? telegramRequest : webhookRequest);
-      if (channel === "telegram" && (!Number.isSafeInteger(receipt.data?.result?.message_id) || receipt.data.result.message_id <= 0)) {
-        throw new SafeError("invalid_alert_receipt", { ambiguous: true });
-      }
+      await this.request(channel, this.env.ALERT_WEBHOOK_URL, webhookRequest);
       await this.change((s, at) => {
         const notice = s.incidents[subject].notice;
         notice.state = "sent";
@@ -649,16 +634,19 @@ export class SchedulerEngine {
     const at = this.now();
     const config = { ...this.config, proactiveAlerts: this.config.alertChannel !== "none" };
     if (!state) return { ok: false, state: "not_started", at, config };
+    // Read-only projection: a protected GET must never commit a migration.
+    migrateState(state);
     const assessments = Object.fromEntries(WORKFLOWS.map(w => [w.name, this.assessment(state, w, at)]));
     const tickAgeMs = age(at, state.lastCompletedAt, state.startedAt);
-    const alertIssues = Object.values(state.incidents).some(i => i.notice && i.notice.state !== "sent");
+    const alertIssues = this.config.webhook && Object.values(state.incidents).some(i => i.notice && i.notice.state !== "sent");
     const ok = Boolean(state.lastCompletedAt) && tickAgeMs < 2 * TICK_MS && !this.config.errors.length
       && state.target === this.config.target && !state.lastTickErrors?.length && !alertIssues
+      && Object.values(state.incidents).every(i => !i.active)
       && Object.values(assessments).every(a => a.healthy);
     const { lease, ...visible } = state;
     return { ...visible, ok, at, config, assessments, tickAgeMs,
       soak: state.soak ? { ...state.soak, elapsedActiveMs: at - state.soak.activeSince,
-        active: state.soak.active && this.config.enabled && this.config.heartbeat && this.config.alertChannel !== "none"
+        active: state.soak.active && state.soak.monitoringMode === this.config.monitoringMode && this.config.enabled && this.config.heartbeat
           && !this.config.errors.length && state.target === this.config.target && tickAgeMs < 2 * TICK_MS,
         validation: "not_evaluated", requiresIndependentVerification: true } : null,
       coordinator: { busy: Boolean(lease && lease.until > at), abandoned: Boolean(lease && lease.until <= at) } };

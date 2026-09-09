@@ -1,17 +1,22 @@
 # Agent State
 
-Current task: reliability runtime released and verified (2026-09-08). Goal blocked on user setup (2026-09-09): external scheduler activation, real notification/incident delivery and a measured 24-hour soak remain incomplete until scoped credentials and destination are provided.
+Current task: user resumed on 2026-09-09, explicitly removing Telegram notifications and supplying a scheduler token. Remove all active Telegram/queue paths, support dashboard-only CT/intel monitoring, verify and release, then stage/activate the external scheduler. Do not request Telegram credentials again.
 
 Current evidence and next steps:
-- Blocker revalidated across three consecutive goal turns: ignored `.env.scheduler` is absent, required setup variables are unset, and Actions secrets contain no scheduler/Telegram configuration. Cloudflare's deployment API returned Worker-not-found (10007). Resume when the repo-scoped Actions token and alert destination are available; do not repeat completed tests/scans merely to keep the goal running.
+- Latest scope: notifications are no longer a requirement. Parent retires scanner enqueue/workflow/CLI and aligns the two-workflow soak verifier; independent workers own scheduler removal/migration and Monitor/API/browser cleanup. Historical outbox data and regression helpers remain, not active delivery paths. Existing repository access disabled notifications.yml remotely.
+- Supplied token is stored only in ignored local configuration. GitHub confirms dispatch HTTP403, permissionDenied=true, requiredPermissions=actions=write, not rate-limited. User was asked to update the SAME token's selected repository and Actions read/write permission; do not export the broad machine token as a workaround. Telegram removal can be released independently of this permission correction.
+- Active scanner no longer enqueues notifications; retired CLI is a no-op even with legacy credentials. Monitor/API no longer reads or renders queue state. Scheduler has two workflows, default dashboard-only incidents, version-2 state migration and no Telegram delivery. Scheduler 78 tests, SQLite runtime smoke, dry run, full unit, intel/storage, release data and desktop/mobile UI checks pass; dependency audit has no vulnerabilities. Independent integration review is complete.
+- Cloudflare is now deployed at `sgcertwatch-scheduler.hongyime.workers.dev`, paused with the supplied scoped token, random protected status credential and Supabase anon heartbeat. Live checks: public status 401, mutation 404, authenticated config dashboard/none, enabled=false, no configuration errors. Checked-in config defaults paused. No live dispatch or soak is claimed. Reviewer fixed the verifier's initial-start/success gap bound with 27 passing tests, including actual engine simulations. Release and live website verification are next.
+
+Previous release baseline (notification requirements below are superseded by the current task):
 - Runtime `7f853ba` is on main and deployed as `dpl_CYaZ3GNo5LDtPoyAHS2vWhbuFTgX`, READY on `sgcertwatch.vercel.app` and `sgcertwatch.hong-yi.me`. Vercel commit status confirms this deployment belongs to that SHA.
 - All local core/intel/reliability/release-data suites pass; audit reports zero vulnerabilities. CI `34246781888` passes PostgreSQL 17 (30 outbox checks, 20-way lock contention, four blocked-expiry regressions), 74 scheduler tests and desktop/mobile Chromium. CodeQL, Semgrep, TruffleHog and LFS checks pass. Independent database, scheduler, browser and release-security reviews are complete.
 - CT `34246820421` succeeded: 30,851 checked, 1,324 findings and 1,353 sightings saved, six direct logs successful. Static CT made progress despite a TrustAsia timeout and Geomys 429; crt.sh timed out. Live SQL confirms persisted Geomys pause until 16:46:33Z and crt.sh pause until 17:45:59Z. Partial coverage is accurate, not a total scanner outage.
 - Duplicate dispatch `34247623022` succeeded with `scan_not_due`, no source-fetch stage and unchanged completed start/success timestamps. Intel `34246843332` succeeded; OpenPhish refreshed while the other three providers retained their six-hour schedules.
 - Notifications `34246893819`, `34247316792` and `34247669614` succeeded with honest unconfigured/zero-backlog status. Durable queue schema is applied and SQL-tested; actual Telegram delivery is NOT verified because channel credentials are absent. No enqueue accumulation occurs without a configured channel.
 - `scripts/verify_live.mjs` passes both production aliases at 1440/390px: default Domains, finding detail/evidence, JSON/CSV downloads, Watchlist allowlist search, Review, Monitor metadata, favicon, console and overflow checks. Production screenshots inspected, including the mobile first viewport. All owned local test/browser/server/container processes have stopped; reviewers are closed.
-- Remaining: put repo-scoped Actions read/write token in ignored `.env.scheduler` as `SCHEDULER_GITHUB_TOKEN`; add Telegram credentials for domain alerts, or a private webhook for operational alerts only. Wrangler is authenticated, but the Worker is not remotely deployed. Generate protected status token at setup; use only Supabase anon/publishable access in Cloudflare, never service-role or the broad machine GitHub token.
-- After activation, verify real dispatches, persistent cooldown/restart behavior and failure/recovery messages, then run `scripts/verify_soak.mjs` after 24 observed hours. Simulated cadence and local tests do not satisfy this gate. No JWT rotation, Google Cloud, paid services or Vercel scanning. Detailed resume notes: `.agents/handoffs/2026-09-08-crtsh-resilience.md`.
+- Remaining scheduler gate: correct the supplied token's repository Actions read/write permission. Stage paused until verified, generate protected status token and use only Supabase anon/publishable access in Cloudflare. Never export service-role or the broad machine GitHub token. No messaging channel is required.
+- After activation, verify real dispatches and persistent cooldown/restart behavior, then run `scripts/verify_soak.mjs` after 24 observed hours in dashboard mode. Simulated cadence and local tests do not satisfy this gate. No JWT rotation, Google Cloud, paid services or Vercel scanning. Detailed resume notes: `.agents/handoffs/2026-09-08-crtsh-resilience.md`.
 
 Earlier investigation history (superseded by current evidence above):
 - Official crt.sh root `/?identity=...&output=json` is supported. Upstream May 28, 2026 notice attributes recurring 50x failures to overloaded/frozen database replicas and inefficient result sorting.
@@ -200,12 +205,12 @@ Next steps:
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-08 17:18:59 +08:00
+- Updated: 2026-09-09 08:07:59 +08:00
 - Machine: PRAWN-E14
 - Harness: codex
 - Event: session-start
 - Branch: main
-- HEAD: 4b82220
-- Dirty files: 0
+- HEAD: a5c04c3
+- Dirty files: 28
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->

@@ -12,7 +12,7 @@ export function safeCode(error) {
   return error instanceof SafeError ? error.code : "internal_failure";
 }
 
-export function retryTime(headers, now, failures = 1, seconds = 0) {
+export function retryTime(headers, now, failures = 1) {
   const retry = headers.get("retry-after");
   const retryAt = retry && /^\d+(\.\d+)?$/.test(retry)
     ? now + Number(retry) * 1000 : Date.parse(retry || "");
@@ -20,8 +20,7 @@ export function retryTime(headers, now, failures = 1, seconds = 0) {
     ? Number(headers.get("x-ratelimit-reset")) * 1000 : 0;
   // No sleeps: persist the server's full minimum wait, with capped local backoff.
   return Math.max(now + Math.min(3600000, 60000 * 2 ** Math.min(failures - 1, 6)),
-    Number.isFinite(retryAt) ? retryAt : 0, Number.isFinite(reset) ? reset : 0,
-    now + (Number.isFinite(seconds) ? Math.max(0, seconds) * 1000 : 0));
+    Number.isFinite(retryAt) ? retryAt : 0, Number.isFinite(reset) ? reset : 0);
 }
 
 async function readJson(response, maxBytes) {
@@ -49,7 +48,7 @@ async function readJson(response, maxBytes) {
 }
 
 // The deadline covers headers AND body, even when a fake/upstream ignores abort.
-export async function boundedJson(fetcher, url, init = {}, timeoutMs = 5000, maxBytes = 131072, expectJson = true, readErrorJson = false) {
+export async function boundedJson(fetcher, url, init = {}, timeoutMs = 5000, maxBytes = 131072, expectJson = true) {
   const controller = new AbortController();
   let timer;
   let response;
@@ -59,14 +58,8 @@ export async function boundedJson(fetcher, url, init = {}, timeoutMs = 5000, max
       void response.body?.cancel().catch(() => {});
       throw new SafeError("request_timeout", { ambiguous: init.method === "POST" });
     }
-    // Generic error bodies can reflect credentials; only Telegram's 429 metadata is needed.
+    // Error bodies can reflect credentials; only status and headers are needed.
     if (!response.ok) {
-      // Telegram puts its minimum 429 delay in a JSON parameters object.
-      if (readErrorJson && response.status === 429) {
-        let data = null;
-        try { data = await readJson(response, maxBytes); } catch { /* Only headers remain usable. */ }
-        return { status: response.status, headers: response.headers, data };
-      }
       void response.body?.cancel().catch(() => {});
       return { status: response.status, headers: response.headers, data: null };
     }

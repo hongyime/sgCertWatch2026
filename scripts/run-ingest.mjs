@@ -1,7 +1,6 @@
 import { loadData } from "../lib/data.js";
 import { scoreCertificate } from "../lib/scoring.js";
 import { mergeSourceState, runSources } from "../lib/ct/orchestrator.js";
-import { enqueueNotificationAlerts } from "../lib/notification-outbox.js";
 import { summarizePrimaryHealth } from "../lib/ct/source-health.js";
 import * as storage from "../lib/supabase.js";
 import { pathToFileURL } from "node:url";
@@ -82,8 +81,7 @@ function summarizeRun(run, matched, persisted, startedAt) {
 }
 
 export async function runIngest({ store = storage, scan = runSources, score = scoreCertificate,
-  enqueue = enqueueNotificationAlerts, readData = loadData, now = Date.now,
-  notificationsEnabled = Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+  readData = loadData, now = Date.now,
   minIntervalMs = Number(process.env.CT_MIN_INTERVAL_MS || 0), leaseOptions = {} } = {}) {
   const { getServiceState, insertSourceRuns, upsertFindingSources, upsertFindings } = store;
   if (!store.configured("service")) throw new Error("Supabase service credentials are required");
@@ -166,12 +164,6 @@ export async function runIngest({ store = storage, scan = runSources, score = sc
     stage = "sightings";
     const persistedSources = await upsertFindingSources(sourceRows, { assertOwned: lease.assertOwned });
     lease.assertOwned();
-    stage = "notification_enqueue";
-    const notifications = notificationsEnabled
-      ? { state: "queued", ...await enqueue(persistedFindings, {
-        minScore: data.scoring?.thresholds?.alert_min ?? 70, assertOwned: lease.assertOwned }) }
-      : { state: "unconfigured", queued: 0 };
-    lease.assertOwned();
 
     const sourceSummaries = runs.map((run) => summarizeRun(
       run,
@@ -202,7 +194,6 @@ export async function runIngest({ store = storage, scan = runSources, score = sc
       matched: findings.length,
       persisted: persistedFindings.length,
       persisted_source_sightings: persistedSources.length,
-      notifications,
       sources: sourceSummaries,
       errors: sourceSummaries.flatMap((run) => run.errors.map((error) => ({
         source: run.source,
@@ -212,7 +203,6 @@ export async function runIngest({ store = storage, scan = runSources, score = sc
     if (status.ok) status.last_success_at = status.checked_at;
 
     await setState("ct_poll_status", status);
-    // Delivery runs independently; only durable enqueue participates in the checkpoint.
     console.log(JSON.stringify(status));
   } catch (error) {
     try {

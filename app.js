@@ -534,7 +534,6 @@ function renderIntelSourceStatus(source) {
 
 function renderMonitorOperations(source, unavailable = false) {
   const operations = source.operations || {};
-  const notifications = source.notifications || {};
   const time = (value) => typeof value === "string" && Number.isFinite(Date.parse(value)) ? formatTime(value) : "Not reported";
   const count = (value) => Number.isSafeInteger(value) && value >= 0 ? value.toLocaleString() : "Not reported";
   const external = source.schedule?.last_external_trigger_at;
@@ -557,13 +556,6 @@ function renderMonitorOperations(source, unavailable = false) {
   $("ct-cursor-lag").textContent = lag?.measured_logs > 0 && count(lag.lag_entries) !== "Not reported"
     ? `${count(lag.lag_entries)} entries across ${count(lag.measured_logs)} measured ${lag.measured_logs === 1 ? "log" : "logs"}` : "Not measured";
   $("ct-run").textContent = [operations.run_id, operations.trigger].filter(Boolean).join(" / ") || "Not reported";
-  $("notification-state").textContent = ({ idle: "Idle", running: "Running", drained: "Drained", completed: "Completed",
-    partial: "Partial", failed: "Failed", lease_lost: "Lease lost", unconfigured: "Unconfigured", disabled: "Disabled" })[notifications.state] || "Unavailable";
-  $("notification-pending").textContent = count(notifications.pending);
-  $("notification-dead").textContent = count(notifications.dead);
-  $("notification-dead").dataset.level = notifications.dead > 0 ? "critical" : "unknown";
-  $("notification-oldest").textContent = time(notifications.oldest_pending_at);
-  $("notification-checked").textContent = time(notifications.checked_at);
 }
 
 async function renderSourceStatus() {

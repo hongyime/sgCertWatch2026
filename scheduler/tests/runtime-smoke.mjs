@@ -35,7 +35,7 @@ try {
   const responses = await Promise.all(Array.from({ length: 8 }, () => object.fetch(
     `https://internal/tick?scheduledAt=${scheduledAt}`, { method: "POST" })));
   for (const response of responses) assert.equal(response.status, 200);
-  assert.equal(dispatches, 3);
+  assert.equal(dispatches, 2);
   assert.equal((await runtime.dispatchFetch("https://worker.test/status")).status, 401);
   let status = await (await runtime.dispatchFetch("https://worker.test/status", {
     headers: { Authorization: `Bearer ${TEST_ENV.STATUS_TOKEN}` }
@@ -48,7 +48,7 @@ try {
   const response = await restarted.get(restarted.idFromName("sgcertwatch-scheduler-v1")).fetch(
     `https://internal/tick?scheduledAt=${scheduledAt}`, { method: "POST" });
   assert.equal(response.status, 200);
-  assert.equal(dispatches, 3);
+  assert.equal(dispatches, 2);
   status = await (await runtime.dispatchFetch("https://worker.test/status", {
     headers: { Authorization: `Bearer ${TEST_ENV.STATUS_TOKEN}` }
   })).json();

@@ -2,6 +2,14 @@
 
 User asks why crt.sh is degraded, whether URLs are correct, and for independently operating robust monitoring. Earlier push/main/deploy authorization remains; JWT rotation excluded.
 
+## September 9 Scope Change
+
+- User explicitly removed Telegram notifications. Active scanner enqueue, notification workflow/CLI execution, public queue status and dashboard queue UI are retired. Historical SQL/data/helpers remain dormant; do not delete them or request messaging credentials.
+- Scheduler now dispatches only CT (15m) and intel (60m), with explicit dashboard monitoring by default and optional private webhook. Version-2 state migration archives retired notifications while preserving scan checkpoints, leases, cooldowns and historical outcomes. No delivery receipt is required in dashboard mode; unresolved incidents still fail health.
+- Supplied repo token is in ignored `.env.scheduler`; GitHub returned dispatch HTTP403 with required Actions write permission, not a rate limit. User was asked to edit that same token for this repository and Actions read/write. Do not export the machine's broad GitHub credential to Cloudflare.
+- Remote notifications workflow is disabled manually. Unit, intel (14 plus 27 storage/API), reliability (including 78 scheduler), release data, desktop/mobile browser and dependency audit checks pass. Independent review fixed the soak verifier's missing initial-gap bound; 27 tests pass, including healthy and delayed-intel actual engine simulations.
+- Cloudflare is deployed with `DISPATCH_ENABLED:false` while permission correction is pending. Only scoped GitHub token, protected random status token and Supabase anon heartbeat were installed. Public status returns 401, public mutation returns 404 and authenticated config confirms paused dashboard mode without errors. Checked-in config also defaults paused. No real dispatch or 24-hour soak has been completed.
+
 Evidence:
 - https://github.com/crtsh/certwatch_db/blob/master/fnc/web_apis.fnc supports identity and output=json on the root. Bare tokens use indexed text matching plus substring filtering, not the right-anchored behavior claimed in our comment. minNotBefore only constrains lint queries; do not invent a domain-search date filter.
 - https://groups.google.com/g/crtsh/c/PsNhy2WVXhg is the operator's May 28, 2026 explanation of overloaded replicas, freezes and inefficient sorting.

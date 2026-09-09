@@ -17,16 +17,18 @@
     "GITHUB_OWNER": "hongyime",
     "GITHUB_REPO": "sgCertWatch2026",
     "GITHUB_REF": "main",
-    "DISPATCH_ENABLED": "true"
+    "DISPATCH_ENABLED": "false"
   }
   // Set GITHUB_TOKEN (fine-grained PAT, this repository only, Actions: read/write)
   // and STATUS_TOKEN (random, at least 32 characters) using wrangler secret put.
-  // Optional paired secrets: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID.
-  // Or private ALERT_WEBHOOK_URL (HTTPS) + optional ALERT_WEBHOOK_SECRET bearer.
+  // Dashboard-only monitoring is the default; no outbound alert setup is required.
+  // Opt in with private ALERT_WEBHOOK_URL (HTTPS) + optional ALERT_WEBHOOK_SECRET bearer.
   // Optional heartbeat: SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY (publishable or anon).
+  // CT/intel heartbeat configuration is required for measured soak evidence.
   // Keep this worker name, binding and migration stable to preserve deduplication.
   // Validate locally: wrangler deploy --dry-run --config scheduler/wrangler.jsonc
   // Tests: node --test scheduler/tests/*.test.mjs
   // Parent supplies its repo-scoped SCHEDULER_GITHUB_TOKEN as Worker GITHUB_TOKEN.
   // Never copy an existing broad GitHub environment token into this Worker.
+  // Enable explicitly only after the scoped token's Actions write access is verified.
 }

@@ -24,13 +24,11 @@ try {
     assert.equal(health.intel_schedule.runner, "github-actions");
     assert.equal(health.schedule.runner, "github-actions");
     assert.equal(health.schedule.cron, "7,22,37,52 * * * *");
-    assert.ok(health.operations && health.notifications && health.cursor_lag);
+    assert.ok(health.operations && health.cursor_lag);
+    assert.equal(Object.hasOwn(health, "notifications"), false, "Monitoring API must omit obsolete notification status");
+    assert.equal(Object.hasOwn(health.poll_status || {}, "notifications"), false, "Legacy enqueue summaries must stay out of public status");
     assert.ok(Number.isFinite(Date.parse(health.operations.last_started_at)), "Real scanner start metadata required");
     assert.ok(Number.isFinite(Date.parse(health.operations.last_success_at)), "Real successful scan metadata required");
-    assert.ok(Number.isFinite(Date.parse(health.notifications.checked_at)), "Notification worker must publish a real snapshot");
-    assert.equal(typeof health.notifications.pending, "number");
-    assert.equal(typeof health.notifications.dead, "number");
-    assert.equal(Object.hasOwn(health.notifications, "payload"), false);
     assert.equal((await fetch(`${base}/favicon.svg`)).status, 200);
     for (const width of [1440, 390]) {
       const page = await browser.newPage({ viewport: { width, height: width === 390 ? 844 : 1000 } });
@@ -75,7 +73,8 @@ try {
       assert.ok((await page.locator("#intel-schedule").innerText()).includes("GitHub Actions"));
       assert.notEqual(await page.locator("#ct-last-start").innerText(), "Not reported");
       assert.notEqual(await page.locator("#ct-last-success").innerText(), "Not reported");
-      assert.notEqual(await page.locator("#notification-checked").innerText(), "Not reported");
+      assert.equal(await page.locator('[id^="notification-"]').count(), 0);
+      assert.doesNotMatch(await page.locator('[data-view-panel="monitor"]').innerText(), /notification|telegram|dead.letter|queue/i);
       await page.locator(".source-details summary").click();
       assert.match(await page.locator("#source-list").innerText(), /Last check:/);
       const backup = health.display_sources.find((row) => row.source === "crtsh");
@@ -107,7 +106,7 @@ try {
     }
     console.log(JSON.stringify({ url: base, findings: payload.findings.length, findings_api_ms: apiMs,
       intel_hits: payload.findings.reduce((count, row) => count + row.intel_hit_count, 0),
-      last_success_at: health.operations.last_success_at, notifications: health.notifications,
+      last_success_at: health.operations.last_success_at, last_external_trigger_at: health.schedule.last_external_trigger_at,
       ct_health: health.health, sources: health.intel_sources.map(({ source, status, scanned_entries, matched }) => ({ source, status, scanned_entries, matched })) }));
   }
   console.log(`Screenshots: ${screenshots}`);

@@ -26,7 +26,6 @@ function harness() {
   return { events, store, options: { store, readData: () => ({}),
     scan: async () => [source("direct_ct", true, [{}]), source("static_ct")],
     score: () => ({ id: "example", registrable: "test.example", domains: ["test.example"], score: 75 }),
-    notificationsEnabled: true,
     enqueue: async () => { events.push({ action: "outbox" }); return { queued: 1 }; } } };
 }
 
@@ -38,15 +37,12 @@ test("idle backups cannot mask unavailable primary sources; legitimate empty pol
   assert.equal(summarizePrimaryHealth([source("direct_ct", false, [], { successful_log_count: 1 })]).ok, true);
 });
 
-test("findings, sightings and durable notification enqueue precede cursor checkpoint", async () => {
+test("findings and sightings precede cursor checkpoint without a notification dependency", async () => {
   const { events, options } = harness();
-  options.enqueue = async () => {
-    assert.deepEqual(events.map((e) => e.action), ["ct_poll_status", "findings", "sightings"]);
-    return { queued: 1 };
-  };
   const result = await runIngest(options);
   assert.equal(result.health, "healthy");
-  assert.equal(result.notifications.state, "queued");
+  assert.equal(Object.hasOwn(result, "notifications"), false);
+  assert.deepEqual(events.map(e => e.action), ["ct_poll_status", "findings", "sightings", "ct_source_state", "source_runs", "ct_poll_status", "release"]);
   assert.equal(events.find((e) => e.action === "ct_source_state").value.direct_ct.index, 1);
   assert.equal(events.at(-1).action, "release");
 });
@@ -88,21 +84,22 @@ test("lost database lease fences cursor and heartbeat writes after provider coll
   assert.equal(events.filter((e) => e.action === "ct_poll_status").length, 1);
 });
 
-test("unconfigured notifications never accumulate jobs or block the CT scanner", async () => {
+test("retired notification options never enqueue or affect scan health", async () => {
   const { events, options } = harness();
-  options.notificationsEnabled = false;
-  options.enqueue = () => assert.fail("disabled channel must not enqueue");
+  options.notificationsEnabled = true;
+  options.enqueue = () => assert.fail("retired notification path must not enqueue");
   const result = await runIngest(options);
-  assert.equal(result.notifications.state, "unconfigured");
+  assert.equal(Object.hasOwn(result, "notifications"), false);
   assert.ok(events.some((e) => e.action === "ct_source_state"));
 });
 
-test("failed durable enqueue retains replay cursors and exposes the failed stage", async () => {
+test("notification storage outages no longer prevent saved CT checkpoints", async () => {
   const { events, options } = harness();
   options.enqueue = async () => { throw new Error("outbox unavailable"); };
-  await assert.rejects(runIngest(options), /outbox unavailable/);
-  assert.equal(events.some((e) => e.action === "ct_source_state"), false);
-  assert.equal(events.findLast((e) => e.action === "ct_poll_status").value.failed_stage, "notification_enqueue");
+  const result = await runIngest(options);
+  assert.equal(result.state, "completed");
+  assert.equal(events.some((e) => e.action === "ct_source_state"), true);
+  assert.equal(events.findLast((e) => e.action === "ct_poll_status").value.failed_stage, undefined);
 });
 
 test("failed initial status read never erases history or reserves a fresh scan start", async () => {
@@ -113,7 +110,7 @@ test("failed initial status read never erases history or reserves a fresh scan s
   assert.deepEqual(events.map(event => event.action), ["release"]);
 });
 
-test("known renewal loss after a findings write prevents sightings, enqueue and checkpoint", async () => {
+test("known renewal loss after a findings write prevents sightings and checkpoint", async () => {
   const { events, options, store } = harness();
   let heartbeat;
   options.leaseOptions = { setTimer: fn => { heartbeat = fn; }, clearTimer: () => {} };

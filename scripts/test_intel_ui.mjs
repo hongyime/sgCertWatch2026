@@ -56,7 +56,6 @@ const sourcePayload = {
     runtime_ms: 180000, duration_ms: 180000, freshness: "fresh", run_id: "test-run-123", trigger: "schedule" },
   schedule: { runner: "github-actions", cron: "7,22,37,52 * * * *", last_external_trigger_at: null },
   cursor_lag: { measured_logs: 0, lag_entries: null, max_lag_entries: null },
-  notifications: { state: "partial", checked_at: iso(), pending: 80, dead: 3, oldest_pending_at: iso(-7200000) },
   health: "partial", display_sources: [
     { source: "direct_ct", ok: true, label: "Direct CT logs", checked_at: iso() },
     { source: "static_ct", ok: true, label: "Static CT logs", checked_at: iso(), scanned_entries: 100, details: { budget_exhausted: true, next_retry_at: iso(3600000) } },
@@ -99,6 +98,11 @@ async function checkLayout(page) {
   assert.deepEqual(problems, []);
 }
 
+async function checkNoNotifications(page) {
+  assert.equal(await page.locator('[id^="notification-"]').count(), 0);
+  assert.doesNotMatch(await page.locator('[data-view-panel="monitor"]').innerText(), /notification|telegram|dead.letter|queue/i);
+}
+
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const base = `http://127.0.0.1:${server.address().port}`;
 let browser;
@@ -113,6 +117,7 @@ try {
     await page.clock.install();
     const errors = [];
     const externalRequests = [];
+    const notificationRequests = [];
     const requests = [];
     let currentFindings = allFindings;
     let currentHealth = sourcePayload;
@@ -123,6 +128,9 @@ try {
     let notifyHeldWatch;
     const heldWatchReady = new Promise((resolve) => { notifyHeldWatch = resolve; });
     page.on("pageerror", (error) => errors.push(error.message));
+    page.on("request", (request) => {
+      if (/notification|outbox|telegram/i.test(new URL(request.url()).pathname)) notificationRequests.push(request.url());
+    });
     await page.route("**/*", async (route) => {
       const url = new URL(route.request().url());
       if (url.origin !== base) {
@@ -247,10 +255,7 @@ try {
     assert.equal(await page.locator("#ct-runtime").innerText(), "3m 0s");
     assert.equal(await page.locator("#ct-run").innerText(), "test-run-123 / schedule");
     assert.equal(await page.locator("#ct-cursor-lag").innerText(), "Not measured");
-    assert.equal(await page.locator("#notification-pending").innerText(), "80");
-    assert.equal(await page.locator("#notification-dead").innerText(), "3");
-    assert.equal(await page.locator("#notification-oldest").innerText(), await displayedTime(sourcePayload.notifications.oldest_pending_at));
-    assert.equal(await page.locator("#notification-checked").innerText(), await displayedTime(sourcePayload.notifications.checked_at));
+    await checkNoNotifications(page);
     await page.locator(".source-details summary").click();
     assert.match(await page.locator("#source-list").innerText(), /crt\.sh backup\ncooldown\n.*HTTP 502/);
     assert.match(await page.locator("#source-list").innerText(), /Last check:.*\nNext attempt:/);
@@ -340,25 +345,30 @@ try {
     await checkLayout(page);
     await page.screenshot({ path: join(screenshots, `monitor-observed-${width}.png`), fullPage: true });
 
-    for (const [queueState, pending, dead] of [["unconfigured", 0, 0], ["disabled", 0, 0], ["unavailable", null, null], ["failed", 80, 3]]) {
-      await reloadMonitor({ ...sourcePayload, health: "healthy", notifications: {
-        state: queueState, pending, dead, checked_at: null, oldest_pending_at: null
-      } });
+    await reloadMonitor({ ...sourcePayload, health: "healthy" });
+    const monitoringWithoutNotifications = await page.locator(".monitor-operations").innerText();
+    for (const notifications of [null, "malformed", {}, ...["partial", "failed", "unconfigured", "disabled"].map((state) => ({
+      state, pending: 80, dead: 3, checked_at: iso(-259200000), oldest_pending_at: iso(-345600000),
+      errors: [hostileText], payload: { token: "fake-secret-must-not-leak" }
+    }))]) {
+      await reloadMonitor({ ...sourcePayload, health: "healthy", notifications });
+      await waitForFeed();
       assert.equal(await page.locator("#source-status").innerText(), "Monitoring active");
-      assert.equal(await page.locator("#notification-state").innerText(), queueState[0].toUpperCase() + queueState.slice(1));
-      assert.equal(await page.locator("#notification-pending").innerText(), pending === null ? "Not reported" : String(pending));
-      assert.equal(await page.locator("#notification-dead").innerText(), dead === null ? "Not reported" : String(dead));
-      assert.equal(await page.locator("#notification-oldest").innerText(), "Not reported");
+      assert.equal(await page.locator("#feed-health").innerText(), "Live database connected");
+      assert.equal(await cards.count(), 3);
+      assert.equal(await page.locator(".monitor-operations").innerText(), monitoringWithoutNotifications);
+      assert.doesNotMatch(await page.locator("body").innerText(), /fake-secret-must-not-leak/);
+      await checkNoNotifications(page);
       await checkLayout(page);
     }
+    await page.screenshot({ path: join(screenshots, `monitor-legacy-notifications-${width}.png`), fullPage: true });
 
-    currentHealth = { ...sourcePayload, health: "healthy", cursor_lag: { measured_logs: 1, lag_entries: 0 },
-      notifications: { state: "unconfigured", pending: null, dead: null } };
+    currentHealth = { ...sourcePayload, health: "healthy", cursor_lag: { measured_logs: 1, lag_entries: 0 } };
     await page.clock.fastForward(60000);
-    await page.locator("#notification-state").filter({ hasText: "Unconfigured" }).waitFor();
-    assert.equal(await page.locator("#notification-pending").innerText(), "Not reported");
+    await page.locator("#ct-cursor-lag").filter({ hasText: "0 entries across 1 measured log" }).waitFor();
     assert.equal(await page.locator("#ct-cursor-lag").innerText(), "0 entries across 1 measured log");
     assert.equal(await page.locator("#source-status").innerText(), "Monitoring active");
+    await checkNoNotifications(page);
 
     failStatus = true;
     await page.clock.fastForward(60000);
@@ -366,7 +376,7 @@ try {
     assert.equal(await page.locator("#ct-last-success").innerText(), "Not reported");
     assert.equal(await page.locator("#ct-runtime").innerText(), "Not reported");
     assert.equal(await page.locator("#ct-cursor-lag").innerText(), "Not measured");
-    assert.equal(await page.locator("#notification-state").innerText(), "Unavailable");
+    await checkNoNotifications(page);
     await checkLayout(page);
     failStatus = false;
 
@@ -382,12 +392,14 @@ try {
     assert.equal(await page.locator("#ct-scheduler").innerText(), "GitHub Actions fallback; external trigger not observed");
     assert.equal(await page.locator("#ct-last-start").innerText(), "Not reported");
     assert.equal(await page.locator("#ct-next-due").innerText(), "Not reported");
-    assert.equal(await page.locator("#notification-pending").innerText(), "Not reported");
+    assert.equal(await page.locator("#ct-freshness").innerText(), "No successful scan reported");
+    await checkNoNotifications(page);
     await checkLayout(page);
     assert.deepEqual(externalRequests, [], "Rendering never requests a suspected host or provider screenshot");
+    assert.deepEqual(notificationRequests, [], "Monitoring never requests a notification worker or queue API");
     assert.deepEqual(errors, []);
     await context.close();
-    console.log(`PASS intel UI at ${width}px: priority, filters, response race, evidence safety, Monitor freshness/running/queues/scheduler, refresh and layout`);
+    console.log(`PASS intel UI at ${width}px: priority, filters, response race, evidence safety, Monitor freshness/running/scheduler/lag, legacy notification isolation, refresh and layout`);
   }
   console.log(`Screenshots: ${screenshots}`);
 } finally {

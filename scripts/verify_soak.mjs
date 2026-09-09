@@ -7,18 +7,30 @@ export function assessSoak(status, sourceRuns, now = Date.now()) {
   const checks = [];
   const check = (name, passed, details) => checks.push({ name, passed: Boolean(passed), details });
   const soak = status?.soak;
+  const mode = status?.config?.monitoringMode;
+  const monitoringConfigured = mode === "dashboard"
+    ? status.config.alertChannel === "none" && status.config.proactiveAlerts === false
+    : mode === "webhook" && status.config.alertChannel === "webhook" && status.config.proactiveAlerts === true;
   check("scheduler_active_and_healthy", status?.ok && soak?.active && status.config?.enabled
-    && status.config?.heartbeat && status.config?.proactiveAlerts);
+    && status.config?.heartbeat && monitoringConfigured && soak.monitoringMode === mode);
+  check("scan_only_workflows", Object.keys(soak?.workflows || {}).sort().join(",") === "ingest,intel");
   check("observed_for_24_hours", soak?.observedActiveMs >= DAY && now - soak?.activeSince >= DAY);
   check("no_unobserved_scheduler_gaps", soak?.unobservedGaps === 0 && soak?.maxTickGapMs <= 10 * MINUTE);
   check("fresh_scheduler_observation", Number.isFinite(status?.at) && Math.abs(now - status.at) < 10 * MINUTE);
-  for (const [name, interval, maxGap] of [["ingest", 15, 30], ["intel", 60, 90], ["notifications", 15, 30]]) {
+  const initialGap = value => Number.isFinite(soak?.activeSince) && Number.isFinite(value)
+    && value >= soak.activeSince && value <= now ? value - soak.activeSince : null;
+  for (const [name, interval, maxGap] of [["ingest", 15, 30], ["intel", 60, 90]]) {
     const metrics = soak?.workflows?.[name] || {};
     const expected = Math.floor(DAY / (interval * MINUTE)) - 1;
+    const initialStartGap = initialGap(metrics.firstActualStartAt);
+    const initialSuccessGap = initialGap(metrics.firstActualSuccessAt);
     check(`${name}_observed_cadence`, metrics.startsObserved >= expected && metrics.successesObserved >= expected
+      && initialStartGap !== null && initialStartGap <= maxGap * MINUTE
+      && initialSuccessGap !== null && initialSuccessGap <= maxGap * MINUTE
       && metrics.maxActualStartGapMs <= maxGap * MINUTE && metrics.maxActualSuccessGapMs <= maxGap * MINUTE
       && now - metrics.lastActualStartAt <= maxGap * MINUTE && now - metrics.lastActualSuccessAt <= maxGap * MINUTE,
     { starts: metrics.startsObserved, successes: metrics.successesObserved, minimum: expected,
+      initial_start_gap_ms: initialStartGap, initial_success_gap_ms: initialSuccessGap, allowed_initial_gap_ms: maxGap * MINUTE,
       max_start_gap_ms: metrics.maxActualStartGapMs, max_success_gap_ms: metrics.maxActualSuccessGapMs });
   }
   // Independently compare committed per-run database evidence, not only Worker counters.
@@ -39,7 +51,7 @@ export function assessSoak(status, sourceRuns, now = Date.now()) {
     && now - runs.at(-1)?.started <= 30 * MINUTE,
   { runs: runs.length, successful: runs.filter(run => run.successful).length, max_start_gap_ms: maxGap });
   check("no_pending_failed_incidents", Object.values(status?.incidents || {}).every(incident => !incident.active
-    && !["failed", "unknown", "sending", "dead_letter", "pending"].includes(incident.notice?.state)));
+    && (mode === "dashboard" || !["failed", "unknown", "sending", "dead_letter", "pending"].includes(incident.notice?.state))));
   return { passed: checks.every(item => item.passed), checked_at: new Date(now).toISOString(),
     observation_started_at: Number.isFinite(soak?.activeSince) ? new Date(soak.activeSince).toISOString() : null, checks };
 }

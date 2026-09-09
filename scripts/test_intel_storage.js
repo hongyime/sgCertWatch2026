@@ -329,41 +329,59 @@ test("cursor lag includes only valid measured tree sizes and positions, includin
   assert.deepEqual(body.sources.filter((row) => row.protocol === "rfc6962").map((row) => row.lag_entries), [250, 0]);
 });
 
-test("notification status exposes only safe aggregates, with missing counts distinct from zero", async (t) => {
-  const states = { ...ctState(), notifications_poll_status: { value: { state: "partial", checked_at: at(),
-    pending: 80, dead: 3, oldest_pending_at: at(-4), payload: { token: "fake-secret-must-not-leak" },
-    errors: [{ id: "private-job", message: "fake-secret-must-not-leak" }] } } };
+test("stale notification state is never read, exposed or used for monitoring availability", async (t) => {
+  t.mock.method(Date, "now", () => now);
+  const states = ctState();
   const calls = mockDatabase(t, { states });
-  const { body } = await invoke(statusHandler);
-  assert.equal(body.health, "healthy");
-  assert.deepEqual(body.notifications, { state: "partial", checked_at: at(), pending: 80, dead: 3, oldest_pending_at: at(-4) });
-  assert.doesNotMatch(JSON.stringify(body), /fake-secret|private-job/);
-  assert.ok(calls.some((call) => call.url.searchParams.get("key") === "eq.notifications_poll_status"));
+  const baseline = (await invoke(statusHandler)).body;
+  for (const value of [null, "malformed", {}, ...["partial", "failed", "unconfigured", "disabled"].map((state) => ({
+    state, checked_at: at(-72), pending: 80, dead: 3, oldest_pending_at: at(-96),
+    payload: { token: "fake-secret-must-not-leak" },
+    errors: [{ id: "private-job", message: "fake-secret-must-not-leak" }]
+  }))]) {
+    states.notifications_poll_status = { value, updated_at: at() };
+    states.ct_poll_status.value.notifications = value;
+    const { statusCode, body } = await invoke(statusHandler);
+    assert.equal(statusCode, 200);
+    assert.equal(body.health, "healthy");
+    for (const key of ["operations", "schedule", "cursor_lag", "display_sources", "intel_sources"]) {
+      assert.deepEqual(body[key], baseline[key], `Notification state must not change ${key}`);
+    }
+    assert.equal(Object.hasOwn(body, "notifications"), false);
+    assert.equal(Object.hasOwn(body.poll_status, "notifications"), false);
+    assert.deepEqual(states.ct_poll_status.value.notifications, value, "Stored legacy heartbeat must remain untouched");
+    assert.doesNotMatch(JSON.stringify(body), /fake-secret|private-job|notifications_poll_status/);
+  }
+  assert.deepEqual([...new Set(calls.filter((call) => call.url.pathname.endsWith("/ingest_state"))
+    .map((call) => call.url.searchParams.get("key")))].sort(),
+  ["eq.ct_poll_status", "eq.ct_source_state", "eq.intel_poll_status"]);
+  assert.ok(calls.every((call) => !/notification|outbox/.test(call.url.href)));
+  assert.ok(calls.every((call) => !call.method || call.method === "GET"), "Dormant queue data must remain untouched");
   assert.ok(calls.every((call) => call.headers.apikey === "test-anon"));
-  states.notifications_poll_status.value = { state: "unconfigured", checked_at: at(), pending: 0, dead: 0 };
-  const unconfigured = (await invoke(statusHandler)).body;
-  assert.equal(unconfigured.health, "healthy");
-  assert.equal(unconfigured.notifications.state, "unconfigured");
-  assert.equal(unconfigured.notifications.pending, 0);
-  assert.equal(unconfigured.notifications.dead, 0);
-  states.notifications_poll_status.value = { state: "idle", pending: -1, dead: "0", checked_at: "invalid" };
-  const invalid = (await invoke(statusHandler)).body;
-  assert.equal(invalid.notifications.pending, null);
-  assert.equal(invalid.notifications.dead, null);
-  assert.equal(invalid.notifications.checked_at, null);
 });
 
-test("missing, failed or inaccessible notification/cursor state does not break CT health", async (t) => {
+test("unavailable notification storage is not a monitoring API dependency", async (t) => {
+  const calls = mockDatabase(t, { states: ctState(), fail: (_table, url) =>
+    /notification|outbox/.test(url.href) ? "fake-private-error" : null });
+  const { statusCode, body } = await invoke(statusHandler);
+  assert.equal(statusCode, 200);
+  assert.equal(body.health, "healthy");
+  assert.equal(Object.hasOwn(body, "notifications"), false);
+  assert.ok(calls.every((call) => !/notification|outbox/.test(call.url.href)));
+  assert.doesNotMatch(JSON.stringify(body), /fake-private-error/);
+});
+
+test("missing, failed or inaccessible cursor state does not break CT health", async (t) => {
   let failing = false;
   mockDatabase(t, { states: ctState(), fail: (table, url) => failing && table === "ingest_state"
-    && ["eq.notifications_poll_status", "eq.ct_source_state"].includes(url.searchParams.get("key"))
+    && url.searchParams.get("key") === "eq.ct_source_state"
     ? "fake-private-error" : null });
   for (const fail of [false, true]) {
     failing = fail;
     const { statusCode, body } = await invoke(statusHandler);
     assert.equal(statusCode, 200);
     assert.equal(body.health, "healthy");
-    assert.deepEqual(body.notifications, { state: "unavailable", checked_at: null, pending: null, dead: null, oldest_pending_at: null });
+    assert.deepEqual(body.cursor_lag, { measured_logs: 0, lag_entries: null, max_lag_entries: null });
     assert.doesNotMatch(JSON.stringify(body), /fake-private-error/);
   }
 });

@@ -7,7 +7,7 @@ import { BASE_TIME, harness, run, TEST_ENV } from "./helpers.mjs";
 test("concurrent duplicate ticks atomically reserve one dispatch per workflow", async () => {
   const h = harness();
   await Promise.all(Array.from({ length: 12 }, () => h.tick()));
-  assert.equal(h.dispatches().length, 3);
+  assert.equal(h.dispatches().length, 2);
   for (const w of WORKFLOWS) assert.equal(h.dispatches(w.file).length, 1);
   const state = await h.state();
   assert.equal(state.metrics.ticksProcessed, 1);
@@ -28,7 +28,7 @@ test("reservation is committed before GitHub receives the dispatch", async () =>
   await h.tick();
 });
 
-test("ingest and notification cadence is 15 minutes, intel is hourly", async () => {
+test("only CT every 15 minutes and intel hourly are scheduled", async () => {
   const h = harness();
   for (let minute = 0; minute <= 60; minute += 5) {
     h.time = BASE_TIME + minute * MINUTE;
@@ -36,7 +36,7 @@ test("ingest and notification cadence is 15 minutes, intel is hourly", async () 
     await h.tick();
   }
   assert.equal(h.dispatches("ingest.yml").length, 5);
-  assert.equal(h.dispatches("notifications.yml").length, 5);
+  assert.equal(h.dispatches("notifications.yml").length, 0);
   assert.equal(h.dispatches("intel.yml").length, 2);
   assert.deepEqual(JSON.parse(h.dispatches()[0].init.body), { ref: "main", inputs: { scheduler: "cloudflare" }, return_run_details: true });
 });
@@ -72,7 +72,7 @@ test("restart retains accepted reservation even when GitHub list has not caught 
   await h.tick();
   h.advance(15);
   await h.tick();
-  assert.equal(h.dispatches().length, 3);
+  assert.equal(h.dispatches().length, 2);
   h.advance(15);
   await h.tick();
   assert.equal(h.dispatches("ingest.yml").length, 2);
@@ -165,7 +165,7 @@ test("expired lease fences a delayed old invocation from mutations and dispatche
   await h.tick();
   release();
   await assert.rejects(old, /lease_lost/);
-  assert.equal(h.dispatches().length, 3);
+  assert.equal(h.dispatches().length, 2);
 });
 
 test("delayed ticks dispatch current work once without replaying missed intervals", async () => {
@@ -174,7 +174,7 @@ test("delayed ticks dispatch current work once without replaying missed interval
   h.advance(180);
   h.rows = Object.fromEntries(WORKFLOWS.map(w => [w.file, []]));
   await h.tick(BASE_TIME + 5 * MINUTE);
-  assert.equal(h.dispatches().length, 6);
+  assert.equal(h.dispatches().length, 4);
   let state = await h.state();
   assert.equal(state.metrics.lastScheduleDelayMs, 175 * MINUTE);
   assert.equal(state.metrics.missedTickWindows, 35);
@@ -182,7 +182,7 @@ test("delayed ticks dispatch current work once without replaying missed interval
   h.advance(5);
   await h.tick(BASE_TIME + MINUTE);
   state = await h.state();
-  assert.equal(h.dispatches().length, 6);
+  assert.equal(h.dispatches().length, 4);
   assert.equal(state.metrics.ticksDuplicate, 1);
 });
 
@@ -192,7 +192,7 @@ test("atomic reservation also enforces elapsed time across calendar slot boundar
   await h.tick();
   h.advance(1);
   await h.tick();
-  assert.equal(h.dispatches().length, 3);
+  assert.equal(h.dispatches().length, 2);
 });
 
 test("GitHub 429 persists Retry-After and suppresses all GitHub requests on restart", async () => {
@@ -207,7 +207,7 @@ test("GitHub 429 persists Retry-After and suppresses all GitHub requests on rest
   assert.equal(h.calls.length, 1);
   h.advance(60);
   await h.tick();
-  assert.equal(h.dispatches().length, 3);
+  assert.equal(h.dispatches().length, 2);
 });
 
 test("secondary 403 and primary exhausted response respect the larger reset time", async () => {
@@ -251,10 +251,10 @@ test("future success timestamps cannot make the watchdog healthy indefinitely", 
   assert.equal(h.dispatches("ingest.yml").length, 0);
 });
 
-const telegramEnv = { TELEGRAM_BOT_TOKEN: "123456:fake-secret", TELEGRAM_CHAT_ID: "-12345" };
+const webhookEnv = { ALERT_WEBHOOK_URL: "https://alerts.example.test/private", ALERT_WEBHOOK_SECRET: "test-webhook-secret" };
 
 test("warning at 30m, critical at 60m and recovery are delivered once across restarts", async () => {
-  const h = harness({ env: telegramEnv });
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
   h.advance(29);
@@ -262,29 +262,29 @@ test("warning at 30m, critical at 60m and recovery are delivered once across res
   assert.equal(h.alerts().length, 0);
   h.advance(1);
   await h.tick();
-  assert.equal(h.alerts().length, 2);
-  assert.match(JSON.parse(h.alerts()[0].init.body).text, /WARNING/);
+  assert.equal(h.alerts().length, 1);
+  assert.equal(JSON.parse(h.alerts()[0].init.body).kind, "warning");
   h.advance(5);
   await h.tick();
-  assert.equal(h.alerts().length, 2);
+  assert.equal(h.alerts().length, 1);
   h.advance(25);
   await h.tick();
-  assert.equal(h.alerts().length, 4);
-  assert.match(JSON.parse(h.alerts()[2].init.body).text, /CRITICAL/);
+  assert.equal(h.alerts().length, 2);
+  assert.equal(JSON.parse(h.alerts()[1].init.body).kind, "critical");
   h.advance(5);
   h.healthy(0);
   await h.tick();
-  assert.equal(h.alerts().length, 6);
-  assert.match(JSON.parse(h.alerts()[4].init.body).text, /RECOVERY/);
+  assert.equal(h.alerts().length, 3);
+  assert.equal(JSON.parse(h.alerts()[2].init.body).kind, "recovery");
   h.advance(5);
   h.healthy(0);
   await h.tick();
-  assert.equal(h.alerts().length, 6);
+  assert.equal(h.alerts().length, 3);
   assert.equal((await h.status()).ok, true);
 });
 
 test("hourly intel warns at 90m and becomes critical at 120m", async () => {
-  const h = harness({ env: telegramEnv });
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
   h.advance(60);
@@ -299,7 +299,7 @@ test("hourly intel warns at 90m and becomes critical at 120m", async () => {
 });
 
 test("queued work and failed runs never advance workflow success freshness", async () => {
-  const h = harness({ env: telegramEnv });
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
   h.advance(60);
@@ -312,7 +312,7 @@ test("queued work and failed runs never advance workflow success freshness", asy
 });
 
 test("observation errors cannot emit a false recovery from cached success", async () => {
-  const h = harness({ env: telegramEnv });
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
   h.advance(30);
@@ -321,10 +321,10 @@ test("observation errors cannot emit a false recovery from cached success", asyn
   h.override = url => url.hostname === "api.github.com" ? new Response(null, { status: 401 }) : undefined;
   await h.tick();
   assert.equal((await h.state()).incidents.ingest.active, true);
-  assert.equal(h.alerts().filter(c => JSON.parse(c.init.body).text.includes("RECOVERY")).length, 0);
+  assert.equal(h.alerts().filter(c => JSON.parse(c.init.body).kind === "recovery").length, 0);
 });
 
-test("disabled alert channel is reported truthfully and never marked delivered", async () => {
+test("dashboard monitoring records incidents without delivery and webhook remains opt-in", async () => {
   const h = harness();
   await h.tick();
   h.advance(60);
@@ -332,13 +332,16 @@ test("disabled alert channel is reported truthfully and never marked delivered",
   const status = await h.status();
   assert.equal(status.config.alertChannel, "none");
   assert.equal(status.config.proactiveAlerts, false);
-  assert.equal(status.incidents.ingest.notice.state, "channel_unconfigured");
+  assert.equal(status.config.monitoringMode, "dashboard");
+  assert.deepEqual(status.config.errors, []);
+  assert.equal(status.incidents.ingest.notice.state, "dashboard_only");
   assert.equal(status.metrics.alertsDelivered || 0, 0);
   assert.equal(h.alerts().length, 0);
   h.advance(5);
-  h.env = { ...h.env, ...telegramEnv };
+  h.env = { ...h.env, ...webhookEnv };
   await h.tick();
-  assert.equal(h.alerts().length, 2);
+  assert.equal(h.alerts().length, 1);
+  assert.equal((await h.status()).config.monitoringMode, "webhook");
 });
 
 test("no recovery message is sent for an incident that was never announced", async () => {
@@ -346,7 +349,7 @@ test("no recovery message is sent for an incident that was never announced", asy
   await h.tick();
   h.advance(30);
   await h.tick();
-  h.env = { ...h.env, ...telegramEnv };
+  h.env = { ...h.env, ...webhookEnv };
   h.advance(5);
   h.healthy(0);
   await h.tick();
@@ -354,12 +357,12 @@ test("no recovery message is sent for an incident that was never announced", asy
   assert.equal((await h.state()).incidents.ingest.notice, null);
 });
 
-test("Telegram explicit rejection retries with a stable incident key and bounded cooldown", async () => {
-  const h = harness({ env: telegramEnv });
+test("webhook explicit rejection retries with a stable incident key and bounded cooldown", async () => {
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
-  h.override = url => url.hostname === "api.telegram.org"
-    ? Response.json({ ok: false, error_code: 429, parameters: { retry_after: 900 } }) : undefined;
+  h.override = url => url.hostname === "alerts.example.test"
+    ? new Response(null, { status: 429, headers: { "Retry-After": "900" } }) : undefined;
   h.advance(30);
   assert.equal((await h.tick()).ok, false);
   const key = (await h.state()).incidents.ingest.notice.key;
@@ -376,11 +379,11 @@ test("Telegram explicit rejection retries with a stable incident key and bounded
   assert.equal(notice.attempts, 2);
 });
 
-test("ambiguous Telegram failure retries after delay with the same event key", async () => {
-  const h = harness({ env: telegramEnv });
+test("ambiguous webhook failure retries after delay with the same event key", async () => {
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
-  h.override = url => { if (url.hostname === "api.telegram.org") throw new Error("token/secret in URL"); };
+  h.override = url => { if (url.hostname === "alerts.example.test") throw new Error("token/secret in URL"); };
   h.advance(30);
   await h.tick();
   let state = await h.state();
@@ -391,7 +394,7 @@ test("ambiguous Telegram failure retries after delay with the same event key", a
   h.override = undefined;
   h.advance(5);
   await h.tick();
-  assert.equal(h.alerts().filter(c => JSON.parse(c.init.body).text.includes("ingest:")).length, 2);
+  assert.equal(h.alerts().filter(c => JSON.parse(c.init.body).subject === "ingest").length, 2);
   assert.equal((await h.state()).incidents.ingest.notice.key, key);
   h.advance(5);
   h.healthy(0);
@@ -402,7 +405,7 @@ test("ambiguous Telegram failure retries after delay with the same event key", a
 });
 
 test("expired alert sending lease retries after restart and records recovery", async () => {
-  const h = harness({ env: telegramEnv });
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
   h.advance(30);
@@ -414,7 +417,7 @@ test("expired alert sending lease retries after restart and records recovery", a
   await h.tick();
   assert.equal((await h.state()).incidents.ingest.notice.state, "sent");
   assert.equal((await h.state()).metrics.alertLeasesRecovered, 1);
-  assert.equal(h.alerts().filter(c => JSON.parse(c.init.body).text.includes("ingest:")).length, 2);
+  assert.equal(h.alerts().filter(c => JSON.parse(c.init.body).subject === "ingest").length, 2);
 });
 
 test("private HTTPS webhook accepts text success and uses a stable event ID", async () => {
@@ -435,7 +438,7 @@ test("private HTTPS webhook accepts text success and uses a stable event ID", as
   assert.equal(output.includes("private-auth-token"), false);
   h.advance(5);
   await h.tick();
-  assert.equal(h.alerts().length, 2);
+  assert.equal(h.alerts().length, 1);
 });
 
 test("webhook is HTTPS only, cannot come from public request input, and never follows redirects", async () => {
@@ -456,7 +459,7 @@ test("webhook is HTTPS only, cannot come from public request input, and never fo
   assert.equal(response.status, 404);
 });
 
-test("notification dispatch continues in the same tick when CT dispatch is rejected", async () => {
+test("intel dispatch continues in the same tick when CT dispatch is rejected", async () => {
   const h = harness();
   h.override = (url, init) => {
     if (init.method === "POST" && url.pathname.includes("ingest.yml")) {
@@ -464,7 +467,8 @@ test("notification dispatch continues in the same tick when CT dispatch is rejec
     }
   };
   await h.tick();
-  assert.equal(h.dispatches("notifications.yml").length, 1);
+  assert.equal(h.dispatches("intel.yml").length, 1);
+  assert.equal(h.dispatches("notifications.yml").length, 0);
 });
 
 const heartbeatEnv = { SUPABASE_URL: "https://project.supabase.co", SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test" };
@@ -473,14 +477,11 @@ function heartbeat(h, successAt = h.time) {
     last_started_at: new Date(successAt).toISOString(), last_success_at: new Date(successAt).toISOString(),
     last_external_trigger_at: new Date(h.time).toISOString(), ok: "true", health: "ok" },
   { key: "intel_poll_status", checked_at: new Date(h.time).toISOString(), last_started_at: new Date(h.time).toISOString(),
-    last_success_at: new Date(h.time).toISOString(), ok: "true", health: null },
-  { key: "notifications_poll_status", checked_at: new Date(h.time).toISOString(),
-    started_at: new Date(h.time).toISOString(), finished_at: new Date(h.time).toISOString(), state: "idle",
-    pending: "0", processing: "0", dead: "0", oldest_pending_at: null }];
+    last_success_at: new Date(h.time).toISOString(), ok: "true", health: null }];
 }
 
 test("direct safe heartbeat uses last_success_at despite recent successful skipped workflows", async () => {
-  const h = harness({ env: { ...heartbeatEnv, ...telegramEnv } });
+  const h = harness({ env: { ...heartbeatEnv, ...webhookEnv } });
   h.healthy(0);
   heartbeat(h);
   await h.tick();
@@ -493,11 +494,11 @@ test("direct safe heartbeat uses last_success_at despite recent successful skipp
   assert.equal(status.assessments.ingest.successAgeMs, 60 * MINUTE);
   assert.equal(status.workflows.ingest.heartbeat.source, "last_success_at");
   assert.equal(status.workflows.ingest.heartbeat.lastExternalTriggerAt, h.time);
-  assert.equal(status.assessments.notifications.healthy, true);
+  assert.equal(status.assessments.intel.healthy, true);
   const call = h.calls.find(c => c.url.hostname === "project.supabase.co");
   assert.equal(call.url.pathname, "/rest/v1/ingest_state");
   assert.match(call.url.searchParams.get("select"), /last_success_at/);
-  assert.equal(call.url.searchParams.get("limit"), "3");
+  assert.equal(call.url.searchParams.get("limit"), "2");
   assert.equal(call.init.headers.Authorization, undefined);
   assert.equal(call.init.headers.apikey, heartbeatEnv.SUPABASE_PUBLISHABLE_KEY);
   h.advance(5);
@@ -599,7 +600,7 @@ test("configuration changes cannot silently reset durable repository deduplicati
   h.env.GITHUB_REPO = "different-repo";
   h.advance(5);
   await h.tick();
-  assert.equal(h.dispatches().length, 3);
+  assert.equal(h.dispatches().length, 2);
   assert.ok((await h.state()).configErrors.includes("target_changed_requires_migration"));
 });
 
@@ -607,16 +608,16 @@ test("pause continues watchdog observation without dispatching", async () => {
   const h = harness({ env: { DISPATCH_ENABLED: "false" } });
   await h.tick();
   assert.equal(h.dispatches().length, 0);
-  assert.equal(h.calls.length, 6);
+  assert.equal(h.calls.length, 4);
   assert.equal((await h.state()).workflows.ingest.decision, "dispatch_paused");
 });
 
 test("secrets and raw error payloads never enter state or status", async () => {
-  const h = harness({ env: telegramEnv });
-  h.override = () => new Response(`private ${h.env.GITHUB_TOKEN} ${h.env.TELEGRAM_BOT_TOKEN}`, { status: 401 });
+  const h = harness({ env: webhookEnv });
+  h.override = () => new Response(`private ${h.env.GITHUB_TOKEN} ${h.env.ALERT_WEBHOOK_SECRET}`, { status: 401 });
   await h.tick();
   const serialized = JSON.stringify(await h.status());
-  for (const secret of [h.env.GITHUB_TOKEN, h.env.STATUS_TOKEN, h.env.TELEGRAM_BOT_TOKEN, h.env.TELEGRAM_CHAT_ID]) assert.equal(serialized.includes(secret), false);
+  for (const secret of [h.env.GITHUB_TOKEN, h.env.STATUS_TOKEN, h.env.ALERT_WEBHOOK_URL, h.env.ALERT_WEBHOOK_SECRET]) assert.equal(serialized.includes(secret), false);
   assert.match(serialized, /github_http_401/);
 });
 
@@ -663,16 +664,16 @@ test("recent actual start prevents duplicate scans even if GitHub history is mis
   assert.equal(h.dispatches("ingest.yml").length, 0);
   assert.equal((await h.state()).workflows.ingest.decision, "recent_actual_start");
   assert.equal(h.dispatches("intel.yml").length, 0);
-  assert.equal(h.dispatches("notifications.yml").length, 1);
+  assert.equal(h.dispatches("notifications.yml").length, 0);
 });
 
-test("failed heartbeat read gates scan dispatch but still allows notification draining", async () => {
+test("failed heartbeat read gates both scans without contacting the retired workflow", async () => {
   const h = harness({ env: heartbeatEnv });
   h.override = url => url.hostname.endsWith("supabase.co") ? new Response(null, { status: 503 }) : undefined;
   await h.tick();
   assert.equal(h.dispatches("ingest.yml").length, 0);
   assert.equal(h.dispatches("intel.yml").length, 0);
-  assert.equal(h.dispatches("notifications.yml").length, 1);
+  assert.equal(h.dispatches("notifications.yml").length, 0);
   assert.equal((await h.state()).workflows.ingest.decision, "heartbeat_unavailable");
 });
 
@@ -687,85 +688,32 @@ test("modern null last_success_at cannot be replaced by a recent checked_at", as
   assert.equal((await h.state()).workflows.ingest.metrics.successesObserved || 0, 0);
 });
 
-test("pending outbox warns even when notifications workflow succeeds while channel is unconfigured", async () => {
-  const h = harness({ env: { ...heartbeatEnv, ...telegramEnv } });
-  h.healthy(0);
-  heartbeat(h);
-  await h.tick();
-  h.advance(30);
-  h.healthy(0);
-  heartbeat(h);
-  Object.assign(h.heartbeatRows[2], { pending: "10", processing: "1", state: "unconfigured",
-    oldest_pending_at: new Date(BASE_TIME).toISOString() });
-  await h.tick();
-  let state = await h.state();
-  assert.equal(state.incidents.notifications.level, 1);
-  assert.equal(state.workflows.notifications.heartbeat.outbox.channelUnavailable, true);
-  assert.equal((await h.status()).assessments.notifications.backlogAgeMs, 30 * MINUTE);
-  h.advance(30);
-  h.healthy(0);
-  heartbeat(h);
-  Object.assign(h.heartbeatRows[2], { pending: "10", state: "unconfigured", oldest_pending_at: new Date(BASE_TIME).toISOString() });
-  await h.tick();
-  assert.equal((await h.state()).incidents.notifications.level, 2);
-  h.advance(5);
-  h.healthy(0);
-  heartbeat(h);
-  await h.tick();
-  state = await h.state();
-  assert.equal(state.incidents.notifications.notice.kind, "recovery");
-  assert.equal(state.incidents.notifications.notice.state, "sent");
-});
-
-test("outbox dead letters produce critical even with a fresh successful workflow", async () => {
-  const h = harness({ env: { ...heartbeatEnv, ...telegramEnv } });
-  h.healthy(0);
-  heartbeat(h);
-  h.heartbeatRows[2].dead = "2";
-  await h.tick();
-  assert.equal((await h.state()).incidents.notifications.level, 2);
-  assert.equal(h.alerts().length, 1);
-  assert.equal((await h.status()).ok, false);
-});
-
-test("absent public outbox row is visible and never misreported as an empty backlog", async () => {
-  const h = harness({ env: heartbeatEnv });
-  h.healthy(0);
-  heartbeat(h, BASE_TIME - 15 * MINUTE);
-  h.heartbeatRows.pop();
-  await h.tick();
-  assert.equal((await h.state()).workflows.notifications.heartbeatError, "missing_heartbeat_row");
-  assert.equal((await h.state()).heartbeat.error, null);
-  assert.equal(h.dispatches("ingest.yml").length, 1);
-  assert.equal((await h.status()).ok, false);
-});
-
 test("repeated ambiguous alert delivery reaches a visible dead letter after five attempts", async () => {
-  const h = harness({ env: telegramEnv });
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
   h.advance(60);
-  h.override = url => { if (url.hostname === "api.telegram.org") throw new Error("lost response"); };
+  h.override = url => { if (url.hostname === "alerts.example.test") throw new Error("lost response"); };
   await h.tick();
   const key = (await h.state()).incidents.ingest.notice.key;
   for (let i = 1; i < 5; i++) {
     const state = await h.state();
-    h.time = Math.max(state.incidents.ingest.notice.retryAt, state.telegram.retryAt, h.time + 5 * MINUTE);
+    h.time = Math.max(state.incidents.ingest.notice.retryAt, state.webhook.retryAt, h.time + 5 * MINUTE);
     await h.tick();
   }
   let state = await h.state();
   assert.equal(state.incidents.ingest.notice.attempts, 5);
   assert.equal(state.incidents.ingest.notice.state, "dead_letter");
   assert.equal(state.incidents.ingest.notice.key, key);
-  const before = h.alerts().filter(c => JSON.parse(c.init.body).text.includes("ingest:")).length;
+  const before = h.alerts().filter(c => JSON.parse(c.init.body).subject === "ingest").length;
   h.advance(120);
   await h.tick();
-  assert.equal(h.alerts().filter(c => JSON.parse(c.init.body).text.includes("ingest:")).length, before);
+  assert.equal(h.alerts().filter(c => JSON.parse(c.init.body).subject === "ingest").length, before);
   assert.ok((await h.state()).metrics.alertDeadLetters >= 1);
 });
 
 test("nonexpired sending lease cannot be taken over by a second delivery attempt", async () => {
-  const h = harness({ env: telegramEnv });
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
   h.advance(30);
@@ -782,7 +730,7 @@ test("nonexpired sending lease cannot be taken over by a second delivery attempt
 });
 
 test("actual start/success metrics dedupe heartbeat snapshots and survive restart", async () => {
-  const h = harness({ env: { ...heartbeatEnv, ...telegramEnv } });
+  const h = harness({ env: { ...heartbeatEnv, ...webhookEnv } });
   h.healthy(0);
   heartbeat(h);
   await h.tick();
@@ -805,7 +753,7 @@ test("actual start/success metrics dedupe heartbeat snapshots and survive restar
 });
 
 test("unconfigured startup cannot accrue configured duration or actual soak metrics", async () => {
-  const h = harness({ env: { ...heartbeatEnv, ...telegramEnv, GITHUB_TOKEN: "" } });
+  const h = harness({ env: { ...heartbeatEnv, ...webhookEnv, GITHUB_TOKEN: "" } });
   await h.tick();
   h.advance(24 * 60);
   assert.equal((await h.status()).soak, null);
@@ -820,8 +768,8 @@ test("unconfigured startup cannot accrue configured duration or actual soak metr
   assert.equal(state.soak.workflows.ingest.startsObserved, 1);
 });
 
-test("elapsed 24h cannot count as observed 24h when cron stopped or alert channel is absent", async () => {
-  const h = harness({ env: { ...heartbeatEnv, ...telegramEnv } });
+test("elapsed 24h cannot count as observed 24h when cron stops or dispatch is paused", async () => {
+  const h = harness({ env: heartbeatEnv });
   h.healthy(0);
   heartbeat(h);
   await h.tick();
@@ -838,14 +786,13 @@ test("elapsed 24h cannot count as observed 24h when cron stopped or alert channe
   assert.equal(status.soak.observedActiveMs, 0);
   assert.equal(status.soak.workflows.ingest.maxActualStartGapMs, 24 * 60 * MINUTE);
   h.advance(5);
-  delete h.env.TELEGRAM_BOT_TOKEN;
-  delete h.env.TELEGRAM_CHAT_ID;
+  h.env.DISPATCH_ENABLED = "false";
   await h.tick();
   assert.equal((await h.status()).soak.active, false);
 });
 
-test("simulated full day records cadence evidence without asserting a real soak pass", async () => {
-  const h = harness({ env: { ...heartbeatEnv, ...telegramEnv } });
+test("dashboard simulated full day records CT/intel cadence without delivery or a real soak claim", async () => {
+  const h = harness({ env: heartbeatEnv });
   for (let minute = 0; minute <= 24 * 60; minute += 5) {
     h.time = BASE_TIME + minute * MINUTE;
     h.healthy(0);
@@ -853,9 +800,6 @@ test("simulated full day records cadence evidence without asserting a real soak 
     const hourly = new Date(BASE_TIME + Math.floor(minute / 60) * 60 * MINUTE).toISOString();
     h.heartbeatRows[1].last_started_at = hourly;
     h.heartbeatRows[1].last_success_at = hourly;
-    const quarter = new Date(BASE_TIME + Math.floor(minute / 15) * 15 * MINUTE).toISOString();
-    h.heartbeatRows[2].started_at = quarter;
-    h.heartbeatRows[2].finished_at = quarter;
     await h.tick();
   }
   const status = await h.status();
@@ -863,23 +807,31 @@ test("simulated full day records cadence evidence without asserting a real soak 
   assert.equal(status.soak.workflows.ingest.startsObserved, 97);
   assert.equal(status.soak.workflows.ingest.successesObserved, 97);
   assert.equal(status.soak.workflows.intel.startsObserved, 25);
-  assert.equal(status.soak.workflows.notifications.startsObserved, 97);
+  assert.equal(status.soak.workflows.intel.successesObserved, 25);
+  assert.equal(status.soak.workflows.intel.maxActualStartGapMs, 60 * MINUTE);
+  assert.equal(status.soak.workflows.intel.maxActualSuccessGapMs, 60 * MINUTE);
+  assert.deepEqual(Object.keys(status.soak.workflows), ["ingest", "intel"]);
   assert.equal(status.soak.workflows.ingest.maxActualStartGapMs, 15 * MINUTE);
   assert.equal(status.soak.workflows.ingest.maxActualSuccessGapMs, 15 * MINUTE);
   assert.equal(status.soak.maxTickGapMs, 5 * MINUTE);
   assert.equal(status.soak.validation, "not_evaluated");
+  assert.equal(status.ok, true);
+  assert.equal(status.soak.active, true);
+  assert.equal(status.soak.monitoringMode, "dashboard");
+  assert.equal(status.config.proactiveAlerts, false);
+  assert.equal(status.metrics.alertsDelivered || 0, 0);
+  assert.equal(h.alerts().length, 0);
   assert.ok(status.events.length <= 48);
 });
 
-test("real Telegram HTTP 429 honors its JSON retry_after across worker restarts", async () => {
-  const h = harness({ env: telegramEnv });
+test("webhook HTTP 429 honors Retry-After across worker restarts", async () => {
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
-  h.override = url => url.hostname === "api.telegram.org" ? Response.json({ ok: false, error_code: 429,
-    description: "private error must not be persisted", parameters: { retry_after: 7200 } }, { status: 429 }) : undefined;
+  h.override = url => url.hostname === "alerts.example.test" ? new Response("private error must not be persisted", { status: 429, headers: { "Retry-After": "7200" } }) : undefined;
   h.advance(30);
   await h.tick();
-  assert.equal((await h.state()).telegram.retryAt, h.time + 120 * MINUTE);
+  assert.equal((await h.state()).webhook.retryAt, h.time + 120 * MINUTE);
   assert.equal((await h.state()).incidents.ingest.notice.retryAt, h.time + 120 * MINUTE);
   h.advance(60);
   await h.tick();
@@ -888,7 +840,7 @@ test("real Telegram HTTP 429 honors its JSON retry_after across worker restarts"
 });
 
 test("30-second actual queue delays plus skipped fallback overlaps sustain 15m CT cadence for a day", async () => {
-  const h = harness({ env: { ...heartbeatEnv, ...telegramEnv } });
+  const h = harness({ env: heartbeatEnv });
   h.dispatchStatus = 200;
   for (const w of WORKFLOWS) h.rows[w.file] = [run(h.time)];
   h.override = (_, init) => { if (init.method === "POST") h.time += 250; };
@@ -931,7 +883,7 @@ test("30-second actual queue delays plus skipped fallback overlaps sustain 15m C
   const state = await h.state();
   assert.equal(h.dispatches("ingest.yml").length, 97);
   assert.equal(h.dispatches("intel.yml").length, 25);
-  assert.equal(h.dispatches("notifications.yml").length, 97);
+  assert.equal(h.dispatches("notifications.yml").length, 0);
   const metrics = state.soak.workflows.ingest;
   assert.equal(metrics.startsObserved, 96);
   assert.equal(metrics.successesObserved, 96);
@@ -956,18 +908,6 @@ test("malformed intel heartbeat cannot gate a CT scan with valid due data", asyn
   assert.equal(state.workflows.intel.decision, "heartbeat_unavailable");
 });
 
-test("invalid outbox counts are isolated from both valid scan heartbeats", async () => {
-  const h = harness({ env: heartbeatEnv });
-  heartbeat(h, BASE_TIME - 15 * MINUTE);
-  h.heartbeatRows[1].last_started_at = new Date(BASE_TIME - 60 * MINUTE).toISOString();
-  h.heartbeatRows[2].pending = "invalid";
-  await h.tick();
-  assert.equal(h.dispatches("ingest.yml").length, 1);
-  assert.equal(h.dispatches("intel.yml").length, 1);
-  assert.equal((await h.state()).workflows.notifications.heartbeatError, "invalid_outbox_counts");
-  assert.equal((await h.status()).assessments.notifications.backlogMonitoring, "unknown");
-});
-
 test("a missing first intel heartbeat bootstraps from GitHub while CT remains independent", async () => {
   const h = harness({ env: heartbeatEnv });
   heartbeat(h, BASE_TIME - 15 * MINUTE);
@@ -982,11 +922,10 @@ test("a missing first intel heartbeat bootstraps from GitHub while CT remains in
 });
 
 test("recovery retains a rejected warning and delivers a summary after its 429 cooldown", async () => {
-  const h = harness({ env: telegramEnv });
+  const h = harness({ env: webhookEnv });
   h.healthy(0);
   await h.tick();
-  h.override = url => url.hostname === "api.telegram.org" ? Response.json({ ok: false, error_code: 429,
-    parameters: { retry_after: 3600 } }, { status: 429 }) : undefined;
+  h.override = url => url.hostname === "alerts.example.test" ? new Response(null, { status: 429, headers: { "Retry-After": "3600" } }) : undefined;
   h.advance(30);
   await h.tick();
   assert.equal((await h.state()).incidents.ingest.notice.state, "failed");
@@ -1012,24 +951,262 @@ test("recovery retains a rejected warning and delivers a summary after its 429 c
   assert.equal(state.incidents.ingest.notice.key, recoveryKey);
   assert.equal(state.incidents.ingest.notice.state, "sent");
   assert.equal(state.incidents.ingest.previousNotice.state, "failed");
-  const texts = h.alerts().map(c => JSON.parse(c.init.body).text);
-  assert.ok(texts.some(text => text.includes("RECOVERY: ingest") && text.includes("Outage already resolved")));
+  const notices = h.alerts().map(c => JSON.parse(c.init.body));
+  assert.ok(notices.some(notice => notice.kind === "recovery" && notice.subject === "ingest" && notice.resolved_before_delivery));
   assert.equal((await h.status()).ok, true);
 });
 
-test("stalled Telegram 429 body cannot shorten the received one-hour cooldown", { timeout: 10000 }, async () => {
-  const h = harness({ env: telegramEnv, timeoutMs: 20 });
+test("stalled webhook 429 body cannot shorten the received one-hour cooldown", { timeout: 10000 }, async () => {
+  const h = harness({ env: webhookEnv, timeoutMs: 20 });
   h.healthy(0);
   await h.tick();
-  h.override = url => url.hostname === "api.telegram.org"
+  h.override = url => url.hostname === "alerts.example.test"
     ? new Response(new ReadableStream({ start() {} }), { status: 429, headers: { "Retry-After": "3600" } }) : undefined;
   h.advance(30);
   await h.tick();
   const state = await h.state();
-  assert.equal(state.telegram.retryAt, h.time + 60 * MINUTE);
+  assert.equal(state.webhook.retryAt, h.time + 60 * MINUTE);
   assert.equal(state.incidents.ingest.notice.retryAt, h.time + 60 * MINUTE);
   assert.equal(state.incidents.ingest.notice.state, "failed");
   h.advance(5);
   await h.tick();
   assert.equal(h.alerts().length, 1);
+});
+
+test("accidental complete or partial Telegram environment values never configure or send alerts", async () => {
+  const obsolete = { TELEGRAM_BOT_TOKEN: "obsolete-test-value", TELEGRAM_CHAT_ID: "obsolete-test-chat" };
+  for (const extra of [obsolete, { TELEGRAM_BOT_TOKEN: obsolete.TELEGRAM_BOT_TOKEN },
+    { TELEGRAM_CHAT_ID: obsolete.TELEGRAM_CHAT_ID }]) {
+    const h = harness({ env: { ...heartbeatEnv, ...extra } });
+    h.healthy(0);
+    heartbeat(h);
+    await h.tick();
+    assert.equal((await h.status()).ok, true);
+    h.advance(60);
+    await h.tick();
+    const incident = (await h.state()).incidents.ingest;
+    assert.equal(incident.active, true);
+    assert.equal(incident.notice.state, "dashboard_only");
+    assert.equal(incident.notice.attempts, 0);
+    assert.equal((await h.status()).ok, false);
+    h.advance(5);
+    h.healthy(0);
+    heartbeat(h);
+    await h.tick();
+    const status = await h.status();
+    assert.equal(status.ok, true);
+    assert.equal(status.config.monitoringMode, "dashboard");
+    assert.deepEqual(status.config.errors, []);
+    assert.equal(status.config.proactiveAlerts, false);
+    assert.equal(status.incidents.ingest.recoveredAt, h.time);
+    assert.equal(status.incidents.ingest.previousNotice.state, "dashboard_only");
+    assert.equal(status.incidents.ingest.notice, null);
+    assert.equal(status.metrics.alertsDelivered || 0, 0);
+    assert.ok(h.calls.every(call => ["api.github.com", "project.supabase.co"].includes(call.url.hostname)));
+    for (const value of Object.values(extra)) assert.equal(JSON.stringify(status).includes(value), false);
+  }
+  const h = harness({ env: { ...webhookEnv, ...obsolete } });
+  h.healthy(0);
+  await h.tick();
+  h.advance(30);
+  await h.tick();
+  assert.equal((await h.status()).config.monitoringMode, "webhook");
+  assert.equal(h.alerts().length, 1);
+  assert.ok(h.calls.every(call => ["api.github.com", "alerts.example.test"].includes(call.url.hostname)));
+});
+
+test("retired notification heartbeat is never requested or assessed even with a failed outbox", async () => {
+  const h = harness({ env: heartbeatEnv });
+  h.healthy(0);
+  heartbeat(h);
+  h.heartbeatRows.push({ key: "notifications_poll_status", checked_at: "invalid", pending: "invalid", dead: "100", state: "failed" });
+  assert.equal((await h.tick()).ok, true);
+  const status = await h.status();
+  assert.equal(status.ok, true);
+  assert.deepEqual(WORKFLOWS.map(w => [w.name, w.file, w.interval]), [
+    ["ingest", "ingest.yml", 15 * MINUTE], ["intel", "intel.yml", 60 * MINUTE]
+  ]);
+  for (const field of [status.workflows, status.assessments, status.soak.workflows]) {
+    assert.deepEqual(Object.keys(field), ["ingest", "intel"]);
+  }
+  const call = h.calls.find(c => c.url.hostname === "project.supabase.co");
+  assert.equal(call.url.searchParams.get("key"), "in.(ct_poll_status,intel_poll_status)");
+  assert.equal(call.url.searchParams.get("limit"), "2");
+  assert.doesNotMatch(call.url.searchParams.get("select"), /pending|processing|dead|finished_at/);
+  assert.ok(h.calls.every(c => !c.url.pathname.includes("notifications.yml")));
+});
+
+test("v1 migration preserves CT/intel checkpoints and fencing while archiving the retired subject", async () => {
+  const h = harness({ env: heartbeatEnv });
+  h.healthy(0);
+  heartbeat(h);
+  await h.tick();
+  await h.storage.seed(s => {
+    s.version = 1;
+    s.telegram = { retryAt: h.time + 60 * MINUTE, failures: 3 };
+    s.lease = { id: "existing-owner", until: h.time + 2 * MINUTE };
+    s.github.retryAt = h.time + 30 * MINUTE;
+    s.heartbeat.retryAt = h.time + 20 * MINUTE;
+    s.workflows.ingest.reservation = { id: "durable-reservation", at: h.time,
+      state: "unknown", holdUntil: h.time + 30 * MINUTE };
+    s.workflows.notifications = structuredClone(s.workflows.ingest);
+    s.incidents.notifications = { id: "retired-incident", active: true, level: 2, since: h.time,
+      notice: { key: "retired-incident:critical", state: "sending", attempts: 2, leaseUntil: h.time } };
+    s.incidents.ingest = { id: "scan-incident", active: true, level: 1, since: h.time,
+      notice: { key: "scan-incident:warning", state: "failed", attempts: 1 } };
+    s.soak.workflows.notifications = { startsObserved: 1000, successesObserved: 1000 };
+    s.soak.alertChannel = "telegram";
+    delete s.soak.monitoringMode;
+  });
+  const before = await h.state();
+  const writes = h.storage.writes;
+  const projected = await h.status();
+  assert.equal(projected.version, 2);
+  assert.equal(projected.soak.active, false);
+  assert.equal(projected.workflows.notifications, undefined);
+  assert.deepEqual(projected.retiredSubjects.notifications.incident, before.incidents.notifications);
+  assert.deepEqual(await h.state(), before);
+  assert.equal(h.storage.writes, writes);
+  await assert.rejects(h.engine().change(s => { s.workflows.ingest.reservation = null; }, "old-owner"), /lease_lost/);
+  assert.deepEqual(await h.state(), before);
+  assert.equal((await h.tick()).skipped, "duplicate_or_busy");
+  const migrated = await h.state();
+  assert.equal(migrated.version, 2);
+  assert.equal(migrated.telegram, undefined);
+  assert.deepEqual(migrated.lease, before.lease);
+  assert.deepEqual(migrated.github, before.github);
+  assert.deepEqual(migrated.heartbeat, before.heartbeat);
+  assert.deepEqual(migrated.workflows.ingest, before.workflows.ingest);
+  assert.deepEqual(migrated.workflows.intel, before.workflows.intel);
+  assert.deepEqual(migrated.incidents.ingest, before.incidents.ingest);
+  assert.deepEqual(migrated.soak.workflows.ingest, before.soak.workflows.ingest);
+  assert.equal(migrated.configuredSince, before.configuredSince);
+  assert.equal(migrated.startedAt, before.startedAt);
+  assert.equal(migrated.lastBucket, before.lastBucket);
+  assert.equal(migrated.lastScheduledAt, before.lastScheduledAt);
+  assert.equal(migrated.metrics.alertsDelivered || 0, 0);
+  assert.equal(h.dispatches().length, 0);
+  h.advance(5);
+  await assert.rejects(h.engine().change(() => {}, "existing-owner"), /lease_lost/);
+});
+
+test("dashboard restart ignores retired incidents and starts fresh soak evidence without resetting lifetime counts", async () => {
+  const h = harness({ env: heartbeatEnv });
+  h.healthy(0);
+  heartbeat(h);
+  await h.tick();
+  await h.storage.seed(s => {
+    s.version = 1;
+    s.workflows.notifications = structuredClone(s.workflows.ingest);
+    s.incidents.notifications = { active: true, level: 2, notice: { state: "dead_letter", attempts: 5 } };
+    s.soak.workflows.notifications = { startsObserved: 999 };
+    s.soak.observedActiveMs = 24 * 60 * MINUTE;
+  });
+  h.advance(5);
+  h.healthy(0);
+  heartbeat(h);
+  assert.equal((await h.tick()).ok, true);
+  let status = await h.status();
+  assert.equal(status.ok, true);
+  assert.equal(status.soak.active, true);
+  assert.equal(status.soak.activeSince, h.time);
+  assert.equal(status.soak.observedActiveMs, 0);
+  assert.equal(status.soak.workflows.ingest.startsObserved, 1);
+  assert.equal(status.workflows.ingest.metrics.startsObserved, 2);
+  assert.equal(status.retiredSubjects.notifications.incident.notice.state, "dead_letter");
+  assert.equal(status.incidents.notifications, undefined);
+  assert.equal(status.metrics.recoveries || 0, 0);
+  assert.equal(status.metrics.alertsDelivered || 0, 0);
+  h.advance(5);
+  await h.tick();
+  status = await h.status();
+  assert.equal(status.soak.observedActiveMs, 5 * MINUTE);
+  assert.equal(status.soak.workflows.ingest.startsObserved, 1);
+});
+
+test("dashboard recovery retains historical delivery outcomes without creating receipts", async () => {
+  for (const state of ["pending", "failed", "unknown", "sending", "dead_letter", "sent", "channel_unconfigured"]) {
+    const h = harness({ env: heartbeatEnv });
+    h.healthy(0);
+    heartbeat(h);
+    await h.tick();
+    const notice = { key: "old:warning", kind: "warning", state, attempts: state === "channel_unconfigured" ? 0 : 1,
+      attemptedAt: BASE_TIME, leaseUntil: BASE_TIME };
+    await h.storage.seed(s => {
+      s.version = 1;
+      s.incidents.ingest = { id: "old", active: true, level: 1, since: BASE_TIME, announced: true, notice };
+    });
+    h.advance(5);
+    h.healthy(0);
+    heartbeat(h);
+    await h.tick();
+    const status = await h.status();
+    assert.equal(status.ok, true);
+    assert.equal(status.incidents.ingest.active, false);
+    assert.equal(status.incidents.ingest.recoveredAt, h.time);
+    assert.deepEqual(status.incidents.ingest.previousNotice, notice);
+    assert.equal(status.incidents.ingest.notice, null);
+    assert.equal(status.metrics.alertsDelivered || 0, 0);
+    assert.equal(status.metrics.alertLeasesRecovered || 0, 0);
+    assert.equal(h.alerts().length, 0);
+  }
+});
+
+test("dashboard does not forgive unresolved CT, intel or control incidents", async () => {
+  for (const subject of ["ingest", "intel", "control"]) {
+    const h = harness({ env: heartbeatEnv });
+    h.healthy(0);
+    heartbeat(h);
+    await h.tick();
+    await h.storage.seed(s => {
+      s.incidents[subject] = { active: true, level: 1, notice: { state: "dashboard_only", attempts: 0 } };
+    });
+    assert.equal((await h.status()).ok, false);
+  }
+});
+
+test("mode changes reset observed soak duration and pending delivery blocks only webhook health", async () => {
+  const h = harness({ env: { ...heartbeatEnv, ...webhookEnv } });
+  h.healthy(0);
+  heartbeat(h);
+  await h.tick();
+  await h.storage.seed(s => {
+    s.incidents.ingest = { active: false, notice: { state: "failed", kind: "recovery", attempts: 1 } };
+  });
+  assert.equal((await h.status()).ok, false);
+  delete h.env.ALERT_WEBHOOK_URL;
+  delete h.env.ALERT_WEBHOOK_SECRET;
+  assert.equal((await h.status()).ok, true);
+  assert.equal((await h.status()).soak.active, false);
+  h.advance(5);
+  h.healthy(0);
+  heartbeat(h);
+  await h.tick();
+  const status = await h.status();
+  assert.equal(status.ok, true);
+  assert.equal(status.soak.active, true);
+  assert.equal(status.soak.monitoringMode, "dashboard");
+  assert.equal(status.soak.activeSince, h.time);
+  assert.equal(status.soak.observedActiveMs, 0);
+  assert.equal(status.incidents.ingest.notice.state, "failed");
+  assert.equal(status.metrics.alertsDelivered || 0, 0);
+});
+
+test("dashboard soak still requires direct heartbeat and cannot count unhealthy success snapshots", async () => {
+  const missing = harness();
+  missing.healthy(0);
+  await missing.tick();
+  assert.equal((await missing.status()).ok, true);
+  assert.equal((await missing.status()).soak, null);
+  for (const unhealthy of [{ ok: "false" }, { health: "down" }, { health: "degraded" }]) {
+    const h = harness({ env: heartbeatEnv });
+    h.healthy(0);
+    heartbeat(h);
+    Object.assign(h.heartbeatRows[0], unhealthy);
+    await h.tick();
+    const status = await h.status();
+    assert.equal(status.ok, false);
+    assert.equal(status.soak.workflows.ingest.startsObserved, 1);
+    assert.equal(status.soak.workflows.ingest.successesObserved || 0, 0);
+  }
 });

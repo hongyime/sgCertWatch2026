@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { loadData } from "../lib/data.js";
 import { scoreCertificate } from "../lib/scoring.js";
 import { enrichDomain } from "../lib/domain/enrichment.js";
-import { dispatchNotifications } from "../lib/notify.js";
 import { generateDailyDigest, formatDigestMarkdown } from "../lib/reports/daily-digest.js";
 
 console.log("Starting sgCertWatch End-to-End Pipeline Verification...");
@@ -68,28 +67,7 @@ assert.equal(enrichment.rdap.registrar, "NameSilo", "Extracted registrar");
 
 finding.enrichment = enrichment;
 
-// 4. Multi-channel notification dispatch simulation
-let notifiedChannels = 0;
-const mockNotifyFetch = async (_url) => {
-  notifiedChannels += 1;
-  return Response.json({ ok: true, result: { message_id: 1, chat: { id: 123 } } });
-};
-
-const notifySummary = await dispatchNotifications([finding], {
-  env: {
-    TELEGRAM_BOT_TOKEN: "mock_token",
-    TELEGRAM_CHAT_ID: "mock_chat"
-  },
-  fetch: mockNotifyFetch,
-  skipDedupe: true
-});
-
-assert.equal(notifySummary.candidates, 1, "Finding qualified for alert");
-assert.equal(notifySummary.telegram, 1, "Dispatched to Telegram");
-assert.equal(notifySummary.discord, undefined, "Discord removed per DECISION-01/16R");
-assert.equal(notifiedChannels, 1, "Only Telegram HTTP call completed");
-
-// 5. Daily digest reporting simulation
+// 4. Daily digest reporting simulation; no outbound notification channel is required.
 const digest = generateDailyDigest({
   findings: [finding],
   sourceRuns: [{ source: "direct_ct", scanned_entries: 1000, ok: true }],

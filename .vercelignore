@@ -9,3 +9,5 @@ eval_baseline.json
 supabase/
 plan.html
 scheduler/
+lib/notify.js
+lib/notification-outbox.js
