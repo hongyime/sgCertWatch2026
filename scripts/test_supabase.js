@@ -32,17 +32,27 @@ console.log("Supabase key scoping tests passed.");
 const { upsertFindings, upsertFindingSources } = await import("../lib/supabase.js");
 const originalFetch = globalThis.fetch;
 try {
-  const inputs = Array.from({ length: 451 }, (_, index) => ({ id: `batch-${index}` }));
-  for (const save of [upsertFindings, upsertFindingSources]) {
+  for (const [save, identityColumn] of [[upsertFindings, "id"], [upsertFindingSources, "finding_id"]]) {
+    const inputs = Array.from({ length: 451 }, (_, index) => ({
+      [identityColumn]: `batch-${index}`,
+      details: { evidence: "complete evidence must still be written" }
+    }));
     const sizes = [];
-    globalThis.fetch = async (_url, options) => {
+    const written = [];
+    globalThis.fetch = async (url, options) => {
       const rows = JSON.parse(options.body);
       sizes.push(rows.length);
+      written.push(...rows);
       assert.equal(options.headers.apikey, "service-role-key-67890");
-      return Response.json(rows);
+      assert.equal(options.headers.Prefer, "resolution=merge-duplicates,return=representation");
+      assert.equal(new URL(url).searchParams.get("select"), identityColumn);
+      return Response.json(rows.map((row) => ({ [identityColumn]: row[identityColumn] })));
     };
-    assert.deepEqual(await save(inputs), inputs);
+    assert.deepEqual(await save(inputs), inputs.map((row) => ({ [identityColumn]: row[identityColumn] })));
+    assert.deepEqual(written, inputs, "Limit the response without discarding stored evidence");
     assert.deepEqual(sizes, [200, 200, 51]);
+    assert.deepEqual(await save([]), []);
+    assert.deepEqual(sizes, [200, 200, 51], "Empty batches must not make a request");
     let calls = 0;
     globalThis.fetch = async (_url, options) => ++calls === 2
       ? new Response("database unavailable", { status: 503 }) : Response.json(JSON.parse(options.body));
