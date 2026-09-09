@@ -1,7 +1,9 @@
 {
   "schema_version": 2,
   "deployment_performed": true,
-  "deployment_state": "paused_pending_actions_write_permission",
+  "deployment_state": "active_observation_in_progress",
+  "worker_version": "732da869-4e63-4cbb-9c2c-ebf727c1fc75",
+  "first_active_tick_at": "2026-09-09T00:45:44.188Z",
   "worker_url": "https://sgcertwatch-scheduler.hongyime.workers.dev",
   "worker_name": "sgcertwatch-scheduler",
   "config": "scheduler/wrangler.jsonc",
