@@ -1,5 +1,7 @@
 # Agent Journal
 
+- 2026-09-10: Applied tested index-only migration b5d0568 after hosted run 34468234544 passed 14 PostgreSQL checks and the existing pipeline/browser suites. Production recovered exactly 27,762,688 bytes; all 157,227 findings and 455,108 sightings remained, with unchanged table files, retained indexes, constraints, privileges and policies. Cluster database size is still about 790 MB, above Free allowance; keep larger lossless storage work open.
+
 - 2026-09-10: Prepare removal of only the unused certificate-identity index, with exact-definition/dependency checks, short lock/statement deadlines and a concurrent rebuild rollback. Retain all records and other indexes; this reduction alone cannot satisfy the Free database allowance. Production application and verification remain pending.
 
 - 2026-09-08: Approved free-source enrichment uses OpenPhish, urlscan, URLhaus and ThreatFox only; exact-host expiring evidence affects review priority without mutating CT scores or positive-corpus labels. Persist conservative polling and shared abuse.ch cooldowns across Actions runs.

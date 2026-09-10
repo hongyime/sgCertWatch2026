@@ -31,6 +31,13 @@ as a standalone statement outside a transaction. It rebuilds the index
 concurrently. This is a limited storage saving; retained history continues to
 grow, and it does not by itself bring the database under the Free allowance.
 
+Applied on September 10 at 10:55 UTC after hosted PostgreSQL tests passed:
+27,762,688 bytes recovered, with all 157,227 findings and 455,108 sightings
+present before and after. The application database measured 774.7 MB and the
+cluster database total 790.0 MB immediately afterward; ongoing ingestion changes
+these sizes. Fourteen migration checks cover full synthetic row equality,
+unchanged plans, keys/policies, idempotence, rollback and lock contention.
+
 Validate the seed data and scoring engine:
 
 ```bash

@@ -1,10 +1,15 @@
 # Agent State
 
-Portfolio storage maintenance, 2026-09-10: Preparing a guarded removal of
-`findings_cert_identity_idx` (27,762,688 bytes, zero recorded scans, no dependent
-objects/constraints in the 10:41 UTC aggregate audit). Runtime identity uses the
-finding primary key. No production schema change has been applied yet. Preserve
-all records, evidence, other indexes and the existing scheduler/soak follow-up.
+Portfolio storage maintenance, 2026-09-10: Guarded migration `b5d0568` removed
+`findings_cert_identity_idx` from production and recovered 27,762,688 bytes.
+Live table files, privileges, constraints, RLS policies and retained indexes
+match their pre-migration definitions; finding/sighting counts did not decrease.
+Hosted run `34468234544` passed all 14 PostgreSQL migration checks on 2,500/5,000
+synthetic findings/sightings, plus pipeline and desktop/mobile suites. The local
+Docker bootstrap timed out before SQL; hosted PostgreSQL is the test evidence.
+Runtime identity uses the finding primary key. Preserve all records, evidence,
+other indexes and the existing scheduler/soak follow-up. Storage still exceeds
+the Free allowance; larger lossless representation work remains necessary.
 The read-only management role cannot EXPLAIN the restricted intelligence RPCs;
 both functions exist. Ordinary feed/detail/source plans use retained indexes.
 
