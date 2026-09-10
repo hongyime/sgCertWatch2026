@@ -1,5 +1,7 @@
 # Agent Journal
 
+- 2026-09-10: Prepare removal of only the unused certificate-identity index, with exact-definition/dependency checks, short lock/statement deadlines and a concurrent rebuild rollback. Retain all records and other indexes; this reduction alone cannot satisfy the Free database allowance. Production application and verification remain pending.
+
 - 2026-09-08: Approved free-source enrichment uses OpenPhish, urlscan, URLhaus and ThreatFox only; exact-host expiring evidence affects review priority without mutating CT scores or positive-corpus labels. Persist conservative polling and shared abuse.ch cooldowns across Actions runs.
 - 2026-09-08: Alternate near-threshold (60-69) and existing-alert candidates before the 500-domain enrichment limit; otherwise high-score findings would exclude the domains eligible for evidence-based promotion. Verified 250 near-threshold candidates live.
 - 2026-09-08: Measured CT budget settled at 6 direct logs x 128 entries, 30 static tiles/log and 90 seconds; persist in 200-row batches with 30-second background write limits. Successful live run checked 58,109 entries and saved 2,536 findings in six minutes. Public read timeouts remain short.

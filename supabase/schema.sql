@@ -29,7 +29,8 @@ create index if not exists findings_severity_idx on public.findings (severity);
 create index if not exists findings_registrable_idx on public.findings (registrable);
 create index if not exists findings_matched_brands_idx on public.findings using gin (matched_brands);
 create index if not exists findings_matched_schemes_idx on public.findings using gin (matched_schemes);
-create index if not exists findings_cert_identity_idx on public.findings (cert_issuer_dn_sha256, cert_serial);
+-- Identity is computed by the scorer and queried through findings_pkey (id).
+-- Existing databases: apply index-cleanup.sql after reviewing current usage.
 
 
 alter table public.findings enable row level security;

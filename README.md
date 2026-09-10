@@ -15,6 +15,22 @@ sgCertWatch2026 is a Singapore-focused Certificate Transparency monitoring dashb
 - `.github/workflows/ingest.yml` polls CT sources on GitHub Actions with a 15-minute target.
 ## Usage
 
+### Database storage maintenance
+
+New databases use `supabase/schema.sql`. Existing databases can apply
+`supabase/index-cleanup.sql` to remove the unused certificate-identity index
+after reviewing current query usage. The September 10 audit found zero scans,
+no dependent constraints/objects, and no identity-column lookup in the runtime.
+The scanner computes the finding ID and upserts through its primary key.
+The migration checks the exact index definition, aborts if it has changed, and
+uses a one-second lock timeout and five-second statement timeout. It preserves
+all findings, sightings, evidence, keys, policies and other indexes.
+
+If a future identity lookup needs it, run `supabase/index-cleanup-rollback.sql`
+as a standalone statement outside a transaction. It rebuilds the index
+concurrently. This is a limited storage saving; retained history continues to
+grow, and it does not by itself bring the database under the Free allowance.
+
 Validate the seed data and scoring engine:
 
 ```bash

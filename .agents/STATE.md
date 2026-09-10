@@ -1,5 +1,13 @@
 # Agent State
 
+Portfolio storage maintenance, 2026-09-10: Preparing a guarded removal of
+`findings_cert_identity_idx` (27,762,688 bytes, zero recorded scans, no dependent
+objects/constraints in the 10:41 UTC aggregate audit). Runtime identity uses the
+finding primary key. No production schema change has been applied yet. Preserve
+all records, evidence, other indexes and the existing scheduler/soak follow-up.
+The read-only management role cannot EXPLAIN the restricted intelligence RPCs;
+both functions exist. Ordinary feed/detail/source plans use retained indexes.
+
 Current task: Organization-targeted scheduler is operational; first real Cloudflare CT scan is verified end to end. Real observation started 2026-09-09T00:45:44.188Z. Observe the first due hourly intel dispatch and verify the full measured day after 2026-09-10T00:51Z. Telegram remains removed.
 
 Current evidence and next steps:

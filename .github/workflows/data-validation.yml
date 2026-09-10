@@ -12,6 +12,7 @@ on:
       - "scripts/test_*.js"
       - "scripts/test_*.mjs"
       - "scripts/test_*.sql"
+      - "scripts/test_*.py"
       - "scripts/verify_*.mjs"
       - "scripts/test_intel*"
       - "app.js"
@@ -40,6 +41,7 @@ on:
       - "scripts/test_*.js"
       - "scripts/test_*.mjs"
       - "scripts/test_*.sql"
+      - "scripts/test_*.py"
       - "scripts/verify_*.mjs"
       - "scripts/test_intel*"
       - "app.js"
@@ -123,6 +125,11 @@ jobs:
         env:
           OUTBOX_TEST_DATABASE_URL: postgres://postgres:local-test-only@127.0.0.1:5432/notification_outbox_test
         run: node scripts/test_run_lock_postgres.mjs
+
+      - name: Test lossless index maintenance
+        env:
+          INDEX_TEST_DATABASE_URL: postgres://postgres:local-test-only@127.0.0.1:5432/notification_outbox_test
+        run: python scripts/test_index_cleanup.py
 
       - name: Install browser for dashboard verification
         run: npx playwright install --with-deps chromium
