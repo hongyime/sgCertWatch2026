@@ -6,10 +6,19 @@ import { join } from "node:path";
 import { chromium } from "playwright";
 
 const root = new URL("../", import.meta.url);
-const assets = new Set(["index.html", "app.js", "styles.css", "favicon.svg", "watchlist.json", "keywords.json", "allowlist.json", "schemes.json"]);
+const assets = new Set(["index.html", "app.js", "refresh.js", "styles.css", "favicon.svg", "watchlist.json", "keywords.json", "allowlist.json", "schemes.json"]);
 const mime = { html: "text/html", js: "text/javascript", css: "text/css", json: "application/json", svg: "image/svg+xml" };
+let streamFindings = false;
+const pendingResponses = new Set();
 const server = createServer(async (request, response) => {
   const name = new URL(request.url, "http://localhost").pathname.slice(1) || "index.html";
+  if (name === "api/findings" && streamFindings) {
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.write('{"findings":[');
+    pendingResponses.add(response);
+    response.once("close", () => pendingResponses.delete(response));
+    return;
+  }
   if (!assets.has(name)) return response.writeHead(404).end();
   try {
     const data = await readFile(new URL(name, root));
@@ -123,6 +132,8 @@ try {
     let currentHealth = sourcePayload;
     let failFindings = false;
     let failStatus = false;
+    let failWatchlist = false;
+    let statusRequests = 0;
     let holdWatch = false;
     let heldRoute;
     let notifyHeldWatch;
@@ -139,6 +150,7 @@ try {
       }
       if (url.pathname === "/api/findings") {
         requests.push(url);
+        if (streamFindings) return route.continue();
         if (holdWatch && url.searchParams.get("view") === "watch") {
           heldRoute = route;
           notifyHeldWatch();
@@ -148,8 +160,11 @@ try {
         const findings = url.searchParams.get("view") === "watch" ? watchFindings : currentFindings;
         return route.fulfill({ json: { storage_configured: true, findings } });
       }
-      if (url.pathname === "/api/source-status") return failStatus
-        ? route.fulfill({ status: 503, body: "Unavailable" }) : route.fulfill({ json: currentHealth });
+      if (url.pathname === "/api/source-status") {
+        statusRequests++;
+        return failStatus ? route.fulfill({ status: 503, body: "Unavailable" }) : route.fulfill({ json: currentHealth });
+      }
+      if (url.pathname === "/watchlist.json" && failWatchlist) return route.fulfill({ status: 503, body: "Unavailable" });
       return route.continue();
     });
     const cards = page.locator("#finding-list [data-finding-index]");
@@ -171,6 +186,21 @@ try {
 
     await page.goto(base);
     await waitForFeed();
+    await page.waitForFunction(() => document.getElementById("ct-scheduler").textContent !== "Checking");
+    const beforeHidden = [requests.length, statusRequests];
+    await page.evaluate(() => {
+      window.testHidden = true;
+      Object.defineProperty(document, "hidden", { configurable: true, get: () => window.testHidden });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await page.clock.fastForward(3600000);
+    assert.deepEqual([requests.length, statusRequests], beforeHidden, "Hidden tabs make no scheduled API reads");
+    const returnedFeed = page.waitForResponse((r) => r.url().includes("/api/findings?"));
+    const returnedStatus = page.waitForResponse((r) => r.url().endsWith("/api/source-status"));
+    await page.evaluate(() => { window.testHidden = false; document.dispatchEvent(new Event("visibilitychange")); });
+    await Promise.all([returnedFeed, returnedStatus]);
+    await waitForFeed();
+    assert.deepEqual([requests.length, statusRequests], beforeHidden.map((n) => n + 1), "Returning refreshes both panels once");
     assert.equal(await page.locator('.view.active').getAttribute('data-view-panel'), "alerts");
     assert.equal(await page.locator('.view.active h2').first().innerText(), "Domains to watch now");
     assert.equal(await page.locator('.monitor-operations').isVisible(), false);
@@ -272,10 +302,10 @@ try {
     await page.selectOption("#severity-filter", "watch");
     await heldWatchReady;
     assert.ok(heldRoute, "Watch request held for out-of-order response test");
+    const cancelledWatch = page.waitForEvent("requestfailed", (request) => request.url().endsWith("&view=watch"));
     await switchFilter("");
-    const staleResponse = page.waitForResponse((response) => response.url().endsWith("&view=watch"));
+    assert.match((await cancelledWatch).failure().errorText, /abort/i);
     await heldRoute.fulfill({ json: { storage_configured: true, findings: [promoted] } });
-    await staleResponse;
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     assert.equal(await cards.count(), 5, "Older Watch response cannot replace All stored findings");
     holdWatch = false;
@@ -293,7 +323,7 @@ try {
 
     holdWatch = true;
     const refreshReady = new Promise((resolve) => { notifyHeldWatch = resolve; });
-    await page.clock.fastForward(60000);
+    await page.clock.fastForward(120000);
     await refreshReady;
     await page.fill("#finding-search", "baseline");
     assert.equal(await cards.count(), 1, "Search remains usable during an automatic refresh");
@@ -395,14 +425,41 @@ try {
     assert.equal(await page.locator("#ct-freshness").innerText(), "No successful scan reported");
     await checkNoNotifications(page);
     await checkLayout(page);
+    // A stalled body must expire too, then recover using the failure backoff.
+    streamFindings = true;
+    const streamingHeaders = page.waitForResponse((response) => response.url().includes("/api/findings?"));
+    await page.reload();
+    await streamingHeaders;
+    await page.clock.fastForward(15000);
+    await page.locator("#finding-list").filter({ hasText: "Could not load alerts" }).waitFor();
+    assert.equal(await page.locator("#export-json-btn").isDisabled(), true);
+    streamFindings = false;
+    await page.clock.fastForward(240000);
+    await waitForFeed();
+    await cards.first().waitFor();
+    assert.equal(await page.locator("#feed-health").innerText(), "Live database connected");
+
+    // Static data failures must not prevent live feed or operational reads.
+    failWatchlist = true;
+    currentHealth = sourcePayload;
+    await page.reload();
+    await page.locator("#data-status").filter({ hasText: "Failed to load /watchlist.json" }).waitFor();
+    await waitForFeed();
+    await cards.first().waitFor();
+    await page.waitForFunction(() => document.getElementById("ct-scheduler").textContent !== "Checking");
+    assert.equal(await page.locator("#feed-health").innerText(), "Live database connected");
+    assert.notEqual(await page.locator("#ct-last-success").innerText(), "Not reported");
+    failWatchlist = false;
     assert.deepEqual(externalRequests, [], "Rendering never requests a suspected host or provider screenshot");
     assert.deepEqual(notificationRequests, [], "Monitoring never requests a notification worker or queue API");
     assert.deepEqual(errors, []);
     await context.close();
-    console.log(`PASS intel UI at ${width}px: priority, filters, response race, evidence safety, Monitor freshness/running/scheduler/lag, legacy notification isolation, refresh and layout`);
+    console.log(`PASS intel UI at ${width}px: priority, filters, cancelled stale response, evidence safety, Monitor, hidden/return refresh, stalled body deadline/recovery, static-data failure isolation and layout`);
   }
   console.log(`Screenshots: ${screenshots}`);
 } finally {
   await browser?.close();
+  for (const response of pendingResponses) response.destroy();
+  server.closeAllConnections();
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 }

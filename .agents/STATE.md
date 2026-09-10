@@ -1,5 +1,17 @@
 # Agent State
 
+Portfolio refresh maintenance, 2026-09-11: the dashboard now uses two-minute
+findings / one-minute operational display refreshes, hidden-tab pause, one active
+request per panel, a 15-second body deadline and failure backoff up to ten minutes.
+Filter changes cancel stale work; static-data failures cannot block live reads.
+Seven timer/concurrency tests, the full local unit pipeline and desktop/mobile
+browser flows pass, including real stalled-body cancellation and recovery.
+The hidden-tab regression fails against the earlier dashboard. Collector
+schedules, records and existing soak follow-ups are preserved. Production
+verification must match this source change; local checks do not establish it.
+Fresh aggregate storage remains above the Free limit. The local sighting-bundle
+benchmark hit a Docker command timeout, so no normalization savings are claimed.
+
 Portfolio storage maintenance, 2026-09-10: Guarded migration `b5d0568` removed
 `findings_cert_identity_idx` from production and recovered 27,762,688 bytes.
 Live table files, privileges, constraints, RLS policies and retained indexes

@@ -15,6 +15,21 @@ sgCertWatch2026 is a Singapore-focused Certificate Transparency monitoring dashb
 - `.github/workflows/ingest.yml` polls CT sources on GitHub Actions with a 15-minute target.
 ## Usage
 
+### Dashboard refresh
+
+The findings display refreshes two minutes after each completed check; operational
+status refreshes after one minute. Hidden tabs pause both loops and cancel active
+reads. Returning to the tab refreshes immediately, and filter changes replace the
+previous findings request. Each panel has at most one active request, a 15-second
+deadline covering the response body, and failure backoff capped at ten minutes.
+The live feed loads independently of the static watch-list files.
+
+These are display intervals. CT/intelligence collection, cursor advancement and
+stored history follow the existing scheduler. A continuously visible tab makes
+up to 30 scheduled findings checks per hour instead of 60, plus initial, return
+and filter-triggered checks; caching and API fan-out affect actual resource use.
+Monthly egress and cost savings have not been measured.
+
 ### Database storage maintenance
 
 New databases use `supabase/schema.sql`. Existing databases can apply

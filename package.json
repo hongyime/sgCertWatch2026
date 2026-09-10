@@ -7,7 +7,7 @@
     "validate": "python scripts/validate_data.py --release",
     "test:intel": "node scripts/test_intel.js && node scripts/test_intel_storage.js",
     "test:reliability": "node scripts/test_run_lock.js && node scripts/test_direct_resilience.js && node scripts/test_intel_runner.js && node scripts/test_notification_outbox.js && node scripts/test_telegram_retirement.js && node scripts/test_soak.js && node --test scheduler/tests/*.test.mjs",
-    "test:unit": "node scripts/test_scoring.js && node scripts/test_ct_sources.js && node scripts/test_crtsh_resilience.js && node scripts/test_ingest_resilience.js && node scripts/test_static_resilience.js && node scripts/test_supabase.js && node scripts/test_auth.js && node scripts/test_registrable.js && node scripts/test_homoglyphs.js && node scripts/test_edit_distance.js && node scripts/test_cert_signals.js && node scripts/test_enrichment.js && node scripts/test_notify.js && node scripts/test_digest.js && node scripts/test_triage.js && node scripts/test_e2e.js",
+    "test:unit": "node scripts/test_scoring.js && node scripts/test_ct_sources.js && node scripts/test_crtsh_resilience.js && node scripts/test_ingest_resilience.js && node scripts/test_static_resilience.js && node scripts/test_supabase.js && node scripts/test_auth.js && node scripts/test_registrable.js && node scripts/test_homoglyphs.js && node scripts/test_edit_distance.js && node scripts/test_cert_signals.js && node scripts/test_enrichment.js && node scripts/test_notify.js && node scripts/test_digest.js && node scripts/test_triage.js && node scripts/test_e2e.js && node --test scripts/test_refresh.js",
     "eval": "node scripts/eval.js",
     "eval:extended": "node scripts/eval_extended_negatives.mjs"
   },

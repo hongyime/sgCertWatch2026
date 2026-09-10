@@ -1,3 +1,5 @@
+import { visiblePoller } from "./refresh.js";
+
 const files = {
   watchlist: "/watchlist.json",
   keywords: "/keywords.json",
@@ -444,7 +446,7 @@ function renderFindingList() {
     : '<li class="watch-card finding-card"><div class="watch-card-head"><strong>No matching findings</strong><span class="review-badge ok">clear</span></div><p>No alerts match current search/filter criteria.</p></li>';
 }
 
-async function renderFindings() {
+async function renderFindings(signal) {
   const request = ++state.findingsRequest;
   const view = state.findingSeverity === "watch" ? "&view=watch" : "";
   state.feedLoading = true;
@@ -453,11 +455,12 @@ async function renderFindings() {
   $("export-json-btn").disabled = true;
   $("export-csv-btn").disabled = true;
   try {
-    const response = await fetch(`/api/findings?limit=50${view}`);
+    const response = await fetch(`/api/findings?limit=50${view}`, { signal });
     if (!response.ok) throw new Error("Feed unavailable");
     const payload = await response.json();
+    signal.throwIfAborted();
     // A slow response from an earlier filter must not replace the current view.
-    if (request !== state.findingsRequest) return;
+    if (request !== state.findingsRequest) return false;
     const findings = Array.isArray(payload.findings) ? payload.findings : [];
     state.findings = findings;
     state.feedConfigured = Boolean(payload.storage_configured);
@@ -467,8 +470,9 @@ async function renderFindings() {
     $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
 
     renderFindingList();
+    return true;
   } catch (error) {
-    if (request !== state.findingsRequest) return;
+    if (request !== state.findingsRequest || (signal.aborted && signal.reason?.name !== "TimeoutError")) return false;
     state.findings = [];
     state.feedLoading = false;
     state.feedError = true;
@@ -476,8 +480,10 @@ async function renderFindings() {
     $("feed-health").textContent = "Feed check failed";
     $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
     $("finding-list").innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>Could not load alerts</strong><span class="review-badge">unavailable</span></div><p>The findings API did not respond on this page load. The next automatic refresh will check again.</p></li>';
+    return false;
   } finally {
     if (request === state.findingsRequest) {
+      state.feedLoading = false;
       $("finding-list").setAttribute("aria-busy", "false");
       $("export-json-btn").disabled = state.feedError;
       $("export-csv-btn").disabled = state.feedError;
@@ -558,11 +564,12 @@ function renderMonitorOperations(source, unavailable = false) {
   $("ct-run").textContent = [operations.run_id, operations.trigger].filter(Boolean).join(" / ") || "Not reported";
 }
 
-async function renderSourceStatus() {
+async function renderSourceStatus(signal) {
   try {
-    const response = await fetch(CT_SOURCE_STATUS_URL);
+    const response = await fetch(CT_SOURCE_STATUS_URL, { signal });
     if (!response.ok) throw new Error("source check failed");
     const status = await response.json();
+    signal.throwIfAborted();
 
     const source = status.status && typeof status.status === "object" ? status.status : status;
     const sources = (source.display_sources || source.sources || []).filter((item) => !Object.hasOwn(INTEL_SOURCES, item.source));
@@ -611,13 +618,16 @@ async function renderSourceStatus() {
       `;
       }).join("")
       : '<div class="source-row"><span>Waiting for first scan</span><strong>pending</strong><small>No CT scan details reported</small></div>';
+    return true;
   } catch (_error) {
+    if (signal.aborted && signal.reason?.name !== "TimeoutError") return false;
     renderMonitorOperations({}, true);
     $("source-status").dataset.level = "unknown";
     $("source-status").textContent = "scan status unknown";
     $("source-list").innerHTML = '<div class="source-row bad"><span>Status API</span><strong>unavailable</strong><small>Could not load source health</small></div>';
     $("intel-schedule").textContent = "Intel schedule unavailable";
     $("intel-source-list").innerHTML = '<div class="source-row bad"><span>Intel status API</span><strong>unavailable</strong><small>Could not load intel source health</small></div>';
+    return false;
   }
 }
 
@@ -749,8 +759,6 @@ async function loadData() {
     state.data = Object.fromEntries(entries);
     renderSummary();
     render();
-    renderFindings();
-    renderSourceStatus();
   } catch (error) {
     $("data-status").textContent = error.message;
     $("data-status").classList.add("error");
@@ -777,7 +785,7 @@ $("severity-filter").addEventListener("change", (event) => {
   state.findings = [];
   $("feed-status").textContent = "Loading feed";
   $("finding-list").innerHTML = '<li class="watch-card finding-card">Loading findings</li>';
-  renderFindings();
+  findingsPoller.refresh();
 });
 
 $("export-json-btn").addEventListener("click", exportFindingsJson);
@@ -811,8 +819,10 @@ document.querySelectorAll("[data-dataset]").forEach((element) => {
 });
 
 loadData();
-setInterval(renderFindings, 60000);
-setInterval(renderSourceStatus, 60000);
+const findingsPoller = visiblePoller(renderFindings, 120000);
+const statusPoller = visiblePoller(renderSourceStatus, 60000);
+findingsPoller.refresh();
+statusPoller.refresh();
 
 document.querySelectorAll("[data-view]").forEach((button) => {
   button.addEventListener("click", () => setView(button.dataset.view));
