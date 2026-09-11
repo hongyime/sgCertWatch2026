@@ -53,7 +53,7 @@ create table if not exists public.finding_sources (
   primary key (finding_id, source, source_ref)
 );
 
-create index if not exists finding_sources_finding_id_idx on public.finding_sources (finding_id);
+-- finding_sources_pkey already supports finding_id equality lookups.
 create index if not exists finding_sources_source_idx on public.finding_sources (source);
 create index if not exists finding_sources_observed_at_idx on public.finding_sources (observed_at desc);
 
