@@ -6,7 +6,14 @@ finding_id lookups. All 22 local PostgreSQL checks pass on 5,000 synthetic
 findings and 15,000 sightings: all fields, grants, RLS, constraints and table
 files survive; upserts, foreign keys, rollback and lock deadlines work. Source
 detail/batch lookups use the primary key with one extra index-page read per
-lookup in this fixture. Production index is about 20 MB; release is pending.
+lookup in this fixture. Hosted CI 34552640884 passed the 22 source-index checks
+plus 14 identity-index checks and the full pipeline/browser suites. Applied at
+02:02 UTC: 20,013,056 bytes recovered; all 192,699 findings and 576,075 sightings
+remained present, with table files, grants, RLS, constraints and retained indexes
+unchanged. Live source lookups use the primary key. The database remains
+933.8 MB (949.1 MB across databases) and continues growing. Reasserting GitHub
+dependency-graph/alerts enablement resolved the unrelated dependency-review 403;
+retry 34552640880 attempt 2 passed. Repository release is tracked in PR #13.
 The completed bounded bundle experiment preserved all fields but an optimistic
 09:42 layout extrapolation still leaves about 658 MB. Keep larger lossless
 storage design and collection-capacity decisions open; do not delete evidence

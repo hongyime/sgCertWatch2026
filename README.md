@@ -42,7 +42,11 @@ permissions, rollback and failure guards. The fixture required one extra index
 page per source lookup; production cache pressure can differ. If needed, run
 `supabase/source-index-cleanup-rollback.sql` outside a transaction to restore the
 lookup index concurrently. This approximately 20 MB saving is only partial;
-retained-data growth still exceeds the Free capacity.
+retained-data growth still exceeds the Free capacity. Applied September 11 at
+02:02 UTC: 20,013,056 bytes recovered, with all 192,699 findings and 576,075
+sightings present before and after. Production source lookups use the retained
+primary key. The database measured 933.8 MB (949.1 MB across all databases)
+immediately afterward; these are point-in-time sizes, excluding WAL and monthly usage.
 
 New databases use `supabase/schema.sql`. Existing databases can apply
 `supabase/index-cleanup.sql` to remove the unused certificate-identity index
