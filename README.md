@@ -32,6 +32,18 @@ Monthly egress and cost savings have not been measured.
 
 ### Database storage maintenance
 
+`supabase/source-index-cleanup.sql` separately removes the overlapping
+`finding_sources_finding_id_idx`. The source primary key starts with finding_id
+and supports the same equality lookups. The migration locks briefly, verifies
+both exact index definitions and the primary-key constraint, and aborts on
+drift or contention. It changes no records or permissions. The 22-check synthetic
+PostgreSQL suite covers preservation, indexed reads, upserts, foreign keys,
+permissions, rollback and failure guards. The fixture required one extra index
+page per source lookup; production cache pressure can differ. If needed, run
+`supabase/source-index-cleanup-rollback.sql` outside a transaction to restore the
+lookup index concurrently. This approximately 20 MB saving is only partial;
+retained-data growth still exceeds the Free capacity.
+
 New databases use `supabase/schema.sql`. Existing databases can apply
 `supabase/index-cleanup.sql` to remove the unused certificate-identity index
 after reviewing current query usage. The September 10 audit found zero scans,

@@ -1,5 +1,17 @@
 # Agent State
 
+Portfolio source-index maintenance, 2026-09-11: `source-index-cleanup.sql` removes
+only finding_sources_finding_id_idx when its exact valid primary key can cover
+finding_id lookups. All 22 local PostgreSQL checks pass on 5,000 synthetic
+findings and 15,000 sightings: all fields, grants, RLS, constraints and table
+files survive; upserts, foreign keys, rollback and lock deadlines work. Source
+detail/batch lookups use the primary key with one extra index-page read per
+lookup in this fixture. Production index is about 20 MB; release is pending.
+The completed bounded bundle experiment preserved all fields but an optimistic
+09:42 layout extrapolation still leaves about 658 MB. Keep larger lossless
+storage design and collection-capacity decisions open; do not delete evidence
+or change collector scheduling. Existing local edits and soak work are separate.
+
 Portfolio refresh maintenance, 2026-09-11: the dashboard now uses two-minute
 findings / one-minute operational display refreshes, hidden-tab pause, one active
 request per panel, a 15-second body deadline and failure backoff up to ten minutes.
