@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { test } from "node:test";
 import pg from "pg";
 import { EvidenceRepository } from "../lib/storage/evidence-repository.js";
@@ -11,6 +12,20 @@ const target = new URL(connectionString);
 if (!["127.0.0.1", "localhost", "[::1]"].includes(target.hostname)
     || !/^\/prawn_evidence_fixture_[a-z0-9]+$/.test(target.pathname)) {
   throw new Error("Refusing database outside the disposable loopback fixture scope");
+}
+let serverAddresses = ["127.0.0.1", "::1"];
+if (process.env.GITHUB_ACTIONS === "true") {
+  // A loopback port published by Actions reaches the service's bridge address.
+  // Bind the exception to the exact Actions-owned container, not a broad private
+  // IP range or a user-supplied address. This inspects an existing CI service.
+  const containerId = process.env.EVIDENCE_TEST_CONTAINER_ID;
+  assert(/^[a-f0-9]{64}$/.test(containerId), "Expected the Actions fixture container ID");
+  const [container] = JSON.parse(execFileSync("docker", ["inspect", containerId], { encoding: "utf8" }));
+  assert.equal(container.Id, containerId);
+  assert(container.Config.Env.includes("POSTGRES_DB=" + target.pathname.slice(1)));
+  assert.equal(container.Config.Image, "postgres:17.11");
+  serverAddresses = Object.values(container.NetworkSettings.Networks).map(network => network.IPAddress).filter(Boolean);
+  assert(serverAddresses.length > 0);
 }
 const pool = new pg.Pool({ connectionString, max: 4, connectionTimeoutMillis: 5000, statement_timeout: 8000 });
 const bytes = (value) => Buffer.from(JSON.stringify(value));
@@ -65,7 +80,7 @@ async function seed(id) {
 await test("PostgreSQL evidence manifest contract", { timeout: 60000 }, async (t) => {
   try {
     const identity = (await pool.query("select current_database() as db,inet_server_addr()::text as address,current_setting('server_version') as version")).rows[0];
-    assert.equal(identity.db, target.pathname.slice(1)); assert(["127.0.0.1/32", "127.0.0.1", "::1/128", "::1"].includes(identity.address));
+    assert.equal(identity.db, target.pathname.slice(1)); assert(serverAddresses.includes(identity.address.split("/")[0]));
     assert.equal((await pool.query("select to_regclass('public.findings') as existing")).rows[0].existing, null, "Fixture database must be empty");
     for (const role of ["anon", "authenticated", "service_role"]) {
       if (!(await pool.query("select 1 from pg_roles where rolname=$1", [role])).rowCount) {
