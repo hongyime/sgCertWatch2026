@@ -133,6 +133,33 @@ Feed results are matched locally against up to 500 distinct stored, unsuppressed
 
 Expiring observations live in `intel_evidence`. The CT score and training corpus remain unchanged. A fresh OpenPhish hit, online URLhaus report, ThreatFox confidence >=75, or explicit urlscan phishing/malware verdict adds at most 10 review-priority points when the CT score is >=60. An ordinary urlscan sighting adds context only. The Domains view uses review priority for Watch now; evidence details link to provider reports. Monitor displays intelligence health separately from CT health.
 
+## Experimental evidence storage
+
+`lib/storage/` prepares a lossless representation for findings and private source
+sightings. It stores original JSON bytes in bounded, checksummed frames and
+publishes immutable object pointers only after upload verification. Complete
+source identity tuples and optimistic database revisions protect concurrent
+updates. Unchanged findings are not uploaded again for source-only updates.
+
+Packed objects must remain private. The public reader first obtains manifests
+through the anonymous database role and RLS, then returns only authorized finding
+frames. A page downloads each required packed object once; private sightings,
+suppressed findings and sibling frames are not returned. No object URLs or service
+credentials are exposed to clients.
+
+This adapter is not connected to production. The SQL under
+`supabase/experimental/` is for an isolated fixture database, not an installation
+step. Existing feed/watch/intel, triage and capture contracts, ingestion timestamps,
+lease fencing, real Storage behavior, full-data sizing, migration space, growth,
+orphan cleanup and rollback must be verified before switching representations.
+The earlier packed-size projection does not establish production free-tier fit.
+
+Run `node --test scripts/test_evidence_objects.mjs` for offline transport/frame
+tests. PostgreSQL checks require a fresh loopback database whose name starts with
+`prawn_evidence_fixture_`, supplied through `EVIDENCE_TEST_DATABASE_URL`; run
+`node --test scripts/test_evidence_postgres.mjs`. The dedicated workflow runs these
+checks on Node 20/24 and PostgreSQL 17.11 without production credentials.
+
 ## Licence
 
 This repository is licensed under Apache-2.0. See `LICENSE` and `NOTICE` for details.
