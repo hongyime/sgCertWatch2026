@@ -12,6 +12,7 @@ declare
   originals jsonb := '{}'; original_texts jsonb := '{}'; seen jsonb := '{}'; key_value text; column_name text;
   attribute record; constraint_row record; default_value jsonb; invalid boolean; duplicate_original boolean;
   output text[] := '{}';
+  batch_columns text[]; input_columns text[];
 begin
   if p_kind = 'finding' then relation := 'public.findings'::regclass; keys := array['id'];
   elsif p_kind = 'source' then relation := 'public.finding_sources'::regclass; keys := array['finding_id','source','source_ref'];
@@ -66,6 +67,14 @@ begin
     patch := input_text::jsonb;
     if jsonb_typeof(patch) is distinct from 'object' then
       raise exception 'Expected an evidence row object' using errcode = '22023';
+    end if;
+    -- Production PostgREST bulk upserts require identical column sets. Treat
+    -- missing fields consistently across the batch; JSON key order is irrelevant.
+    select coalesce(array_agg(k order by k), '{}'::text[]) into input_columns
+      from jsonb_object_keys(patch) k;
+    if batch_columns is null then batch_columns := input_columns;
+    elsif input_columns <> batch_columns then
+      raise exception 'Evidence bulk rows require identical columns' using errcode = '22023';
     end if;
     if exists (select 1 from jsonb_object_keys(patch) k where not k = any(columns)) then
       raise exception 'Unknown evidence column' using errcode = '42703';
