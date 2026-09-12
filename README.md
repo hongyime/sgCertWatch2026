@@ -133,6 +133,97 @@ Feed results are matched locally against up to 500 distinct stored, unsuppressed
 
 Expiring observations live in `intel_evidence`. The CT score and training corpus remain unchanged. A fresh OpenPhish hit, online URLhaus report, ThreatFox confidence >=75, or explicit urlscan phishing/malware verdict adds at most 10 review-priority points when the CT score is >=60. An ordinary urlscan sighting adds context only. The Domains view uses review priority for Watch now; evidence details link to provider reports. Monitor displays intelligence health separately from CT health.
 
+## Experimental evidence storage
+
+`lib/storage/` prepares a lossless representation for findings and private source
+sightings. It stores original JSON bytes in bounded, checksummed frames and
+publishes immutable object pointers only after upload verification. Complete
+source identity tuples and optimistic database revisions protect concurrent
+updates. Unchanged findings are not uploaded again for source-only updates.
+
+Manifest pointers use 40 binary bytes: the complete 32-byte SHA-256 digest,
+then big-endian four-byte offset and length. Finding IDs remain their original
+strings. SQL and REST clients reconstruct the same object/offset/length shape;
+source pointers remain private. Invalid lengths, bounds and unrecognized JSON
+pointer fields fail before publication instead of silently losing metadata.
+
+`publishBatch` groups at most 200 complete finding/source snapshots, with a
+combined four-MiB raw-byte budget, into shared immutable objects. One service-only
+RPC publishes their pointers in a consistent lock order. Revision conflicts are
+reported for each finding; a validation or visibility error rolls back the
+entire RPC. Callers must resolve every conflict before advancing collection
+cursors. In the 200-finding synthetic fixture, grouping changes 400 object uploads
+to two and 200 publication calls to one, while a 100-finding public page downloads
+one packed object. These counts depend on record sizes; they are not production
+usage or savings measurements.
+
+Packed objects must remain private. The public reader first obtains manifests
+through the anonymous database role and RLS, then returns only authorized finding
+frames. A page downloads each required packed object once; private sightings,
+suppressed findings and sibling frames are not returned. No object URLs or service
+credentials are exposed to clients.
+
+This adapter is not connected to production. The SQL under
+`supabase/experimental/` is for an isolated fixture database, not an installation
+step. Existing feed/watch/intel, triage and capture contracts, ingestion timestamps,
+lease fencing, real Storage behavior, full-data sizing, migration space, growth,
+orphan cleanup and rollback must be verified before switching representations.
+The earlier packed-size projection does not establish production free-tier fit.
+
+Run `node --test scripts/test_evidence_objects.mjs` for offline transport/frame
+tests. PostgreSQL checks require a fresh loopback database whose name starts with
+`prawn_evidence_fixture_`, supplied through `EVIDENCE_TEST_DATABASE_URL`; run
+`node --test scripts/test_evidence_postgres.mjs`. The dedicated workflow runs these
+checks on Node 20/24 and PostgreSQL 17.11 without production credentials.
+
+`upsertSourceRows` accepts the partial source payloads used by ingestion. Its
+service-only `prepare_evidence_rows` RPC applies the current PostgreSQL column
+types/defaults before publication, preserving omitted stored fields and original
+`created_at` values. Existing rows and results travel as JSON text, so large JSONB
+numbers and microsecond timestamps do not pass through JavaScript serialization.
+Conflicts reload the winning snapshot and normalize again; identical updates
+reuse the original bytes and publish nothing. Empty source names/references are
+retained as distinct SQL key values. Complete-snapshot `upsertSources` remains
+available for fixtures and migration preparation.
+
+Run `node --test scripts/test_evidence_rows.mjs` with
+`EVIDENCE_ROWS_DATABASE_URL` pointing to a separate fresh loopback fixture
+database named `prawn_evidence_fixture_*`. These differential tests compare with
+native PostgreSQL `INSERT ... ON CONFLICT`, not a live PostgREST HTTP server.
+The workflow also checks concurrent partial writes through the real manifest
+RPC. A local 10,000-source fixture exposed quadratic map rebuilding; one SQL
+aggregate completed normalization in 785 ms under the eight-second statement
+deadline. This synthetic timing is not a production capacity or billing result.
+
+The reviewed boundary is the current schema and ingestion payloads: at most 200
+incoming rows, 10,000 existing sources, and a 4 MiB transport budget. Finding IDs
+must still be nonempty and all identity components are byte-bounded. Generated
+or identity columns are rejected; arbitrary future defaults and schema changes
+need a new contract review. Finding-writer, search, capture, intel and triage
+integration, database lease fencing, oversized-row handling and the full storage
+migration remain open. No production writer imports this experimental adapter.
+
 ## Licence
 
 This repository is licensed under Apache-2.0. See `LICENSE` and `NOTICE` for details.
+
+For the isolated storage contract, run `node --test scripts/test_evidence_objects.mjs`
+and `node --test scripts/test_evidence_postgres.mjs`. The latter requires an owned
+loopback fixture database; the workflow supplies one. Afterwards,
+`node scripts/test_evidence_metadata.mjs` compares physical JSONB and binary
+manifest tables, including primary keys, using synthetic data only. It defaults
+to 2,000 rows; `EVIDENCE_METADATA_ROWS` accepts up to 1,000,000. A terminally
+interrupted measurement can resume its existing fixture with
+`EVIDENCE_METADATA_RESUME=1`; it verifies the final row equality before reporting.
+Do not target a production database. This component measurement excludes parent
+findings, evidence objects, Storage metadata, query indexes, versions, orphans,
+bloat and migration peak space, so it does not establish whole-project Free fit.
+
+The 2026-09-12 local PostgreSQL 17.11 comparison contains 300,000 synthetic
+manifests with both pointers present. Compact tables plus primary keys occupy
+72,949,760 bytes versus 129,744,896 bytes for JSONB: 56,795,136 bytes (43.77%)
+less, with all 300,000 pointer pairs equal after decoding. The initial four-minute
+measurement process ended after populating the tables; its preserved fixture
+was resumed to complete equality and size checks. The final schema also passes
+a 2,000-row measurement and completed-fixture resume check. These measurements
+do not include full application or Storage metadata and do not prove Free fit.
