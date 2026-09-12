@@ -299,3 +299,58 @@ test("batch manifest client sends one bounded RPC with explicit revisions", asyn
   assert.deepEqual(await store.compareAndSwapMany([{ id: "a", expectedRevision: 3, next: { suppressed: false, finding: pointer, sources: null } }]), [{ id: "a", saved: false }]);
   assert.equal(calls, 1);
 });
+
+test("partial source upserts use canonical database rows before publication", async () => {
+  const store = fixtureStore(); const original = source();
+  await store.repository.publish("fixture-a", { finding: finding(), sources: [original] }, 0);
+  const incoming = Buffer.from('{"finding_id":"fixture-a","source":"fixture","source_ref":"fixture:one","observed_at":"2026-01-03"}');
+  const normalized = Buffer.from(original.toString().replace('2026-01-02T03:04:05.123456Z', '2026-01-03T00:00:00+00:00'));
+  store.privateManifests.prepareRows = async (kind, existing, rows) => {
+    assert.equal(kind, "source"); assert.deepEqual(existing, [original]); assert.deepEqual(rows, [incoming]);
+    return [normalized];
+  };
+  await store.repository.upsertSourceRows("fixture-a", [incoming]);
+  const snapshot = await store.repository.readPrivateSnapshot("fixture-a");
+  assert.deepEqual(snapshot.sources, [normalized]); assert.deepEqual(snapshot.finding, finding());
+  assert(snapshot.sources[0].toString().includes("9007199254740993123456789"));
+});
+
+test("empty source names and references remain distinct valid SQL identities", async () => {
+  const store = fixtureStore();
+  const originals = [source("", "fixture-a", ""), source("", "fixture-a", "fixture"), source("ref", "fixture-a", "")];
+  await store.repository.publish("fixture-a", { finding: finding(), sources: originals }, 0);
+  store.privateManifests.prepareRows = async (kind, existing, rows) => {
+    assert.deepEqual(existing, originals); return [originals[0]];
+  };
+  await store.repository.upsertSourceRows("fixture-a", [Buffer.from('{"finding_id":"fixture-a","source":"","source_ref":"","observed_at":"2026-01-02T03:04:05.123456Z"}')]);
+  assert.deepEqual((await store.repository.readPrivateSnapshot("fixture-a")).sources, originals);
+});
+
+test("unchanged canonical source upsert uploads and publishes nothing", async () => {
+  const store = fixtureStore(); const original = source();
+  await store.repository.publish("fixture-a", { finding: finding(), sources: [original] }, 0);
+  store.privateManifests.prepareRows = async () => [original]; store.events.length = 0;
+  const incoming = Buffer.from('{"finding_id":"fixture-a","source":"fixture","source_ref":"fixture:one","observed_at":"2026-01-02T03:04:05.123456Z"}');
+  const manifest = await store.repository.upsertSourceRows("fixture-a", [incoming]);
+  assert.equal(manifest.revision, 1);
+  assert.equal(store.events.filter(([kind]) => ["put", "cas"].includes(kind)).length, 0);
+});
+
+test("source normalization cannot change identities or acknowledge missing rows", async () => {
+  for (const normalized of [[], [source("other")], [source("fixture:one", "other")], [source(), source()]]) {
+    const store = fixtureStore(); await store.repository.publish("fixture-a", { finding: finding(), sources: [] }, 0);
+    store.privateManifests.prepareRows = async () => normalized; store.events.length = 0;
+    await assert.rejects(store.repository.upsertSourceRows("fixture-a", [source()]), /normalization|identity|another finding/);
+    assert.equal(store.events.filter(([kind]) => ["put", "cas"].includes(kind)).length, 0);
+  }
+});
+
+test("private normalization transport preserves raw JSON digits in text strings", async () => {
+  const raw = source(); let calls = 0;
+  const store = privateManifestStore({ url: "https://fixture.invalid", serviceKey: "synthetic-service", fetchImpl: async (url, options) => {
+    calls++; assert.match(url.pathname, /rpc\/prepare_evidence_rows$/);
+    assert.deepEqual(JSON.parse(options.body), { p_kind: "source", p_existing: [raw.toString()], p_incoming: [raw.toString()] });
+    return Response.json([raw.toString()]);
+  } });
+  assert.deepEqual(await store.prepareRows("source", [raw], [raw]), [raw]); assert.equal(calls, 1);
+});

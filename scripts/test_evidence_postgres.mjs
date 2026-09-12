@@ -60,6 +60,12 @@ function stores() {
     return rows.map(row => ({ id: row.finding_id, suppressed: false, finding: row.finding_pointer }));
   };
   const privateManifests = {
+    async prepareRows(kind, existing, incoming) {
+      events.push("normalize_rows");
+      const { rows } = await asRole("service_role", "select public.prepare_evidence_rows($1,$2,$3) as prepared",
+        [kind, existing.map(row => row.toString()), incoming.map(row => row.toString())]);
+      return rows[0].prepared.map(row => Buffer.from(row));
+    },
     async get(id) {
       const { rows } = await asRole("service_role", "select m.finding_id,m.revision,public.unpack_evidence_pointer(m.finding_pointer) as finding_pointer,public.unpack_evidence_pointer(m.sources_pointer) as sources_pointer,f.suppressed from public.evidence_object_manifests m join public.findings f on f.id=m.finding_id where finding_id=$1", [id]);
       if (!rows.length) return null;
@@ -97,6 +103,71 @@ await test("PostgreSQL evidence manifest contract", { timeout: 60000 }, async (t
     const schema = await readFile(new URL("../supabase/schema.sql", import.meta.url), "utf8");
     await pool.query(schema.split("create table if not exists public.ct_source_runs")[0]);
     await pool.query(await readFile(new URL("../supabase/experimental/evidence-manifests.sql", import.meta.url), "utf8"));
+    await pool.query(await readFile(new URL("../supabase/experimental/evidence-row-contracts.sql", import.meta.url), "utf8"));
+    await t.test("partial source writes preserve timestamps and precision through real normalization and CAS", async () => {
+      const id = "partial-upsert"; await seed(id); const store = stores();
+      const original = source(id, "old");
+      await store.repository.publish(id, { finding: finding(id), sources: [original] }, 0);
+      const pointer = (await store.privateManifests.get(id)).finding;
+      const partial = bytes({ finding_id: id, source: "fixture", source_ref: "old", observed_at: "2026-02-03T16:00:00.123456+08:00" });
+      await store.repository.upsertSourceRows(id, [partial]);
+      const saved = await store.repository.readPrivateSnapshot(id);
+      assert.deepEqual(saved.manifest.finding, pointer);
+      const exact = (await pool.query(`select $1::jsonb->'details' = $2::jsonb->'details' as details,
+        $1::jsonb->>'created_at' = $2::jsonb->>'created_at' as created,
+        ($1::jsonb->>'observed_at')::timestamptz = '2026-02-03T08:00:00.123456Z'::timestamptz as observed`,
+      [saved.sources[0].toString(), original.toString()])).rows[0];
+      assert.deepEqual(exact, { details: true, created: true, observed: true });
+      store.events.length = 0;
+      const retry = await store.repository.upsertSourceRows(id, [partial]);
+      assert.equal(retry.revision, saved.manifest.revision);
+      assert.equal(store.events.filter(event => event === "object_put").length, 0);
+    });
+    await t.test("empty source identity fields survive normalization and publication", async () => {
+      const id = "partial-empty"; await seed(id); const store = stores();
+      await store.repository.publish(id, { finding: finding(id), sources: [] }, 0);
+      const rows = [["", ""], ["fixture", ""], ["", "ref"]].map(([name, ref]) =>
+        bytes({ finding_id: id, source: name, source_ref: ref, observed_at: "2026-02-03" }));
+      await store.repository.upsertSourceRows(id, rows);
+      const saved = await store.repository.readPrivateSnapshot(id);
+      assert.deepEqual(saved.sources.map(raw => { const row = JSON.parse(raw); return [row.source, row.source_ref]; }), [["", ""], ["fixture", ""], ["", "ref"]]);
+      const retry = await store.repository.upsertSourceRows(id, rows);
+      assert.equal(retry.revision, saved.manifest.revision);
+    });
+    await t.test("concurrent partial source upserts re-normalize against the winning snapshot", async () => {
+      const id = "partial-concurrent"; await seed(id); const store = stores(); const original = source(id, "original");
+      await store.repository.publish(id, { finding: finding(id), sources: [original] }, 0);
+      const get = store.privateManifests.get; let reads = 0; let release;
+      const barrier = new Promise(resolve => { release = resolve; });
+      store.privateManifests.get = async key => {
+        const current = await get(key);
+        if (reads < 2) { reads++; if (reads === 2) release(); await barrier; }
+        return current;
+      };
+      const partial = ref => bytes({ finding_id: id, source: "fixture", source_ref: ref, observed_at: "2026-02-03" });
+      await Promise.all([store.repository.upsertSourceRows(id, [partial("first")]), store.repository.upsertSourceRows(id, [partial("second")])]);
+      const saved = await store.repository.readPrivateSnapshot(id);
+      assert.equal(saved.manifest.revision, 3); assert.equal(saved.sources.length, 3);
+      assert.deepEqual(saved.sources.find(raw => JSON.parse(raw).source_ref === "original"), original);
+      assert.deepEqual(saved.sources.map(raw => JSON.parse(raw).source_ref).sort(), ["first", "original", "second"]);
+      assert.equal(store.events.filter(event => event === "normalize_rows").length, 3);
+      for (const raw of saved.sources.filter(raw => JSON.parse(raw).source_ref !== "original")) {
+        assert.equal((await pool.query("select ($1::jsonb->>'created_at')::timestamptz between now()-interval '1 minute' and now() as recent", [raw.toString()])).rows[0].recent, true);
+      }
+    });
+    await t.test("failed normalization and lease loss cannot publish or upload source updates", async () => {
+      const id = "partial-failure"; await seed(id); const store = stores();
+      await store.repository.publish(id, { finding: finding(id), sources: [source(id, "old")] }, 0);
+      const before = await store.privateManifests.get(id); store.events.length = 0;
+      await assert.rejects(store.repository.upsertSourceRows(id, [bytes({ finding_id: id, source: "fixture", source_ref: "new" })]), error => error.code === "23502");
+      assert.equal(store.events.filter(event => event === "object_put").length, 0);
+      let owned = true; const prepare = store.privateManifests.prepareRows;
+      store.privateManifests.prepareRows = async (...args) => { const rows = await prepare(...args); owned = false; return rows; };
+      await assert.rejects(store.repository.upsertSourceRows(id, [bytes({ finding_id: id, source: "fixture", source_ref: "new", observed_at: "2026-02-03" })],
+        { assertOwned: () => { if (!owned) throw new Error("fixture lease lost"); } }), /lease lost/);
+      assert.equal(store.events.filter(event => event === "object_put").length, 0);
+      assert.deepEqual(await store.privateManifests.get(id), before);
+    });
     await t.test("binary pointers retain all digest bits and frame boundaries", async () => {
       for (const pointer of [
         { object: "00".repeat(32), offset: 0, length: 46 },

@@ -176,6 +176,33 @@ tests. PostgreSQL checks require a fresh loopback database whose name starts wit
 `node --test scripts/test_evidence_postgres.mjs`. The dedicated workflow runs these
 checks on Node 20/24 and PostgreSQL 17.11 without production credentials.
 
+`upsertSourceRows` accepts the partial source payloads used by ingestion. Its
+service-only `prepare_evidence_rows` RPC applies the current PostgreSQL column
+types/defaults before publication, preserving omitted stored fields and original
+`created_at` values. Existing rows and results travel as JSON text, so large JSONB
+numbers and microsecond timestamps do not pass through JavaScript serialization.
+Conflicts reload the winning snapshot and normalize again; identical updates
+reuse the original bytes and publish nothing. Empty source names/references are
+retained as distinct SQL key values. Complete-snapshot `upsertSources` remains
+available for fixtures and migration preparation.
+
+Run `node --test scripts/test_evidence_rows.mjs` with
+`EVIDENCE_ROWS_DATABASE_URL` pointing to a separate fresh loopback fixture
+database named `prawn_evidence_fixture_*`. These differential tests compare with
+native PostgreSQL `INSERT ... ON CONFLICT`, not a live PostgREST HTTP server.
+The workflow also checks concurrent partial writes through the real manifest
+RPC. A local 10,000-source fixture exposed quadratic map rebuilding; one SQL
+aggregate completed normalization in 785 ms under the eight-second statement
+deadline. This synthetic timing is not a production capacity or billing result.
+
+The reviewed boundary is the current schema and ingestion payloads: at most 200
+incoming rows, 10,000 existing sources, and a 4 MiB transport budget. Finding IDs
+must still be nonempty and all identity components are byte-bounded. Generated
+or identity columns are rejected; arbitrary future defaults and schema changes
+need a new contract review. Finding-writer, search, capture, intel and triage
+integration, database lease fencing, oversized-row handling and the full storage
+migration remain open. No production writer imports this experimental adapter.
+
 ## Licence
 
 This repository is licensed under Apache-2.0. See `LICENSE` and `NOTICE` for details.
