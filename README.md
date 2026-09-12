@@ -141,6 +141,22 @@ publishes immutable object pointers only after upload verification. Complete
 source identity tuples and optimistic database revisions protect concurrent
 updates. Unchanged findings are not uploaded again for source-only updates.
 
+Manifest pointers use 40 binary bytes: the complete 32-byte SHA-256 digest,
+then big-endian four-byte offset and length. Finding IDs remain their original
+strings. SQL and REST clients reconstruct the same object/offset/length shape;
+source pointers remain private. Invalid lengths, bounds and unrecognized JSON
+pointer fields fail before publication instead of silently losing metadata.
+
+`publishBatch` groups at most 200 complete finding/source snapshots, with a
+combined four-MiB raw-byte budget, into shared immutable objects. One service-only
+RPC publishes their pointers in a consistent lock order. Revision conflicts are
+reported for each finding; a validation or visibility error rolls back the
+entire RPC. Callers must resolve every conflict before advancing collection
+cursors. In the 200-finding synthetic fixture, grouping changes 400 object uploads
+to two and 200 publication calls to one, while a 100-finding public page downloads
+one packed object. These counts depend on record sizes; they are not production
+usage or savings measurements.
+
 Packed objects must remain private. The public reader first obtains manifests
 through the anonymous database role and RLS, then returns only authorized finding
 frames. A page downloads each required packed object once; private sightings,
@@ -163,3 +179,24 @@ checks on Node 20/24 and PostgreSQL 17.11 without production credentials.
 ## Licence
 
 This repository is licensed under Apache-2.0. See `LICENSE` and `NOTICE` for details.
+
+For the isolated storage contract, run `node --test scripts/test_evidence_objects.mjs`
+and `node --test scripts/test_evidence_postgres.mjs`. The latter requires an owned
+loopback fixture database; the workflow supplies one. Afterwards,
+`node scripts/test_evidence_metadata.mjs` compares physical JSONB and binary
+manifest tables, including primary keys, using synthetic data only. It defaults
+to 2,000 rows; `EVIDENCE_METADATA_ROWS` accepts up to 1,000,000. A terminally
+interrupted measurement can resume its existing fixture with
+`EVIDENCE_METADATA_RESUME=1`; it verifies the final row equality before reporting.
+Do not target a production database. This component measurement excludes parent
+findings, evidence objects, Storage metadata, query indexes, versions, orphans,
+bloat and migration peak space, so it does not establish whole-project Free fit.
+
+The 2026-09-12 local PostgreSQL 17.11 comparison contains 300,000 synthetic
+manifests with both pointers present. Compact tables plus primary keys occupy
+72,949,760 bytes versus 129,744,896 bytes for JSONB: 56,795,136 bytes (43.77%)
+less, with all 300,000 pointer pairs equal after decoding. The initial four-minute
+measurement process ended after populating the tables; its preserved fixture
+was resumed to complete equality and size checks. The final schema also passes
+a 2,000-row measurement and completed-fixture resume check. These measurements
+do not include full application or Storage metadata and do not prove Free fit.

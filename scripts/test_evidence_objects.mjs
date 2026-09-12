@@ -23,6 +23,13 @@ export function fixtureStore() {
     async compareAndSwap(id, revision, next) {
       events.push(["cas", id]); if ((state.get(id)?.revision ?? 0) !== revision) return false;
       state.set(id, structuredClone(next)); return true;
+    },
+    async compareAndSwapMany(entries) {
+      events.push(["cas_batch", entries.length]);
+      const results = [];
+      for (const entry of entries) results.push({ id: entry.id,
+        saved: await this.compareAndSwap(entry.id, entry.expectedRevision, entry.next) });
+      return results;
     }
   };
   const publicManifests = { async get(id) {
@@ -201,4 +208,94 @@ test("private publication sends expected revision and both pointers in one RPC",
   assert.equal(await store.compareAndSwap("id", 4, { suppressed: false, finding: pointer, sources: null }), false);
   assert.match(seen.url.pathname, /rpc\/publish_evidence_manifest$/);
   assert.deepEqual(JSON.parse(seen.options.body), { p_finding_id: "id", p_expected_revision: 4, p_suppressed: false, p_finding_pointer: pointer, p_sources_pointer: null });
+});
+
+test("public and private clients decode compact pointers without exposing source metadata", async () => {
+  const pointer = { object: "00ff".repeat(16), offset: 66051, length: 1029 };
+  const binary = Buffer.alloc(40); Buffer.from(pointer.object, "hex").copy(binary);
+  binary.writeUInt32BE(pointer.offset, 32); binary.writeUInt32BE(pointer.length, 36);
+  const wire = "\\x" + binary.toString("hex");
+  const fetchImpl = async () => Response.json([{ finding_id: "fixture", revision: 1,
+    finding_pointer: wire, sources_pointer: wire, findings: { suppressed: true } }]);
+  const publicRow = await publicManifestReader({ url: "https://fixture.invalid", anonKey: "synthetic-anon", fetchImpl }).get("fixture");
+  assert.deepEqual(publicRow.finding, pointer); assert.equal(publicRow.sources, undefined);
+  const privateRow = await privateManifestStore({ url: "https://fixture.invalid", serviceKey: "synthetic-service", fetchImpl }).get("fixture");
+  assert.deepEqual(privateRow.finding, pointer); assert.deepEqual(privateRow.sources, pointer);
+  assert.equal(privateRow.suppressed, true);
+});
+
+test("manifest clients reject truncated, malformed and out-of-bounds binary pointers", async () => {
+  const overflow = Buffer.alloc(40); overflow.writeUInt32BE(0xffffffff, 32); overflow.writeUInt32BE(46, 36);
+  for (const pointer of ["\\x" + "00".repeat(39), "\\x" + "00".repeat(41), "\\x" + "zz".repeat(40),
+    "00".repeat(40), "\\x" + Buffer.alloc(40).toString("hex"), "\\x" + overflow.toString("hex")]) {
+    const reader = publicManifestReader({ url: "https://fixture.invalid", anonKey: "synthetic-anon",
+      fetchImpl: async () => Response.json([{ finding_id: "fixture", revision: 1, finding_pointer: pointer }]) });
+    await assert.rejects(reader.get("fixture"), /pointer/);
+  }
+});
+
+test("200 findings share two private objects and one publication call", async () => {
+  const entries = Array.from({ length: 200 }, (_, index) => {
+    const id = `batch-${index}`;
+    return { findingId: id, finding: finding(id), sources: [source("exact", id)], expectedRevision: 0 };
+  });
+  const individual = fixtureStore();
+  for (const entry of entries) await individual.repository.publish(entry.findingId, entry, 0);
+  assert.equal(individual.blobs.size, 400);
+  const batch = fixtureStore();
+  const result = await batch.repository.publishBatch(entries);
+  assert.equal(result.length, 200); assert(result.every(row => row.saved));
+  assert.equal(batch.blobs.size, 2); assert.equal(batch.events.filter(([kind]) => kind === "cas_batch").length, 1);
+  for (const entry of entries) {
+    const saved = await batch.repository.readPrivateSnapshot(entry.findingId);
+    assert.deepEqual(saved.finding, entry.finding); assert.deepEqual(saved.sources, entry.sources);
+  }
+  batch.events.length = 0;
+  const page = await batch.repository.readPublicFindings(entries.slice(0, 100).map(e => e.findingId));
+  assert.deepEqual(page, entries.slice(0, 100).map(e => e.finding));
+  assert.equal(batch.events.filter(([kind]) => kind === "read").length, 1);
+});
+
+test("invalid batch data and byte budgets fail before Storage calls", async () => {
+  const store = fixtureStore(); const entry = { findingId: "a", finding: finding("a"), sources: [], expectedRevision: 0 };
+  for (const entries of [[], Array.from({ length: 201 }, () => entry), [entry, entry],
+    [{ ...entry, finding: finding("other") }], [{ ...entry, sources: [source("wrong-finding")] }],
+    [{ ...entry, finding: finding("a", { oversized: "x".repeat(MAX_OBJECT_BYTES) }) }]]) {
+    await assert.rejects(store.repository.publishBatch(entries));
+    assert.equal(store.events.length, 0);
+  }
+});
+
+test("batch conflicts are explicit and malformed acknowledgements cannot advance callers", async () => {
+  const store = fixtureStore(); const entry = { findingId: "a", finding: finding("a"), sources: [], expectedRevision: 0 };
+  await store.repository.publishBatch([entry]);
+  const conflict = await store.repository.publishBatch([entry, { ...entry, findingId: "b", finding: finding("b") }]);
+  assert.deepEqual(conflict.map(({ id, saved }) => ({ id, saved })), [{ id: "a", saved: false }, { id: "b", saved: true }]);
+  assert.equal(conflict[0].manifest, null); assert.equal(store.state.get("a").revision, 1);
+  for (const result of [[], [{ id: "other", saved: true }], [{ id: "a", saved: "true" }]]) {
+    store.privateManifests.compareAndSwapMany = async () => result;
+    await assert.rejects(store.repository.publishBatch([entry]), /acknowledgement/);
+  }
+});
+
+test("batch upload or lease failure cannot publish any new manifest", async () => {
+  const entry = { findingId: "a", finding: finding("a"), sources: [source("private", "a")], expectedRevision: 0 };
+  const failed = fixtureStore(); failed.objects.putIfAbsent = async () => { throw new Error("upload failed"); };
+  await assert.rejects(failed.repository.publishBatch([entry]), /upload failed/); assert.equal(failed.state.size, 0);
+  const expired = fixtureStore(); let owned = true;
+  const read = expired.objects.read; expired.objects.read = async key => { const value = await read(key); owned = false; return value; };
+  await assert.rejects(expired.repository.publishBatch([entry], { assertOwned: () => { if (!owned) throw new Error("lease lost"); } }), /lease lost/);
+  assert.equal(expired.state.size, 0); assert.equal(expired.events.filter(([kind]) => kind === "cas_batch").length, 0);
+});
+
+test("batch manifest client sends one bounded RPC with explicit revisions", async () => {
+  const pointer = { object: "a".repeat(64), offset: 0, length: 46 }; let calls = 0;
+  const store = privateManifestStore({ url: "https://fixture.invalid", serviceKey: "synthetic-service", fetchImpl: async (url, options) => {
+    calls++; assert.match(url.pathname, /rpc\/publish_evidence_manifests$/);
+    assert.deepEqual(JSON.parse(options.body), { p_publications: [{ id: "a", expected_revision: 3,
+      suppressed: false, finding_pointer: pointer, sources_pointer: null }] });
+    return Response.json([{ finding_id: "a", saved: false }]);
+  } });
+  assert.deepEqual(await store.compareAndSwapMany([{ id: "a", expectedRevision: 3, next: { suppressed: false, finding: pointer, sources: null } }]), [{ id: "a", saved: false }]);
+  assert.equal(calls, 1);
 });
