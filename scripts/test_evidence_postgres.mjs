@@ -5,6 +5,7 @@ import { test } from "node:test";
 import pg from "pg";
 import { EvidenceRepository } from "../lib/storage/evidence-repository.js";
 import { privateManifestStore, publicManifestReader } from "../lib/storage/supabase-manifests.js";
+import { verifyLeaseContracts } from "./test_evidence_lease_cases.mjs";
 
 globalThis.fetch = async () => { throw new Error("Live provider requests forbidden in PostgreSQL fixtures"); };
 const connectionString = process.env.EVIDENCE_TEST_DATABASE_URL;
@@ -29,6 +30,7 @@ if (process.env.GITHUB_ACTIONS === "true") {
   assert(serverAddresses.length > 0);
 }
 const pool = new pg.Pool({ connectionString, max: 4, connectionTimeoutMillis: 5000, statement_timeout: 8000 });
+const fixtureLease = { name: "evidence_fixture", owner: "d673a2ad-2be0-4f10-8e57-6dc202609130" };
 const bytes = (value) => Buffer.from(JSON.stringify(value));
 const finding = (id) => bytes({ id, suppressed: false, observed_at: "2026-01-01T00:00:00Z", domains: ["synthetic.invalid"], score: 1 });
 const source = (id, ref) => Buffer.from(`{"finding_id":${JSON.stringify(id)},"source":"fixture","source_ref":${JSON.stringify(ref)},"observed_at":"2026-01-01T00:00:00.654321Z","details":{"large":9007199254740993123456789,"fraction":1.0000000000000000001},"created_at":"2026-01-01T00:00:00.123456Z"}`);
@@ -43,7 +45,7 @@ async function asRole(role, sql, params = []) {
   finally { client.release(); }
 }
 
-function stores() {
+function stores(lease = fixtureLease) {
   const blobs = new Map(); const events = [];
   const objects = {
     async read(key) { events.push("object_read"); assert(blobs.has(key)); return Buffer.from(blobs.get(key)); },
@@ -60,6 +62,10 @@ function stores() {
     return rows.map(row => ({ id: row.finding_id, suppressed: false, finding: row.finding_pointer }));
   };
   const privateManifests = {
+    async assertLease() {
+      const result = await asRole("service_role", "select public.assert_evidence_lease($1,$2) as owned", [lease.name, lease.owner]);
+      assert.equal(result.rows[0].owned, true);
+    },
     async prepareRows(kind, existing, incoming) {
       events.push("normalize_rows");
       const { rows } = await asRole("service_role", "select public.prepare_evidence_rows($1,$2,$3) as prepared",
@@ -72,13 +78,13 @@ function stores() {
       const row = rows[0]; return { id: row.finding_id, revision: Number(row.revision), suppressed: row.suppressed, finding: row.finding_pointer, sources: row.sources_pointer };
     },
     async compareAndSwap(id, revision, next) {
-      const { rows } = await asRole("service_role", "select public.publish_evidence_manifest($1,$2,$3,$4,$5) as saved",
-        [id, revision, next.suppressed, next.finding, next.sources]); return rows[0].saved;
+      const { rows } = await asRole("service_role", "select public.publish_evidence_manifest($1,$2,$3,$4,$5,$6,$7) as saved",
+        [id, revision, next.suppressed, next.finding, next.sources, lease.name, lease.owner]); return rows[0].saved;
     },
     async compareAndSwapMany(entries) {
       const payload = entries.map(entry => ({ id: entry.id, expected_revision: entry.expectedRevision,
         suppressed: entry.next.suppressed, finding_pointer: entry.next.finding, sources_pointer: entry.next.sources }));
-      const { rows } = await asRole("service_role", "select * from public.publish_evidence_manifests($1)", [JSON.stringify(payload)]);
+      const { rows } = await asRole("service_role", "select * from public.publish_evidence_manifests($1,$2,$3)", [JSON.stringify(payload), lease.name, lease.owner]);
       return rows.map(row => ({ id: row.finding_id, saved: row.saved }));
     }
   };
@@ -102,8 +108,22 @@ await test("PostgreSQL evidence manifest contract", { timeout: 60000 }, async (t
     }
     const schema = await readFile(new URL("../supabase/schema.sql", import.meta.url), "utf8");
     await pool.query(schema.split("create table if not exists public.ct_source_runs")[0]);
+    await pool.query(await readFile(new URL("../supabase/run-locks.sql", import.meta.url), "utf8"));
+    await asRole("service_role", "select public.acquire_run_lock($1,$2,900)", [fixtureLease.name, fixtureLease.owner]);
     await pool.query(await readFile(new URL("../supabase/experimental/evidence-manifests.sql", import.meta.url), "utf8"));
     await pool.query(await readFile(new URL("../supabase/experimental/evidence-row-contracts.sql", import.meta.url), "utf8"));
+    await t.test("an expired worker cannot publish after another worker acquires its lease", async () => {
+      const lease = { name: "expired_worker", owner: "d673a2ad-2be0-4f10-8e57-6dc202609131" };
+      await asRole("service_role", "select public.acquire_run_lock($1,$2,900)", [lease.name, lease.owner]);
+      const id = "lease-takeover"; await seed(id); const store = stores(lease);
+      const initial = await store.repository.publish(id, { finding: finding(id), sources: [] }, 0);
+      await pool.query("update public.run_locks set locked_until=clock_timestamp()-interval '1 second' where name=$1", [lease.name]);
+      const takeover = await asRole("service_role", "select public.acquire_run_lock($1,$2,900) as acquired",
+        [lease.name, "d673a2ad-2be0-4f10-8e57-6dc202609132"]);
+      assert.equal(takeover.rows[0].acquired, true);
+      await assert.rejects(store.repository.publish(id, { finding: finding(id), sources: [source(id, "stale")] }, 1), /Evidence lease/);
+      assert.deepEqual(await store.privateManifests.get(id), initial);
+    });
     await t.test("partial source writes preserve timestamps and precision through real normalization and CAS", async () => {
       const id = "partial-upsert"; await seed(id); const store = stores();
       const original = source(id, "old");
@@ -192,7 +212,7 @@ await test("PostgreSQL evidence manifest contract", { timeout: 60000 }, async (t
       const beyond = Buffer.from(valid); beyond.writeUInt32BE(0xffffffff, 32);
       const lengthOverflow = Buffer.from(valid); lengthOverflow.writeUInt32BE(0xffffffff, 36);
       for (const invalid of [Buffer.alloc(39), Buffer.alloc(41), Buffer.alloc(40), beyond, lengthOverflow]) {
-        await assert.rejects(asRole("service_role", "insert into public.evidence_object_manifests values ($1,1,$2,null)", [id, invalid]), error => error.code === "23514");
+        await assert.rejects(pool.query("insert into public.evidence_object_manifests values ($1,1,$2,null)", [id, invalid]), error => error.code === "23514");
         await assert.rejects(asRole("anon", "select public.unpack_evidence_pointer($1)", [invalid]), error => error.code === "22023");
       }
       assert.equal((await pool.query("select count(*)::integer as n from public.evidence_object_manifests where finding_id=$1", [id])).rows[0].n, 0);
@@ -216,11 +236,14 @@ await test("PostgreSQL evidence manifest contract", { timeout: 60000 }, async (t
       assert.deepEqual(privateRow.finding, decoded.finding); assert.deepEqual(privateRow.sources, decoded.sources);
     });
     await t.test("anon cannot read source pointers, mutate manifests or execute publication RPC", async () => {
-      for (const sql of ["select sources_pointer from public.evidence_object_manifests", "update public.evidence_object_manifests set revision=revision+1", "select public.publish_evidence_manifest('pg-roundtrip',1,false,null,null)"]) {
+      for (const sql of ["select sources_pointer from public.evidence_object_manifests", "update public.evidence_object_manifests set revision=revision+1", "select public.publish_evidence_manifest('pg-roundtrip',1,false,null,null,null,null)"]) {
         await assert.rejects(asRole("anon", sql), error => error.code === "42501");
       }
       await assert.rejects(asRole("authenticated", "select finding_id from public.evidence_object_manifests"), error => error.code === "42501");
-      for (const role of ["anon", "authenticated"]) await assert.rejects(asRole(role, "select * from public.publish_evidence_manifests('[]')"), error => error.code === "42501");
+      for (const role of ["anon", "authenticated"]) {
+        await assert.rejects(asRole(role, "select * from public.publish_evidence_manifests('[]',null,null)"), error => error.code === "42501");
+        await assert.rejects(asRole(role, "select public.assert_evidence_lease(null,null)"), error => error.code === "42501");
+      }
     });
     await t.test("packed batch publication preserves rows and reports revision conflicts", async () => {
       const store = stores();
@@ -245,9 +268,9 @@ await test("PostgreSQL evidence manifest contract", { timeout: 60000 }, async (t
       const pointer = { object: "a".repeat(64), offset: 0, length: 46 };
       const first = { id: a, expected_revision: 0, suppressed: false, finding_pointer: pointer, sources_pointer: null };
       const second = { ...first, id: b, finding_pointer: { ...pointer, length: 0 } };
-      await assert.rejects(asRole("service_role", "select * from public.publish_evidence_manifests($1)", [JSON.stringify([first, second])]), error => error.code === "22023");
+      await assert.rejects(asRole("service_role", "select * from public.publish_evidence_manifests($1,$2,$3)", [JSON.stringify([first, second]), fixtureLease.name, fixtureLease.owner]), error => error.code === "22023");
       assert.equal((await pool.query("select count(*)::integer as n from public.evidence_object_manifests where finding_id=any($1)", [[a, b]])).rows[0].n, 0);
-      await assert.rejects(asRole("service_role", "select * from public.publish_evidence_manifests($1)", [JSON.stringify([first, first])]), error => error.code === "22023");
+      await assert.rejects(asRole("service_role", "select * from public.publish_evidence_manifests($1,$2,$3)", [JSON.stringify([first, first]), fixtureLease.name, fixtureLease.owner]), error => error.code === "22023");
       assert.equal((await pool.query("select count(*)::integer as n from public.evidence_object_manifests where finding_id=$1", [a])).rows[0].n, 0);
     });
     await t.test("opposite-order concurrent batches serialize without lost updates or deadlock", async () => {
@@ -310,10 +333,11 @@ await test("PostgreSQL evidence manifest contract", { timeout: 60000 }, async (t
     await t.test("invalid pointer constraints fail transaction without replacing manifest", async () => {
       const row = (await pool.query("select * from public.evidence_object_manifests where finding_id='pg-roundtrip'")).rows[0];
       for (const pointer of [{ object: "../escape", offset: 0, length: 100 }, { object: "a".repeat(64), offset: 0.5, length: 100 }, { object: "a".repeat(64), offset: 0, length: 4194305 }]) {
-        await assert.rejects(asRole("service_role", "update public.evidence_object_manifests set finding_pointer=$1 where finding_id='pg-roundtrip'", [pointer]), error => error.code === "23514");
+        await assert.rejects(pool.query("update public.evidence_object_manifests set finding_pointer=$1 where finding_id='pg-roundtrip'", [pointer]), error => error.code === "23514");
       }
       assert.deepEqual((await pool.query("select * from public.evidence_object_manifests where finding_id='pg-roundtrip'")).rows[0], row);
     });
+    await verifyLeaseContracts({ t, pool, asRole, stores, seed, finding, source });
     console.log("EVIDENCE_POSTGRES_IDENTITY " + JSON.stringify(identity));
   } finally { await pool.end(); }
 });

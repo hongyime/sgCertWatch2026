@@ -6,6 +6,7 @@ import { SupabasePrivateObjects } from "../lib/storage/supabase-objects.js";
 import { publicManifestReader, privateManifestStore } from "../lib/storage/supabase-manifests.js";
 
 globalThis.fetch = async () => { throw new Error("Live network forbidden in evidence fixtures"); };
+const fixtureLease = { name: "evidence_fixture", owner: "d673a2ad-2be0-4f10-8e57-6dc202609130" };
 const finding = (id = "fixture-a", extra = {}) => Buffer.from(JSON.stringify({ id, suppressed: false, ...extra }));
 const source = (ref = "fixture:one", id = "fixture-a", name = "fixture") => Buffer.from(
   `{"finding_id":${JSON.stringify(id)},"source":${JSON.stringify(name)},"source_ref":${JSON.stringify(ref)},` +
@@ -19,6 +20,7 @@ export function fixtureStore() {
     async putIfAbsent(key, bytes) { events.push(["put", key]); if (!blobs.has(key)) blobs.set(key, Buffer.from(bytes)); }
   };
   const privateManifests = {
+    async assertLease() {},
     async get(id) { events.push(["private", id]); return structuredClone(state.get(id) ?? null); },
     async compareAndSwap(id, revision, next) {
       events.push(["cas", id]); if ((state.get(id)?.revision ?? 0) !== revision) return false;
@@ -201,13 +203,52 @@ test("public manifest client uses only anon key and excludes private pointer", a
   assert.throws(() => publicManifestReader({ url: "https://fixture.invalid", serviceKey: "unused" }), /configuration/);
 });
 test("private publication sends expected revision and both pointers in one RPC", async () => {
-  let seen; const store = privateManifestStore({ url: "https://fixture.invalid", serviceKey: "synthetic-service", fetchImpl: async (url, options) => {
+  let seen; const store = privateManifestStore({ url: "https://fixture.invalid", serviceKey: "synthetic-service", lease: fixtureLease, fetchImpl: async (url, options) => {
     seen = { url, options }; return Response.json(false);
   } });
   const pointer = { object: "a".repeat(64), offset: 0, length: 100 };
   assert.equal(await store.compareAndSwap("id", 4, { suppressed: false, finding: pointer, sources: null }), false);
   assert.match(seen.url.pathname, /rpc\/publish_evidence_manifest$/);
-  assert.deepEqual(JSON.parse(seen.options.body), { p_finding_id: "id", p_expected_revision: 4, p_suppressed: false, p_finding_pointer: pointer, p_sources_pointer: null });
+  assert.deepEqual(JSON.parse(seen.options.body), { p_lock_name: fixtureLease.name, p_owner_id: fixtureLease.owner, p_finding_id: "id", p_expected_revision: 4, p_suppressed: false, p_finding_pointer: pointer, p_sources_pointer: null });
+});
+
+test("writers require a valid explicit lease before making any network request", async () => {
+  let calls = 0;
+  const config = { url: "https://fixture.invalid", serviceKey: "synthetic-service", fetchImpl: async () => { calls++; return Response.json(true); } };
+  const store = privateManifestStore(config);
+  for (const action of [() => store.assertLease(), () => store.compareAndSwap("a", 0, {}),
+    () => store.compareAndSwapMany([{ id: "a", expectedRevision: 0, next: {} }])]) {
+    await assert.rejects(action(), /Evidence lease is required/);
+  }
+  for (const lease of [null, {}, { ...fixtureLease, name: "" }, { ...fixtureLease, name: "x".repeat(101) },
+    { ...fixtureLease, owner: "not-a-uuid" }]) assert.throws(() => privateManifestStore({ ...config, lease }), /Invalid evidence lease/);
+  assert.equal(calls, 0);
+});
+
+test("one manifest client keeps its original lease across preflight, single and batch requests", async () => {
+  const lease = { ...fixtureLease }; const bodies = [];
+  const store = privateManifestStore({ url: "https://fixture.invalid", serviceKey: "synthetic-service", lease,
+    fetchImpl: async (url, options) => {
+      bodies.push(JSON.parse(options.body));
+      return Response.json(url.pathname.endsWith("publish_evidence_manifests") ? [{ finding_id: "a", saved: true }] : true);
+    } });
+  lease.name = "successor"; lease.owner = "d673a2ad-2be0-4f10-8e57-6dc202609139";
+  await store.assertLease(); await store.compareAndSwap("a", 0, {});
+  await store.compareAndSwapMany([{ id: "a", expectedRevision: 0, next: {} }]);
+  assert.equal(bodies.length, 3);
+  for (const body of bodies) assert.deepEqual([body.p_lock_name, body.p_owner_id], [fixtureLease.name, fixtureLease.owner]);
+});
+
+test("failed or malformed lease preflight cannot be acknowledged or upload evidence", async () => {
+  for (const acknowledgement of [false, null, "true", {}, []]) {
+    const store = privateManifestStore({ url: "https://fixture.invalid", serviceKey: "synthetic-service", lease: fixtureLease,
+      fetchImpl: async () => Response.json(acknowledgement) });
+    await assert.rejects(store.assertLease(), /lease acknowledgement/);
+  }
+  const store = fixtureStore(); store.privateManifests.assertLease = async () => { throw new Error("Lease unavailable"); };
+  await assert.rejects(store.repository.publish("fixture-a", { finding: finding(), sources: [] }, 0), /Lease unavailable/);
+  await assert.rejects(store.repository.publishBatch([{ findingId: "fixture-a", finding: finding(), sources: [], expectedRevision: 0 }]), /Lease unavailable/);
+  assert.equal(store.blobs.size, 0); assert.equal(store.state.size, 0);
 });
 
 test("public and private clients decode compact pointers without exposing source metadata", async () => {
@@ -290,9 +331,9 @@ test("batch upload or lease failure cannot publish any new manifest", async () =
 
 test("batch manifest client sends one bounded RPC with explicit revisions", async () => {
   const pointer = { object: "a".repeat(64), offset: 0, length: 46 }; let calls = 0;
-  const store = privateManifestStore({ url: "https://fixture.invalid", serviceKey: "synthetic-service", fetchImpl: async (url, options) => {
+  const store = privateManifestStore({ url: "https://fixture.invalid", serviceKey: "synthetic-service", lease: fixtureLease, fetchImpl: async (url, options) => {
     calls++; assert.match(url.pathname, /rpc\/publish_evidence_manifests$/);
-    assert.deepEqual(JSON.parse(options.body), { p_publications: [{ id: "a", expected_revision: 3,
+    assert.deepEqual(JSON.parse(options.body), { p_lock_name: fixtureLease.name, p_owner_id: fixtureLease.owner, p_publications: [{ id: "a", expected_revision: 3,
       suppressed: false, finding_pointer: pointer, sources_pointer: null }] });
     return Response.json([{ finding_id: "a", saved: false }]);
   } });

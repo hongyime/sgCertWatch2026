@@ -84,20 +84,46 @@ create table public.evidence_object_manifests (
 alter table public.evidence_object_manifests enable row level security;
 revoke all on table public.evidence_object_manifests from public, anon, authenticated;
 grant select (finding_id, revision, finding_pointer) on public.evidence_object_manifests to anon;
-grant select, insert, update on public.evidence_object_manifests to service_role;
+-- Publication is only available through the fenced, service-only functions.
+-- The migration owner retains DML for controlled administration, not workers.
+revoke all on public.evidence_object_manifests from service_role;
+grant select on public.evidence_object_manifests to service_role;
 create policy evidence_manifest_public_read on public.evidence_object_manifests
   for select to anon using (exists (
     select 1 from public.findings f
     where f.id = finding_id and f.suppressed = false
   ));
 
+-- Requires run-locks.sql. A fresh owner UUID is issued for every acquisition.
+-- FOR SHARE prevents renewal, release or takeover until this transaction ends.
+-- Never hold this lock while calling Storage; preflight is a separate request.
+create function public.assert_evidence_lease(p_lock_name text, p_owner_id uuid)
+returns boolean language plpgsql security definer set search_path = '' set lock_timeout = '2s'
+as $$
+declare existing public.run_locks;
+begin
+  if p_lock_name is null or length(p_lock_name) not between 1 and 100 or p_owner_id is null then
+    raise exception 'Evidence lease is missing or lost' using errcode = 'PT409';
+  end if;
+  select * into existing from public.run_locks where name = p_lock_name for share;
+  if not found or existing.owner_id is distinct from p_owner_id
+     or existing.locked_until <= clock_timestamp() then
+    raise exception 'Evidence lease is missing or lost' using errcode = 'PT409';
+  end if;
+  return true;
+end;
+$$;
+revoke all on function public.assert_evidence_lease(text,uuid) from public, anon, authenticated;
+grant execute on function public.assert_evidence_lease(text,uuid) to service_role;
+
 create function public.publish_evidence_manifest(
   p_finding_id text, p_expected_revision bigint, p_suppressed boolean,
-  p_finding_pointer jsonb, p_sources_pointer jsonb
-) returns boolean language plpgsql security invoker set search_path = ''
+  p_finding_pointer jsonb, p_sources_pointer jsonb, p_lock_name text, p_owner_id uuid
+) returns boolean language plpgsql security definer set search_path = '' set lock_timeout = '2s'
 as $$
 declare current_suppressed boolean; changed integer;
 begin
+  perform public.assert_evidence_lease(p_lock_name, p_owner_id);
   if p_expected_revision is null or p_expected_revision < 0 or p_expected_revision >= 9007199254740991
      or p_suppressed is null then
     raise exception 'Invalid evidence publication revision/visibility';
@@ -123,19 +149,23 @@ begin
       where finding_id = p_finding_id and revision = p_expected_revision;
   end if;
   get diagnostics changed = row_count;
+  -- Waiting for a finding or manifest lock may consume the remaining lease.
+  -- Rejecting here rolls back the write; ownership stays locked through commit.
+  perform public.assert_evidence_lease(p_lock_name, p_owner_id);
   return changed = 1;
 end;
 $$;
-revoke all on function public.publish_evidence_manifest(text,bigint,boolean,jsonb,jsonb)
+revoke all on function public.publish_evidence_manifest(text,bigint,boolean,jsonb,jsonb,text,uuid)
   from public, anon, authenticated;
-grant execute on function public.publish_evidence_manifest(text,bigint,boolean,jsonb,jsonb) to service_role;
+grant execute on function public.publish_evidence_manifest(text,bigint,boolean,jsonb,jsonb,text,uuid) to service_role;
 
-create function public.publish_evidence_manifests(p_publications jsonb)
+create function public.publish_evidence_manifests(p_publications jsonb, p_lock_name text, p_owner_id uuid)
 returns table(finding_id text, saved boolean)
-language plpgsql security invoker set search_path = ''
+language plpgsql security definer set search_path = '' set lock_timeout = '2s'
 as $$
 declare item jsonb; seen text[] := '{}'; expected numeric;
 begin
+  perform public.assert_evidence_lease(p_lock_name, p_owner_id);
   if jsonb_typeof(p_publications) is distinct from 'array'
      or jsonb_array_length(p_publications) not between 1 and 200 then
     raise exception 'Invalid publication batch' using errcode = '22023';
@@ -157,13 +187,14 @@ begin
       raise exception 'Invalid publication revision' using errcode = '22023';
     end if;
     saved := public.publish_evidence_manifest(finding_id,expected::bigint,(item->>'suppressed')::boolean,
-      item->'finding_pointer',nullif(item->'sources_pointer','null'::jsonb));
+      item->'finding_pointer',nullif(item->'sources_pointer','null'::jsonb),p_lock_name,p_owner_id);
     return next;
   end loop;
+  perform public.assert_evidence_lease(p_lock_name, p_owner_id);
 end;
 $$;
-revoke all on function public.publish_evidence_manifests(jsonb) from public, anon, authenticated;
-grant execute on function public.publish_evidence_manifests(jsonb) to service_role;
+revoke all on function public.publish_evidence_manifests(jsonb,text,uuid) from public, anon, authenticated;
+grant execute on function public.publish_evidence_manifests(jsonb,text,uuid) to service_role;
 
 create function public.read_evidence_manifests(p_ids text[])
 returns table (finding_id text, revision bigint, finding_pointer jsonb)
