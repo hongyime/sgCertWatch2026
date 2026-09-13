@@ -194,3 +194,6 @@
 2026-09-13: Lease-fenced storage draft passed hosted Node 20/24 and Vercel preview checks; production preservation and PostPlan v68 bytes verified. The portfolio goal remains active and free-tier capacity is unresolved.
 
 - 2026-09-13: Keep experimental finding row and manifest publication atomic after uploads; preserve legacy wide rows and source snapshots. Verify immutable bodies before acknowledging no-ops because legacy edits do not increment manifest revisions. Inject the writer only after acquiring a fresh ingest lease; no automatic fallback or production flag.
+
+- 2026-09-13: PR #14 finding writer passed all applicable hosted checks and remains a draft; PostPlan 75 is verified. All 26 deployed public homepages return HTTP 200 without Vercel deployment-error headers. Preserve the full portfolio scope and rotate to Collector migration ordering; capacity has not been solved by the experimental dual representation.
+2026-09-13: Source coexistence writes use native relational rows as authority and atomically publish checked complete snapshots. Preserve old object-only sightings by rejecting unreconciled publication; never infer deletion from their absence in relational rows.

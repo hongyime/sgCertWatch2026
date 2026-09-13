@@ -11,6 +11,7 @@ import pg from "pg";
 import { privateManifestStore, publicManifestReader } from "../lib/storage/supabase-manifests.js";
 import { EvidenceRepository } from "../lib/storage/evidence-repository.js";
 import { findingWriterCases } from "./test_evidence_finding_cases.mjs";
+import { sourceWriterCases } from "./test_evidence_source_cases.mjs";
 
 const target = new URL(process.env.EVIDENCE_HTTP_DATABASE_URL || "invalid:");
 assert.equal(target.hostname, "127.0.0.1");
@@ -125,7 +126,7 @@ await test("PostgREST 14.5 HTTP evidence contracts", { timeout: 60000 }, async t
     await pool.query(await readFile(new URL("../supabase/run-locks.sql", import.meta.url), "utf8"));
     await pool.query("select public.acquire_run_lock($1,$2,900)", [fixtureLease.name, fixtureLease.owner]);
     for (const [extension] of schema.matchAll(/^alter table public\.findings add column[^;]+;/gm)) await pool.query(extension);
-    for (const name of ["evidence-manifests.sql", "evidence-row-contracts.sql", "evidence-finding-writer.sql"])
+    for (const name of ["evidence-manifests.sql", "evidence-row-contracts.sql", "evidence-finding-writer.sql", "evidence-source-writer.sql"])
       await pool.query(await readFile(new URL("../supabase/experimental/" + name, import.meta.url), "utf8"));
     const authenticator = "prawn_http_" + randomBytes(8).toString("hex");
     const password = randomBytes(32).toString("hex");
@@ -266,6 +267,7 @@ await test("PostgREST 14.5 HTTP evidence contracts", { timeout: 60000 }, async t
       assert.deepEqual(await repository.readPublicFinding("adapter"), finding);
     });
     await findingWriterCases(t, { pool, store, reader, raw, minimal, request, seedFinding, originals, loopbackFetch, tokens });
+    await sourceWriterCases(t, { pool, store, reader, raw, minimal, request, seedFinding, originals, loopbackFetch, tokens, fixtureLease });
   } finally {
     if (server && server.exitCode === null) { const stopped = once(server, "exit"); server.kill(); await stopped; }
     await pool.end();

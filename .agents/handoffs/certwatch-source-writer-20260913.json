@@ -1,0 +1,66 @@
+{
+  "at": "2026-09-13T07:20:24.155397+00:00",
+  "tasks": [
+    {
+      "id": "trace_source_upsert_and_coexistence_contract",
+      "done": true
+    },
+    {
+      "id": "implement_batched_source_publication",
+      "done": true
+    },
+    {
+      "id": "prove_native_database_http_and_ingest_behavior",
+      "done": true
+    },
+    {
+      "id": "complete_hosted_checks_and_preservation_audit",
+      "done": false
+    },
+    {
+      "id": "update_portfolio_html_and_markdown",
+      "done": false
+    }
+  ],
+  "finding": "Experimental source writer currently publishes each finding separately and leaves relational source rows stale. Current production has no experimental schema. Add a batched relational/object commit with legacy-row conflict detection before any cutover.",
+  "constraints": [
+    "Preserve original checkout and existing notes.",
+    "No production schema, record, schedule, shared Docker or SG SHIOK changes.",
+    "Retain full portfolio scope and all source/reader/writer/capacity/lifecycle gates."
+  ],
+  "production_changed": false,
+  "base": "028ed384ace8b93d2ba765f8690b6c548a239691",
+  "local_validation": {
+    "http_cases": 46,
+    "http_total_results": 47,
+    "http_database": "PostgreSQL 17.11",
+    "http_gateway": "PostgREST 14.5",
+    "node": "24.21.0",
+    "http_lab_stopped": true,
+    "unit": "passed",
+    "reliability": "passed",
+    "offline_cases": 36,
+    "production_mutations": false
+  },
+  "fixture_costs": {
+    "incoming_sources": 200,
+    "finding_contexts": 200,
+    "lease_preflight_calls": 1,
+    "context_calls": 1,
+    "normalization_calls": 1,
+    "commit_calls": 1,
+    "source_object_uploads": 1,
+    "source_object_verification_reads": 1,
+    "shared_parent_object_reads": 1,
+    "identical_retry_uploads": 0,
+    "identical_retry_native_row_changes": 0,
+    "identical_retry_revision_changes": 0
+  },
+  "remaining_cutover_gates": [
+    "Every reader/writer and older object-only source reconciliation",
+    "Full capacity, migration peak space, object metadata and orphan lifecycle",
+    "Actual egress, continuing growth and rollback"
+  ],
+  "stage": "local_validated",
+  "next": "Commit and run hosted draft checks, verify original and production preservation, then update the portfolio report. No production activation."
+}

@@ -161,7 +161,16 @@ export async function findingWriterCases(t, { pool, store, reader, raw, minimal,
       writerFactory: lease => {
         assert(Object.isFrozen(lease)); assert.equal(lease.owner, seenOwners.at(-1));
         const transport = failure === "finding" ? { ...objects, async putIfAbsent() { throw new Error("Upload failed"); } } : objects;
-        const writer = evidenceIngestWriter({ url: "https://fixture.invalid", serviceKey: tokens.service_role, fetchImpl: loopbackFetch, objects: transport, lease });
+        const fetchImpl = (url, options) => {
+          if (failure === "source-materialize" && new URL(url).pathname.endsWith("/commit_evidence_sources")) {
+            const body = JSON.parse(options.body); const entry = body.p_entries[0];
+            const invalid = JSON.stringify({ ...JSON.parse(entry.incoming_rows[0]), observed_at: null });
+            entry.incoming_rows = [invalid]; entry.source_rows = [invalid];
+            return loopbackFetch(url, { ...options, body: JSON.stringify(body) });
+          }
+          return loopbackFetch(url, options);
+        };
+        const writer = evidenceIngestWriter({ url: "https://fixture.invalid", serviceKey: tokens.service_role, fetchImpl, objects: transport, lease });
         return { async upsertFindings(...args) { const result = await writer.upsertFindings(...args); events.push("findings"); return result; },
           async upsertFindingSources(...args) { if (failure === "source") throw new Error("Source upload failed"); const result = await writer.upsertFindingSources(...args); events.push("sources"); return result; } };
       }
@@ -173,7 +182,11 @@ export async function findingWriterCases(t, { pool, store, reader, raw, minimal,
       await assert.rejects(run("writer-ingest-" + phase, phase), /[Uu]pload failed/);
       assert.deepEqual(state.get("ct_source_state"), cursor);
     }
-    assert.equal(new Set(seenOwners).size, 3); assert.equal(await store.get("writer-ingest-finding"), null);
+    await assert.rejects(run("writer-ingest-source-materialize", "source-materialize"), /HTTP 400/);
+    assert.deepEqual(state.get("ct_source_state"), cursor);
+    assert.equal((await pool.query("select count(*)::int as count from public.finding_sources where finding_id='writer-ingest-source-materialize'")).rows[0].count, 0);
+    assert.equal((await pool.query("select count(*)::int as count from public.finding_sources where finding_id='writer-ingest-good'")).rows[0].count, 1);
+    assert.equal(new Set(seenOwners).size, 4); assert.equal(await store.get("writer-ingest-finding"), null);
     const privateRepo = repository(objects); assert.equal((await privateRepo.readPrivateSnapshot("writer-ingest-good")).sources.length, 1);
     assert.equal((await pool.query("select count(*)::int as count from public.run_locks where name='writer-ingest' and locked_until>clock_timestamp()" )).rows[0].count, 0);
   });
