@@ -190,3 +190,7 @@
 2026-09-13: Reuse existing row leases and fresh per-acquisition owner UUIDs for experimental publication fencing; uploads stay outside database transactions and all cutover gates remain active.
 
 2026-09-13: Reproduced stale publication after ownership handoff and verified database fencing locally. Worker clients retain one fresh owner UUID, publication transactions prevent takeover until commit, and expiry/validation failure rolls back the whole batch. No production cutover or data cleanup.
+
+2026-09-13: Lease-fenced storage draft passed hosted Node 20/24 and Vercel preview checks; production preservation and PostPlan v68 bytes verified. The portfolio goal remains active and free-tier capacity is unresolved.
+
+- 2026-09-13: Keep experimental finding row and manifest publication atomic after uploads; preserve legacy wide rows and source snapshots. Verify immutable bodies before acknowledging no-ops because legacy edits do not increment manifest revisions. Inject the writer only after acquiring a fresh ingest lease; no automatic fallback or production flag.

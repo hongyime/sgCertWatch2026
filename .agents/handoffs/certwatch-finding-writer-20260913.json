@@ -1,0 +1,78 @@
+{
+  "at": "2026-09-13T04:15:23.411301+00:00",
+  "tasks": [
+    {
+      "id": "implement_batched_finding_context_and_atomic_publication",
+      "done": true
+    },
+    {
+      "id": "integrate_lease_bound_ingest_writer_in_synthetic_tests",
+      "done": true
+    },
+    {
+      "id": "validate_conflicts_lossless_upserts_cursor_and_hosted_checks",
+      "done": false
+    },
+    {
+      "id": "verify_original_and_production_preservation",
+      "done": false
+    },
+    {
+      "id": "refresh_portfolio_and_publish_html",
+      "done": false
+    }
+  ],
+  "draft_pr": 14,
+  "production_changed": false,
+  "constraints": [
+    "Experimental only; preserve legacy wide rows and all sightings.",
+    "Use one acquired run lease and bounded batches; no fallback on failed publication.",
+    "No production schema, record, collector, shared Docker or SG SHIOK changes."
+  ],
+  "remaining_cutover_gates": [
+    "all readers/writers",
+    "source batching and legacy coexistence",
+    "full capacity and object lifecycle",
+    "egress and migration peak space",
+    "growth and rollback"
+  ],
+  "local_validation": {
+    "unit": {
+      "exit_code": 0,
+      "node": "24.21.0",
+      "seconds": 11.14,
+      "tap_test_counts": [
+        8,
+        13,
+        7
+      ]
+    },
+    "reliability": {
+      "exit_code": 0,
+      "node": "24.21.0",
+      "seconds": 27.26,
+      "tap_test_counts": [
+        3,
+        35,
+        4,
+        2,
+        27,
+        78
+      ]
+    },
+    "http": {
+      "tests": 37,
+      "node": "24.21.0",
+      "postgres": "17.11",
+      "postgrest": "14.5",
+      "stopped": true,
+      "evidence": "certwatch-http-finding-writer-final.log"
+    },
+    "regression": {
+      "red": "certwatch-http-finding-stale-body-red.log",
+      "green": "certwatch-http-finding-stale-body-green.log"
+    },
+    "original_tracked_files_preserved": 182
+  },
+  "next": "Push the reviewed draft and verify hosted Node 20/24, original/production preservation and portfolio report."
+}

@@ -82,8 +82,8 @@ function summarizeRun(run, matched, persisted, startedAt) {
 
 export async function runIngest({ store = storage, scan = runSources, score = scoreCertificate,
   readData = loadData, now = Date.now,
-  minIntervalMs = Number(process.env.CT_MIN_INTERVAL_MS || 0), leaseOptions = {} } = {}) {
-  const { getServiceState, insertSourceRuns, upsertFindingSources, upsertFindings } = store;
+  minIntervalMs = Number(process.env.CT_MIN_INTERVAL_MS || 0), leaseOptions = {}, writerFactory } = {}) {
+  const { getServiceState, insertSourceRuns } = store;
   if (!store.configured("service")) throw new Error("Supabase service credentials are required");
   const lease = await acquireRunLease(store, leaseOptions);
   if (!lease) {
@@ -105,6 +105,13 @@ export async function runIngest({ store = storage, scan = runSources, score = sc
       console.log(JSON.stringify({ skipped: "scan_not_due", last_started_at: previous.last_started_at || previous.checked_at }));
       return;
     }
+    // A factory receives only this acquisition's immutable identity. Failed
+    // experimental writes propagate; production continues to use store by default.
+    stage = "writer_initialization";
+    const writer = writerFactory ? await writerFactory(Object.freeze({ name: lease.name, owner: lease.owner })) : store;
+    const { upsertFindings, upsertFindingSources } = writer;
+    if (typeof upsertFindings !== "function" || typeof upsertFindingSources !== "function") throw new Error("Invalid ingest writer");
+    lease.assertOwned();
     await setState("ct_poll_status", { ...previous, state: "running", last_started_at: startedAt,
       run_id: process.env.GITHUB_RUN_ID || null, trigger: process.env.GITHUB_EVENT_NAME || "local",
       scheduler_trigger: process.env.SCHEDULER_TRIGGER || "github",
