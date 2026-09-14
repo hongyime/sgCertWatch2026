@@ -432,7 +432,7 @@ function renderSummary() {
   $("pending-list").innerHTML = pending.length
     ? pending.map(renderReviewCard).join("")
     : '<li class="watch-card review-card"><div class="watch-card-head"><strong>No parked domains</strong><span class="review-badge ok">clear</span></div><p>Nothing is waiting for manual ownership review.</p></li>';
-  $("data-status").textContent = `Live at ${new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" })}`;
+  $("data-status").textContent = `Watchlist loaded at ${new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 function renderFindingList() {

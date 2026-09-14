@@ -462,6 +462,7 @@ try {
     await page.waitForFunction(() => document.getElementById("source-status").textContent.includes("Collection paused"));
     assert.equal(await page.locator("#export-json-btn").isDisabled(), true);
     assert.equal(await page.locator("#feed-count").innerText(), "—");
+    await page.locator("#data-status").filter({ hasText: "Watchlist loaded at" }).waitFor();
     const pausedCounts = [requests.length, statusRequests];
     await page.clock.fastForward(86400000);
     await page.evaluate(() => {
