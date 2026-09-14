@@ -1,6 +1,7 @@
 import { configured, getState, listCtLogs, listSourceRuns } from "../lib/supabase.js";
 import { isLogSelected } from "../lib/ct/loglist.js";
 import { compileSourceHealth } from "../lib/ct/source-health.js";
+import { respondIfStorageRecovery } from "../lib/storage-recovery.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 const CT_TARGET_MS = 15 * 60 * 1000;
@@ -130,6 +131,8 @@ export default async function handler(request, response) {
     response.status(405).json({ error: "method_not_allowed" });
     return;
   }
+
+  if (respondIfStorageRecovery(response)) return;
 
   try {
     const [pollStatusRow, sourceRuns, sourceStateRow, intelResult, logsResult] = await Promise.all([
