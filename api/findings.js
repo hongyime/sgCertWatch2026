@@ -1,4 +1,5 @@
 import { configured, listFindings } from "../lib/supabase.js";
+import { respondIfStorageRecovery } from "../lib/storage-recovery.js";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") {
@@ -6,6 +7,8 @@ export default async function handler(request, response) {
     response.status(405).json({ error: "method_not_allowed" });
     return;
   }
+
+  if (respondIfStorageRecovery(response)) return;
 
   try {
     const limit = request.query?.limit || 50;

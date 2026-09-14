@@ -133,6 +133,8 @@ try {
     let failFindings = false;
     let failStatus = false;
     let failWatchlist = false;
+    let storageRecovery = false;
+    const recoveryPayload = { error: "storage_recovery", maintenance: true };
     let statusRequests = 0;
     let holdWatch = false;
     let heldRoute;
@@ -150,6 +152,7 @@ try {
       }
       if (url.pathname === "/api/findings") {
         requests.push(url);
+        if (storageRecovery) return route.fulfill({ status: 503, json: recoveryPayload });
         if (streamFindings) return route.continue();
         if (holdWatch && url.searchParams.get("view") === "watch") {
           heldRoute = route;
@@ -162,6 +165,7 @@ try {
       }
       if (url.pathname === "/api/source-status") {
         statusRequests++;
+        if (storageRecovery) return route.fulfill({ status: 503, json: recoveryPayload });
         return failStatus ? route.fulfill({ status: 503, body: "Unavailable" }) : route.fulfill({ json: currentHealth });
       }
       if (url.pathname === "/watchlist.json" && failWatchlist) return route.fulfill({ status: 503, body: "Unavailable" });
@@ -450,6 +454,33 @@ try {
     assert.equal(await page.locator("#feed-health").innerText(), "Live database connected");
     assert.notEqual(await page.locator("#ct-last-success").innerText(), "Not reported");
     failWatchlist = false;
+
+    // Explicit database recovery pauses both timers, including visibility retries.
+    storageRecovery = true;
+    await page.reload();
+    await page.locator("#finding-list").filter({ hasText: "Stored history is temporarily unavailable" }).waitFor();
+    await page.waitForFunction(() => document.getElementById("source-status").textContent.includes("Collection paused"));
+    assert.equal(await page.locator("#export-json-btn").isDisabled(), true);
+    assert.equal(await page.locator("#feed-count").innerText(), "—");
+    const pausedCounts = [requests.length, statusRequests];
+    await page.clock.fastForward(86400000);
+    await page.evaluate(() => {
+      Object.defineProperty(document, "hidden", { configurable: true, value: true });
+      document.dispatchEvent(new Event("visibilitychange"));
+      Object.defineProperty(document, "hidden", { configurable: true, value: false });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await page.clock.fastForward(86400000);
+    assert.deepEqual([requests.length, statusRequests], pausedCounts);
+    await checkLayout(page);
+    await page.screenshot({ path: join(screenshots, `storage-recovery-${width}.png`), fullPage: true });
+    await page.click('[data-view="monitor"]');
+    await checkLayout(page);
+    // An explicit reload can recover after the operational guard is cleared.
+    storageRecovery = false;
+    await page.reload();
+    await cards.first().waitFor();
+    assert.equal(await page.locator("#feed-health").innerText(), "Live database connected");
     assert.deepEqual(externalRequests, [], "Rendering never requests a suspected host or provider screenshot");
     assert.deepEqual(notificationRequests, [], "Monitoring never requests a notification worker or queue API");
     assert.deepEqual(errors, []);

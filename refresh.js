@@ -11,6 +11,7 @@ export function visiblePoller(task, intervalMs, {
   let pending = false;
   let failures = 0;
   let stopped = false;
+  let automatic = true;
 
   function clearScheduled() {
     clearTimer(timer);
@@ -38,7 +39,7 @@ export function visiblePoller(task, intervalMs, {
       if (!cancelled) failures = ok && !controller.signal.aborted ? 0 : Math.min(failures + 1, 10);
       if (!stopped && !visibility.hidden) {
         if (pending) void run();
-        else timer = setTimer(run, Math.min(intervalMs * 2 ** failures, maxDelayMs));
+        else if (automatic) timer = setTimer(run, Math.min(intervalMs * 2 ** failures, maxDelayMs));
       }
     }
   }
@@ -55,12 +56,16 @@ export function visiblePoller(task, intervalMs, {
     if (visibility.hidden) {
       clearScheduled();
       current?.abort(new DOMException("Page hidden", "AbortError"));
-    } else refresh();
+    } else if (automatic) refresh();
   }
 
   visibility.addEventListener("visibilitychange", onVisibility);
   return {
     refresh,
+    pauseAutomatic() {
+      automatic = false;
+      clearScheduled();
+    },
     stop() {
       stopped = true;
       clearScheduled();

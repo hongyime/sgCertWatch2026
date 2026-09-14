@@ -456,6 +456,14 @@ async function renderFindings(signal) {
   $("export-csv-btn").disabled = true;
   try {
     const response = await fetch(`/api/findings?limit=50${view}`, { signal });
+    if (response.status === 503) {
+      const recovery = await response.json().catch(() => null);
+      signal.throwIfAborted();
+      if (recovery?.error === "storage_recovery" && recovery.maintenance === true) {
+        findingsPoller.pauseAutomatic();
+        throw Object.assign(new Error("Database recovery in progress"), { maintenance: true });
+      }
+    }
     if (!response.ok) throw new Error("Feed unavailable");
     const payload = await response.json();
     signal.throwIfAborted();
@@ -477,9 +485,12 @@ async function renderFindings(signal) {
     state.feedLoading = false;
     state.feedError = true;
     $("feed-status").textContent = error.message;
-    $("feed-health").textContent = "Feed check failed";
+    $("feed-health").textContent = error.maintenance ? "Database recovery in progress" : "Feed check failed";
+    $("feed-count").textContent = "—";
     $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
-    $("finding-list").innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>Could not load alerts</strong><span class="review-badge">unavailable</span></div><p>The findings API did not respond on this page load. The next automatic refresh will check again.</p></li>';
+    $("finding-list").innerHTML = error.maintenance
+      ? '<li class="watch-card finding-card"><div class="watch-card-head"><strong>Stored history is temporarily unavailable</strong><span class="review-badge">recovery</span></div><p>New collection is paused while database recovery is arranged. Automatic refresh is paused on this page. Reload later to check again.</p></li>'
+      : '<li class="watch-card finding-card"><div class="watch-card-head"><strong>Could not load alerts</strong><span class="review-badge">unavailable</span></div><p>The findings API did not respond on this page load. The next automatic refresh will check again.</p></li>';
     return false;
   } finally {
     if (request === state.findingsRequest) {
@@ -567,6 +578,14 @@ function renderMonitorOperations(source, unavailable = false) {
 async function renderSourceStatus(signal) {
   try {
     const response = await fetch(CT_SOURCE_STATUS_URL, { signal });
+    if (response.status === 503) {
+      const recovery = await response.json().catch(() => null);
+      signal.throwIfAborted();
+      if (recovery?.error === "storage_recovery" && recovery.maintenance === true) {
+        statusPoller.pauseAutomatic();
+        throw Object.assign(new Error("Database recovery in progress"), { maintenance: true });
+      }
+    }
     if (!response.ok) throw new Error("source check failed");
     const status = await response.json();
     signal.throwIfAborted();
@@ -619,14 +638,18 @@ async function renderSourceStatus(signal) {
       }).join("")
       : '<div class="source-row"><span>Waiting for first scan</span><strong>pending</strong><small>No CT scan details reported</small></div>';
     return true;
-  } catch (_error) {
+  } catch (error) {
     if (signal.aborted && signal.reason?.name !== "TimeoutError") return false;
     renderMonitorOperations({}, true);
     $("source-status").dataset.level = "unknown";
-    $("source-status").textContent = "scan status unknown";
-    $("source-list").innerHTML = '<div class="source-row bad"><span>Status API</span><strong>unavailable</strong><small>Could not load source health</small></div>';
-    $("intel-schedule").textContent = "Intel schedule unavailable";
-    $("intel-source-list").innerHTML = '<div class="source-row bad"><span>Intel status API</span><strong>unavailable</strong><small>Could not load intel source health</small></div>';
+    $("source-status").textContent = error.maintenance ? "Collection paused · database recovery" : "scan status unknown";
+    $("source-list").innerHTML = error.maintenance
+      ? '<div class="source-row warn"><span>Database recovery</span><strong>paused</strong><small>Source history is temporarily unavailable. Automatic refresh is paused on this page.</small></div>'
+      : '<div class="source-row bad"><span>Status API</span><strong>unavailable</strong><small>Could not load source health</small></div>';
+    $("intel-schedule").textContent = error.maintenance ? "Intel collection paused" : "Intel schedule unavailable";
+    $("intel-source-list").innerHTML = error.maintenance
+      ? '<div class="source-row warn"><span>Database recovery</span><strong>paused</strong><small>New collection is paused. Reload later to check again.</small></div>'
+      : '<div class="source-row bad"><span>Intel status API</span><strong>unavailable</strong><small>Could not load intel source health</small></div>';
     return false;
   }
 }

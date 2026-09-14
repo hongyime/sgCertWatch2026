@@ -4,6 +4,22 @@ import { visiblePoller } from "../refresh.js";
 
 const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve(); };
 
+test("recovery pauses automatic reads and visibility retries but keeps explicit refresh", async () => {
+  let calls = 0;
+  const h = harness(async () => { calls++; h.poll.pauseAutomatic(); return false; });
+  h.poll.refresh(); await flush();
+  assert.equal(calls, 1);
+  await h.advance(86400000);
+  await h.hidden(true); await h.hidden(false);
+  assert.equal(calls, 1);
+  assert.equal(h.timers.size, 0);
+  h.poll.refresh(); await flush();
+  assert.equal(calls, 2);
+  await h.advance(86400000);
+  assert.equal(calls, 2);
+  h.poll.stop();
+});
+
 function harness(task, interval = 120000) {
   const visibility = new EventTarget();
   visibility.hidden = false;

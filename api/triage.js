@@ -1,5 +1,6 @@
 import { checkBearer } from "../lib/auth.js";
 import { serviceHeaders } from "../lib/supabase.js";
+import { respondIfStorageRecovery } from "../lib/storage-recovery.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -18,6 +19,8 @@ export default async function handler(request, response) {
   if (!auth.ok) {
     return json(response, auth.reason === "server_misconfigured" ? 500 : 401, { error: "unauthorized" });
   }
+
+  if (respondIfStorageRecovery(response)) return;
 
   let body;
   try {

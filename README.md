@@ -88,6 +88,17 @@ GitHub's fallback schedule targets `:07`, `:22`, `:37`, and `:52` UTC each hour.
 
 Required repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. The dashboard functions need `SUPABASE_URL` and `SUPABASE_ANON_KEY` only. Apply `supabase/schema.sql` for a new database, then `supabase/run-locks.sql` before deploying the reliability runners. No messaging credentials are required.
 
+During a database recovery, set Vercel production `SGCERTWATCH_STORAGE_RECOVERY=true`
+and deploy. Findings, source status and authenticated triage then return a no-store
+503 recovery response without contacting Supabase. The dashboard explains the
+outage and pauses automatic and visibility-triggered refreshes until the page is
+reloaded. This guard does not pause collectors: their GitHub workflows and external
+scheduler must be paused separately. It neither deletes records nor recovers disk
+space. Clear the flag and redeploy only after database health, retained data and
+bounded reads/writes are validated. Keep collection paused until measured capacity
+and a growth guard pass. Rolling back the code removes this guard; it does not
+repair the database or restore quota.
+
 The poller samples CertStream, tails a rotating set of direct RFC6962 CT logs, reads Let's Encrypt logs through the Static CT API tile reader, and keeps `crt.sh` as a fallback comparison source. Findings and source health are stored in Supabase so the dashboard can show partial coverage instead of treating one source outage as a total outage.
 
 The Actions job polls six direct logs with up to 128 entries each, and permits 30 tiles per static log within a 90-second static-source budget. Logs rotate across runs so later logs are not starved. Malformed responses retain the failed range for retry, while earlier completed static tiles are retained. HTTP 429 pauses sibling logs for at least one hour within each adapter, honoring longer `Retry-After` values. Cooldowns are saved before scoring and survive restarts or later write failures without advancing unsaved cursors. Other operators continue. Findings and CT sightings are saved in batches of 200 rows. These are sampling limits, not full CT coverage.
