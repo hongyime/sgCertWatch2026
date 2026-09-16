@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-12T23:54:50.545823+00:00",
+  "updated_at": "2026-09-13T00:05:54.705151+00:00",
   "draft_pr": 14,
-  "stage": "local_checks_passed_hosted_pending",
+  "stage": "checked_draft_and_report_published",
   "tasks": [
     {
       "id": "map_existing_lease_and_publication_contracts",
@@ -17,11 +17,11 @@
     },
     {
       "id": "validate_concurrency_http_and_hosted_draft",
-      "done": false
+      "done": true
     },
     {
       "id": "verify_production_preservation_and_publish_report",
-      "done": false
+      "done": true
     }
   ],
   "production_changed": false,
@@ -43,5 +43,14 @@
     "postgrest_version": "14.5",
     "all_passed": true
   },
-  "lease_cost": "Single or 200-snapshot batch: one lease preflight plus one publication RPC. An identical source retry checks ownership before reading and before acknowledging. Object upload/read costs are unchanged."
+  "lease_cost": "Single or 200-snapshot batch: one lease preflight plus one publication RPC. An identical source retry checks ownership before reading and before acknowledging. Object upload/read costs are unchanged.",
+  "source": "df907674b2f59bd0eac95196b328209141fa500a",
+  "hosted_run": "https://github.com/hongyime/sgCertWatch2026/actions/runs/34726646733",
+  "postplan": {
+    "version": 68,
+    "url": "https://aoo181uudk96.postplan.dev#certwatch-lease-draft",
+    "verified_at": "2026-09-13T00:05:10.229269+00:00"
+  },
+  "portfolio_complete": false,
+  "next": "Rotate to Pokemoncards metadata persistence and the remaining portfolio queue; retain all production cutover gates."
 }

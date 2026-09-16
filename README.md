@@ -176,9 +176,9 @@ credentials are exposed to clients.
 
 This adapter is not connected to production. The SQL under
 `supabase/experimental/` is for an isolated fixture database, not an installation
-step. Existing feed/watch/intel, triage and capture contracts, ingestion timestamps,
-lease fencing, real Storage behavior, full-data sizing, migration space, growth,
-orphan cleanup and rollback must be verified before switching representations.
+step. Existing feed/watch/intel, triage and capture contracts, complete production
+writer integration, full-data sizing, migration space, growth, object lifecycle
+and rollback must be verified before switching representations.
 The earlier packed-size projection does not establish production free-tier fit.
 
 Run `node --test scripts/test_evidence_objects.mjs` for offline transport/frame
@@ -211,7 +211,7 @@ checksum-pinned PostgREST 14.5 binary, matching the production API version check
 on 13 September 2026. Supply `EVIDENCE_HTTP_DATABASE_URL` for another fresh
 loopback fixture database and `EVIDENCE_POSTGREST_BINARY` for that binary. The
 test starts and stops its own loopback HTTP server with synthetic credentials.
-It verifies 19 contracts through actual HTTP: identifier-only acknowledgements,
+It verifies contracts through actual HTTP: identifier-only acknowledgements,
 partial fields, defaults, numeric/timestamp precision, rejected batches, JWT/RLS
 permissions, binary manifest pointers, atomic CAS and source retries. Bulk rows
 must have the same column set, matching the production PostgREST upsert; property
@@ -222,9 +222,30 @@ The reviewed boundary is the current schema and ingestion payloads: at most 200
 incoming rows, 10,000 existing sources, and a 4 MiB transport budget. Finding IDs
 must still be nonempty and all identity components are byte-bounded. Generated
 or identity columns are rejected; arbitrary future defaults and schema changes
-need a new contract review. Finding-writer, search, capture, intel and triage
-integration, database lease fencing, oversized-row handling and the full storage
-migration remain open. No production writer imports this experimental adapter.
+need a new contract review. Search, capture, intel, triage, outbox, full production
+writer integration, oversized-row handling and the storage migration remain open.
+No production entry point imports this experimental adapter.
+
+The experimental `evidenceIngestWriter` now accepts the finding/source methods
+used by `runIngest`. An explicitly injected `writerFactory` receives that run's
+fresh, immutable lease identity after acquisition. The default writer is unchanged
+and no environment switch enables the experimental path. Finding batches use one
+context read, one native normalization RPC and one atomic row/manifest commit,
+plus a lease preflight. Original JSON numbers and timestamps travel as text.
+First publication preserves existing sightings; later finding updates retain their
+source pointers. Relational edits and manifest conflicts retry within a fixed
+budget, and a failed upload/publication prevents the ingest cursor from advancing.
+
+The 200-new-finding fixture uploads and verifies one packed object. An identical
+retry verifies each shared object once and performs no uploads or revision writes.
+This verification matters because legacy edits can leave an object's body stale
+without changing its manifest revision. Finding rows and pointers commit together
+after uploads; locks never span Storage calls. Real HTTP tests cover rollback,
+lease takeover, legacy edits during upload/lock waits and ingest failure stages.
+The SQL deliberately preserves wide relational finding rows. Source updates are
+still per finding and are not mirrored to legacy source rows; all readers/writers,
+capacity, egress, lifecycle and migration rollback must pass before production
+cutover. These fixture request counts do not prove monthly free-tier fit.
 
 ## Licence
 
