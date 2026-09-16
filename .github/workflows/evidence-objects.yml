@@ -1,10 +1,10 @@
 name: Evidence object contract
 on:
   pull_request:
-    paths: ['lib/storage/**', 'supabase/experimental/evidence-manifests.sql', 'scripts/test_evidence_*.mjs', '.github/workflows/evidence-objects.yml']
+    paths: ['lib/storage/**', 'supabase/experimental/**', 'supabase/schema.sql', 'scripts/test_evidence_*.mjs', '.github/workflows/evidence-objects.yml']
   push:
     branches: [main]
-    paths: ['lib/storage/**', 'supabase/experimental/evidence-manifests.sql', 'scripts/test_evidence_*.mjs', '.github/workflows/evidence-objects.yml']
+    paths: ['lib/storage/**', 'supabase/experimental/**', 'supabase/schema.sql', 'scripts/test_evidence_*.mjs', '.github/workflows/evidence-objects.yml']
 permissions:
   contents: read
 concurrency:
@@ -42,6 +42,15 @@ jobs:
       - run: node --test scripts/test_evidence_objects.mjs
       - run: node --test scripts/test_evidence_postgres.mjs
         env:
+          EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+      - name: Create separate synthetic row-contract database
+        run: >-
+          node --input-type=module -e 'import pg from "pg";
+          const client = new pg.Client({ connectionString: process.env.EVIDENCE_TEST_DATABASE_URL });
+          await client.connect(); await client.query("create database prawn_evidence_fixture_rowsci"); await client.end();'
+      - run: node --test scripts/test_evidence_rows.mjs
+        env:
+          EVIDENCE_ROWS_DATABASE_URL: postgres://postgres:fixture-only@127.0.0.1:5432/prawn_evidence_fixture_rowsci
           EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
       - run: node scripts/test_evidence_metadata.mjs
         env:
