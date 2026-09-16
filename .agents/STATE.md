@@ -1,24 +1,33 @@
-# Current state — 14 September 2026
+# Current state — 16 September 2026
 
-SGCertWatch collection is paused by the owner's choice: ingest/intel/capture
-workflows disabled and the external scheduler has no cron triggers. Preserve all
-records; no project pause, paid upgrade or collection restart is authorized.
+Collection is paused (owner directive, 2026-09-14). All records retained.
+No collection restart, paid upgrade or record deletion authorised.
 
-The Supabase database has zero filesystem space available and its db/rest health
-is UNHEALTHY with PostgreSQL in recovery mode (02:05 UTC). SQL cannot connect.
-Provider recovery is needed before retained-data and capacity validation can
-continue. The Last 30 Days Vercel dashboard attributes 3h10m / 78.3% to this app;
-it includes deployments before ingestion left Vercel on 24 August.
+## Merged today (2026-09-16)
 
-This change adds an opt-in production SGCERTWATCH_STORAGE_RECOVERY guard. It
-returns no-store 503s without database calls; triage authentication stays first.
-The UI explains the outage and pauses automatic/visibility refreshes. Manual
-refresh or reload remains possible. It does not recover disk or CPU allowance.
-The full unit pipeline and desktop/mobile browser flows pass locally, including
-13 polling/recovery tests. Hosted checks and production activation are next.
+- **PR #17** `feat/lossless-evidence-storage` — lossless evidence storage +
+  atomic writes. Merged to main.
+- **PR #18** `maintenance/db-space-recovery-20260916` — drops two write-only
+  indexes on `finding_sources` + VACUUM FULL + REINDEX. Merged to main.
+  Migration file: `supabase/space-recovery.sql` (ready to apply).
 
-Keep the separate lossless-storage PR #14 draft pending. Do not apply migrations
-against the recovering database. After provider recovery, validate retained data,
-bounded reads/writes, migration space, rollback and measured capacity before
-clearing this guard or considering a collection restart. Earlier implementation
-history remains in JOURNAL.md and git history.
+## Blocked: DB in PostgreSQL recovery mode
+
+The database reports `FATAL: 57P03` (PostgreSQL WAL replay in progress).
+Project API shows ACTIVE_HEALTHY — the issue is at the PostgreSQL layer, not
+the API layer. This is automatic; no action required beyond waiting.
+This is NOT a monthly-quota reset. Storage (500 MB free-tier limit) is a
+permanent cap, not monthly. DB grew to ~777 MB before the cap was hit.
+
+**When DB exits recovery mode, run immediately:**
+```
+supabase db query --linked -f supabase/space-recovery.sql
+```
+Then measure: `SELECT pg_size_pretty(pg_database_size(current_database()));`
+
+## Next steps
+
+1. Wait for PostgreSQL to exit recovery (automatic, minutes–hours).
+2. Apply space-recovery.sql — should bring DB from ~777 MB to ~400–450 MB.
+3. If DB remains under 500 MB: re-evaluate collection restart with owner.
+4. Earlier implementation history and open decisions in JOURNAL.md.
