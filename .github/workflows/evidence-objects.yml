@@ -1,0 +1,81 @@
+name: Evidence object contract
+on:
+  pull_request:
+    paths: ['lib/storage/**', 'lib/run-lease.js', 'scripts/run-ingest.mjs', 'supabase/experimental/**', 'supabase/schema.sql', 'supabase/run-locks.sql', 'scripts/test_evidence_*.mjs', '.github/workflows/evidence-objects.yml']
+  push:
+    branches: [main]
+    paths: ['lib/storage/**', 'lib/run-lease.js', 'scripts/run-ingest.mjs', 'supabase/experimental/**', 'supabase/schema.sql', 'supabase/run-locks.sql', 'scripts/test_evidence_*.mjs', '.github/workflows/evidence-objects.yml']
+permissions:
+  contents: read
+concurrency:
+  group: evidence-objects-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 24]
+    services:
+      postgres:
+        image: postgres:17.11
+        env:
+          POSTGRES_PASSWORD: fixture-only
+          POSTGRES_DB: prawn_evidence_fixture_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      EVIDENCE_TEST_DATABASE_URL: postgres://postgres:fixture-only@127.0.0.1:5432/prawn_evidence_fixture_ci
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test scripts/test_evidence_objects.mjs
+      - run: node --test scripts/test_evidence_postgres.mjs
+        env:
+          EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+      - name: Create separate synthetic row-contract database
+        run: >-
+          node --input-type=module -e 'import pg from "pg";
+          const client = new pg.Client({ connectionString: process.env.EVIDENCE_TEST_DATABASE_URL });
+          await client.connect(); await client.query("create database prawn_evidence_fixture_rowsci"); await client.end();'
+      - run: node --test scripts/test_evidence_rows.mjs
+        env:
+          EVIDENCE_ROWS_DATABASE_URL: postgres://postgres:fixture-only@127.0.0.1:5432/prawn_evidence_fixture_rowsci
+          EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+      - name: Install pinned PostgREST HTTP fixture binary
+        shell: bash
+        run: |
+          mkdir "$RUNNER_TEMP/postgrest-14.5"
+          cd "$RUNNER_TEMP/postgrest-14.5"
+          curl --fail --location --max-time 45 --retry 2 --output postgrest.tar.xz https://github.com/PostgREST/postgrest/releases/download/v14.5/postgrest-v14.5-linux-static-x86-64.tar.xz
+          echo 'ab5cc7e974d4940447991804588cfb8b3f7b2c57b691f0905df04d51ede69470  postgrest.tar.xz' | sha256sum --check --strict
+          tar --extract --file postgrest.tar.xz
+      - name: Create separate synthetic HTTP database
+        run: >-
+          node --input-type=module -e 'import pg from "pg";
+          const client = new pg.Client({ connectionString: process.env.EVIDENCE_TEST_DATABASE_URL });
+          await client.connect(); await client.query("create database prawn_evidence_fixture_httpci"); await client.end();'
+      - name: Verify actual PostgREST HTTP contracts
+        run: node --test scripts/test_evidence_http.mjs
+        env:
+          EVIDENCE_HTTP_DATABASE_URL: postgres://postgres:fixture-only@127.0.0.1:5432/prawn_evidence_fixture_httpci
+          EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+          EVIDENCE_POSTGREST_BINARY: ${{ runner.temp }}/postgrest-14.5/postgrest
+      - run: node scripts/test_evidence_metadata.mjs
+        env:
+          EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+      - name: Verify resuming a completed synthetic measurement
+        run: node scripts/test_evidence_metadata.mjs
+        env:
+          EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+          EVIDENCE_METADATA_RESUME: "1"

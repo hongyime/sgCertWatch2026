@@ -1,0 +1,56 @@
+{
+  "updated_at": "2026-09-13T00:05:54.705151+00:00",
+  "draft_pr": 14,
+  "stage": "checked_draft_and_report_published",
+  "tasks": [
+    {
+      "id": "map_existing_lease_and_publication_contracts",
+      "done": true
+    },
+    {
+      "id": "reproduce_stale_worker_publication",
+      "done": true
+    },
+    {
+      "id": "implement_database_fencing_and_adapter_contract",
+      "done": true
+    },
+    {
+      "id": "validate_concurrency_http_and_hosted_draft",
+      "done": true
+    },
+    {
+      "id": "verify_production_preservation_and_publish_report",
+      "done": true
+    }
+  ],
+  "production_changed": false,
+  "contract": "Bind each experimental writer to one fresh run-lock owner; validate the owner and expiry under a database row lock through publication. Preserve revision conflicts and byte-identical source retries.",
+  "remaining_cutover_gates": [
+    "full reader and writer integration",
+    "oversized records",
+    "full project and Storage capacity",
+    "object lifecycle",
+    "weighted egress",
+    "growth",
+    "migration peak space and rollback"
+  ],
+  "local_checks": {
+    "offline_cases": 36,
+    "postgres_cases": 28,
+    "http_cases": 22,
+    "postgres_version": "17.11",
+    "postgrest_version": "14.5",
+    "all_passed": true
+  },
+  "lease_cost": "Single or 200-snapshot batch: one lease preflight plus one publication RPC. An identical source retry checks ownership before reading and before acknowledging. Object upload/read costs are unchanged.",
+  "source": "df907674b2f59bd0eac95196b328209141fa500a",
+  "hosted_run": "https://github.com/hongyime/sgCertWatch2026/actions/runs/34726646733",
+  "postplan": {
+    "version": 68,
+    "url": "https://aoo181uudk96.postplan.dev#certwatch-lease-draft",
+    "verified_at": "2026-09-13T00:05:10.229269+00:00"
+  },
+  "portfolio_complete": false,
+  "next": "Rotate to Pokemoncards metadata persistence and the remaining portfolio queue; retain all production cutover gates."
+}

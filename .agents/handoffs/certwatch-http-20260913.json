@@ -1,0 +1,49 @@
+{
+  "at": "2026-09-12T20:40:19.324084+00:00",
+  "previous_turn": "PROGRESS: Home weather is production verified and PostPlan 64 published",
+  "base_head": "e0f73d431edaf1678b188090d1819d586cbe5044",
+  "tasks": [
+    {
+      "id": "inspect_real_http_contract",
+      "done": true
+    },
+    {
+      "id": "run_postgrest_differential_oracle",
+      "done": true
+    },
+    {
+      "id": "fix_confirmed_adapter_differences",
+      "done": true
+    },
+    {
+      "id": "validate_and_update_draft",
+      "done": false
+    },
+    {
+      "id": "refresh_portfolio_deployments_and_report",
+      "done": false
+    }
+  ],
+  "scope": "Synthetic PostgreSQL and PostgREST; no experimental production schema, collector, application data, Docker or SG SHIOK changes",
+  "cutover_gates": [
+    "full reader and writer integration",
+    "database lease fencing",
+    "oversized records",
+    "full capacity and lifecycle",
+    "weighted egress and growth",
+    "migration peak and rollback"
+  ],
+  "portfolio_goal_complete": false,
+  "local_validation": {
+    "http_cases": 19,
+    "offline_cases": 33,
+    "native_row_cases": 19,
+    "postgres_integration_cases": 17,
+    "production_postgrest_version": "14.5",
+    "fixture_postgrest_version": "14.5",
+    "fixture_postgres_version": "17.11",
+    "production_postgres_version_previously_measured": "17.6",
+    "local_services_stopped": true,
+    "hosted_checks": "pending"
+  }
+}

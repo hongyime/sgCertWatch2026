@@ -1,0 +1,105 @@
+{
+  "at": "2026-09-13T04:15:23.411301+00:00",
+  "tasks": [
+    {
+      "id": "implement_batched_finding_context_and_atomic_publication",
+      "done": true
+    },
+    {
+      "id": "integrate_lease_bound_ingest_writer_in_synthetic_tests",
+      "done": true
+    },
+    {
+      "id": "validate_conflicts_lossless_upserts_cursor_and_hosted_checks",
+      "done": true
+    },
+    {
+      "id": "verify_original_and_production_preservation",
+      "done": true
+    },
+    {
+      "id": "refresh_portfolio_and_publish_html",
+      "done": true
+    }
+  ],
+  "draft_pr": 14,
+  "production_changed": false,
+  "constraints": [
+    "Experimental only; preserve legacy wide rows and all sightings.",
+    "Use one acquired run lease and bounded batches; no fallback on failed publication.",
+    "No production schema, record, collector, shared Docker or SG SHIOK changes."
+  ],
+  "remaining_cutover_gates": [
+    "all readers/writers",
+    "source batching and legacy coexistence",
+    "full capacity and object lifecycle",
+    "egress and migration peak space",
+    "growth and rollback"
+  ],
+  "local_validation": {
+    "unit": {
+      "exit_code": 0,
+      "node": "24.21.0",
+      "seconds": 11.14,
+      "tap_test_counts": [
+        8,
+        13,
+        7
+      ]
+    },
+    "reliability": {
+      "exit_code": 0,
+      "node": "24.21.0",
+      "seconds": 27.26,
+      "tap_test_counts": [
+        3,
+        35,
+        4,
+        2,
+        27,
+        78
+      ]
+    },
+    "http": {
+      "tests": 37,
+      "node": "24.21.0",
+      "postgres": "17.11",
+      "postgrest": "14.5",
+      "stopped": true,
+      "evidence": "certwatch-http-finding-writer-final.log"
+    },
+    "regression": {
+      "red": "certwatch-http-finding-stale-body-red.log",
+      "green": "certwatch-http-finding-stale-body-green.log"
+    },
+    "original_tracked_files_preserved": 182
+  },
+  "next": "UnifiedCollector dependency-ordered migrations and remaining full CI failures; runtime-location question remains pending.",
+  "source": "028ed384ace8b93d2ba765f8690b6c548a239691",
+  "hosted": {
+    "run": 34738064820,
+    "nodes": [
+      20,
+      24
+    ],
+    "cases": {
+      "offline": 36,
+      "postgres": 28,
+      "native_rows": 19,
+      "http": 36
+    },
+    "metadata_and_resume": "passed"
+  },
+  "security_checks": "All 16 applicable checks passed; draft launch readiness skipped",
+  "original_preservation": "182 tracked hashes and original environment/edits unchanged",
+  "stage": "checked_draft",
+  "publication": {
+    "url": "https://aoo181uudk96.postplan.dev",
+    "version": 75,
+    "verified_at": "2026-09-13T04:50:45.126767+00:00",
+    "local_sha256": "a95824d87f7e8ff12582253cc416b06a99afe7caff5a2489a1016c0964a028a4",
+    "hosted_sha256": "a95824d87f7e8ff12582253cc416b06a99afe7caff5a2489a1016c0964a028a4",
+    "matches": true
+  },
+  "portfolio_complete": false
+}
