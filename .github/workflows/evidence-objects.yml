@@ -43,3 +43,11 @@ jobs:
       - run: node --test scripts/test_evidence_postgres.mjs
         env:
           EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+      - run: node scripts/test_evidence_metadata.mjs
+        env:
+          EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+      - name: Verify resuming a completed synthetic measurement
+        run: node scripts/test_evidence_metadata.mjs
+        env:
+          EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+          EVIDENCE_METADATA_RESUME: "1"
