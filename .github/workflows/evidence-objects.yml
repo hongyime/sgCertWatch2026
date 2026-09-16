@@ -52,6 +52,25 @@ jobs:
         env:
           EVIDENCE_ROWS_DATABASE_URL: postgres://postgres:fixture-only@127.0.0.1:5432/prawn_evidence_fixture_rowsci
           EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+      - name: Install pinned PostgREST HTTP fixture binary
+        shell: bash
+        run: |
+          mkdir "$RUNNER_TEMP/postgrest-14.5"
+          cd "$RUNNER_TEMP/postgrest-14.5"
+          curl --fail --location --max-time 45 --retry 2 --output postgrest.tar.xz https://github.com/PostgREST/postgrest/releases/download/v14.5/postgrest-v14.5-linux-static-x86-64.tar.xz
+          echo 'ab5cc7e974d4940447991804588cfb8b3f7b2c57b691f0905df04d51ede69470  postgrest.tar.xz' | sha256sum --check --strict
+          tar --extract --file postgrest.tar.xz
+      - name: Create separate synthetic HTTP database
+        run: >-
+          node --input-type=module -e 'import pg from "pg";
+          const client = new pg.Client({ connectionString: process.env.EVIDENCE_TEST_DATABASE_URL });
+          await client.connect(); await client.query("create database prawn_evidence_fixture_httpci"); await client.end();'
+      - name: Verify actual PostgREST HTTP contracts
+        run: node --test scripts/test_evidence_http.mjs
+        env:
+          EVIDENCE_HTTP_DATABASE_URL: postgres://postgres:fixture-only@127.0.0.1:5432/prawn_evidence_fixture_httpci
+          EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}
+          EVIDENCE_POSTGREST_BINARY: ${{ runner.temp }}/postgrest-14.5/postgrest
       - run: node scripts/test_evidence_metadata.mjs
         env:
           EVIDENCE_TEST_CONTAINER_ID: ${{ job.services.postgres.id }}

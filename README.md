@@ -206,6 +206,18 @@ RPC. A local 10,000-source fixture exposed quadratic map rebuilding; one SQL
 aggregate completed normalization in 785 ms under the eight-second statement
 deadline. This synthetic timing is not a production capacity or billing result.
 
+The workflow also runs `node --test scripts/test_evidence_http.mjs` against a
+checksum-pinned PostgREST 14.5 binary, matching the production API version checked
+on 13 September 2026. Supply `EVIDENCE_HTTP_DATABASE_URL` for another fresh
+loopback fixture database and `EVIDENCE_POSTGREST_BINARY` for that binary. The
+test starts and stops its own loopback HTTP server with synthetic credentials.
+It verifies 19 contracts through actual HTTP: identifier-only acknowledgements,
+partial fields, defaults, numeric/timestamp precision, rejected batches, JWT/RLS
+permissions, binary manifest pointers, atomic CAS and source retries. Bulk rows
+must have the same column set, matching the production PostgREST upsert; property
+order can differ. Native SQL and HTTP tests remain separate oracles. Private
+object bytes in this HTTP suite use an in-memory fixture, not live Storage.
+
 The reviewed boundary is the current schema and ingestion payloads: at most 200
 incoming rows, 10,000 existing sources, and a 4 MiB transport budget. Finding IDs
 must still be nonempty and all identity components are byte-bounded. Generated
