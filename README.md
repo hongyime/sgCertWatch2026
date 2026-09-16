@@ -242,10 +242,28 @@ This verification matters because legacy edits can leave an object's body stale
 without changing its manifest revision. Finding rows and pointers commit together
 after uploads; locks never span Storage calls. Real HTTP tests cover rollback,
 lease takeover, legacy edits during upload/lock waits and ingest failure stages.
-The SQL deliberately preserves wide relational finding rows. Source updates are
-still per finding and are not mirrored to legacy source rows; all readers/writers,
-capacity, egress, lifecycle and migration rollback must pass before production
-cutover. These fixture request counts do not prove monthly free-tier fit.
+The SQL deliberately preserves wide relational finding rows.
+
+Source batches now use one context read, one native normalization RPC and one
+atomic source-row/manifest commit, plus a lease preflight. Up to 200 incoming
+sightings across different findings share packed objects. In the 200-finding
+fixture, one source object is uploaded and verified; one additional object read
+checks the shared parent snapshots. An identical retry reads the two existing
+objects without uploads, native row updates or manifest revision changes.
+Native source rows remain authoritative during coexistence. Their original
+numbers, timestamps, omitted fields and untouched sightings are preserved.
+Concurrent parent/source edits and competing publications cause bounded retries.
+SQL failures roll back the whole RPC, and failed materialization leaves the
+collector cursor unchanged. Parent and child locks are ordered and acquired only
+after object verification; publication rechecks the same acquired run lease.
+
+The older standalone object-only source updater is a separate draft interface.
+The ingest writer refuses to discard sightings present only in an old object;
+those snapshots require explicit reconciliation before using coexistence writes.
+All readers/writers, capacity, egress, lifecycle and migration rollback must pass
+before production cutover. These fixture request counts do not prove monthly
+free-tier fit. Real HTTP tests use an isolated PostgREST/PostgreSQL database with
+synthetic in-memory object storage; they do not contact production providers.
 
 ## Licence
 
