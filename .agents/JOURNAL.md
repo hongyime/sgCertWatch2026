@@ -1,3 +1,5 @@
+- 2026-09-16: Prepared supabase/space-recovery.sql to reclaim database bytes without deleting or altering any row. Drops finding_sources_source_idx and finding_sources_observed_at_idx (write-only indexes never read by the app; only the composite primary key is used for upserts and cascades), then VACUUM FULL findings, finding_sources and ct_source_runs to reclaim update-driven bloat, then REINDEX the retained indexes. Index drops are guarded, transactional and dependency-checked; VACUUM FULL is safe because collection is paused. Rollback recreates the two dropped indexes. Vercel hold is respected: pushed to maintenance/db-space-recovery-20260916, not main.
+
 # Agent Journal
 
 - 2026-09-10: Applied tested index-only migration b5d0568 after hosted run 34468234544 passed 14 PostgreSQL checks and the existing pipeline/browser suites. Production recovered exactly 27,762,688 bytes; all 157,227 findings and 455,108 sightings remained, with unchanged table files, retained indexes, constraints, privileges and policies. Cluster database size is still about 790 MB, above Free allowance; keep larger lossless storage work open.

@@ -54,8 +54,9 @@ create table if not exists public.finding_sources (
 );
 
 -- finding_sources_pkey already supports finding_id equality lookups.
-create index if not exists finding_sources_source_idx on public.finding_sources (source);
-create index if not exists finding_sources_observed_at_idx on public.finding_sources (observed_at desc);
+-- Historical btree indexes on (source) and (observed_at desc) were dropped
+-- for space recovery (see supabase/space-recovery.sql); the application only
+-- writes to finding_sources and never filters it by those columns.
 
 alter table public.finding_sources enable row level security;
 
