@@ -1,0 +1,47 @@
+{
+  "updated_at": "2026-09-12T23:54:50.545823+00:00",
+  "draft_pr": 14,
+  "stage": "local_checks_passed_hosted_pending",
+  "tasks": [
+    {
+      "id": "map_existing_lease_and_publication_contracts",
+      "done": true
+    },
+    {
+      "id": "reproduce_stale_worker_publication",
+      "done": true
+    },
+    {
+      "id": "implement_database_fencing_and_adapter_contract",
+      "done": true
+    },
+    {
+      "id": "validate_concurrency_http_and_hosted_draft",
+      "done": false
+    },
+    {
+      "id": "verify_production_preservation_and_publish_report",
+      "done": false
+    }
+  ],
+  "production_changed": false,
+  "contract": "Bind each experimental writer to one fresh run-lock owner; validate the owner and expiry under a database row lock through publication. Preserve revision conflicts and byte-identical source retries.",
+  "remaining_cutover_gates": [
+    "full reader and writer integration",
+    "oversized records",
+    "full project and Storage capacity",
+    "object lifecycle",
+    "weighted egress",
+    "growth",
+    "migration peak space and rollback"
+  ],
+  "local_checks": {
+    "offline_cases": 36,
+    "postgres_cases": 28,
+    "http_cases": 22,
+    "postgres_version": "17.11",
+    "postgrest_version": "14.5",
+    "all_passed": true
+  },
+  "lease_cost": "Single or 200-snapshot batch: one lease preflight plus one publication RPC. An identical source retry checks ownership before reading and before acknowledging. Object upload/read costs are unchanged."
+}

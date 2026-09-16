@@ -1,10 +1,10 @@
 name: Evidence object contract
 on:
   pull_request:
-    paths: ['lib/storage/**', 'supabase/experimental/**', 'supabase/schema.sql', 'scripts/test_evidence_*.mjs', '.github/workflows/evidence-objects.yml']
+    paths: ['lib/storage/**', 'supabase/experimental/**', 'supabase/schema.sql', 'supabase/run-locks.sql', 'scripts/test_evidence_*.mjs', '.github/workflows/evidence-objects.yml']
   push:
     branches: [main]
-    paths: ['lib/storage/**', 'supabase/experimental/**', 'supabase/schema.sql', 'scripts/test_evidence_*.mjs', '.github/workflows/evidence-objects.yml']
+    paths: ['lib/storage/**', 'supabase/experimental/**', 'supabase/schema.sql', 'supabase/run-locks.sql', 'scripts/test_evidence_*.mjs', '.github/workflows/evidence-objects.yml']
 permissions:
   contents: read
 concurrency:

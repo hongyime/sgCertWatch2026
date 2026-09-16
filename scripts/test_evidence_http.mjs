@@ -55,7 +55,8 @@ const loopbackFetch = (url, options) => {
   assert(endpoint.pathname.startsWith("/rest/v1/"));
   return nativeFetch(origin + endpoint.pathname.slice("/rest/v1".length) + endpoint.search, options);
 };
-const store = privateManifestStore({ url: "https://fixture.invalid", serviceKey: tokens.service_role, fetchImpl: loopbackFetch });
+const fixtureLease = { name: "evidence_http", owner: "d673a2ad-2be0-4f10-8e57-6dc202609130" };
+const store = privateManifestStore({ url: "https://fixture.invalid", serviceKey: tokens.service_role, fetchImpl: loopbackFetch, lease: fixtureLease });
 const reader = publicManifestReader({ url: "https://fixture.invalid", anonKey: tokens.anon, fetchImpl: loopbackFetch });
 async function nativeUpsert(kind, rows) {
   // Exactly the production URL selection and Prefer header in lib/supabase.js.
@@ -120,6 +121,8 @@ await test("PostgREST 14.5 HTTP evidence contracts", { timeout: 60000 }, async t
     }
     const schema = await readFile(new URL("../supabase/schema.sql", import.meta.url), "utf8");
     await pool.query(schema.split("create table if not exists public.ct_source_runs")[0]);
+    await pool.query(await readFile(new URL("../supabase/run-locks.sql", import.meta.url), "utf8"));
+    await pool.query("select public.acquire_run_lock($1,$2,900)", [fixtureLease.name, fixtureLease.owner]);
     for (const [extension] of schema.matchAll(/^alter table public\.findings add column[^;]+;/gm)) await pool.query(extension);
     for (const name of ["evidence-manifests.sql", "evidence-row-contracts.sql"])
       await pool.query(await readFile(new URL("../supabase/experimental/" + name, import.meta.url), "utf8"));
@@ -191,7 +194,8 @@ await test("PostgREST 14.5 HTTP evidence contracts", { timeout: 60000 }, async t
     await t.test("anonymous and authenticated JWTs cannot normalize or publish", async () => {
       for (const role of ["anon", "authenticated"]) for (const [path, body] of [
         ["/rpc/prepare_evidence_rows", { p_kind: "finding", p_existing: [], p_incoming: [JSON.stringify(minimal("denied"))] }],
-        ["/rpc/publish_evidence_manifests", { p_publications: [] }]
+        ["/rpc/publish_evidence_manifests", { p_publications: [], p_lock_name: fixtureLease.name, p_owner_id: fixtureLease.owner }],
+        ["/rpc/assert_evidence_lease", { p_lock_name: fixtureLease.name, p_owner_id: fixtureLease.owner }]
       ]) { const response = await request(path, { role, body: JSON.stringify(body) }); assert.equal(response.status, role === "anon" ? 401 : 403); assert.equal((await response.json()).code, "42501"); }
     });
     await t.test("real HTTP manifests enforce suppression and hide source pointers", async () => {
@@ -212,6 +216,39 @@ await test("PostgREST 14.5 HTTP evidence contracts", { timeout: 60000 }, async t
       assert.deepEqual(await store.compareAndSwapMany(entries), [{ id: "batch-a", saved: false }, { id: "batch-b", saved: false }]);
       await assert.rejects(store.compareAndSwapMany([{ id: "batch-a", expectedRevision: 1, next }, { id: "batch-b", expectedRevision: 1, next: { ...next, suppressed: true } }]));
       assert.equal((await store.get("batch-a")).revision, 1);
+    });
+    await t.test("HTTP publication requires lease parameters and returns 409 for a lost lease", async () => {
+      await seedFinding("lease-http");
+      const base = { p_finding_id: "lease-http", p_expected_revision: 0, p_suppressed: false,
+        p_finding_pointer: { object: "a".repeat(64), offset: 0, length: 100 }, p_sources_pointer: null };
+      const missing = await request("/rpc/publish_evidence_manifest", { body: JSON.stringify(base) });
+      assert.equal(missing.status, 404); assert.equal((await missing.json()).code, "PGRST202");
+      for (const extra of [{ p_lock_name: null, p_owner_id: null },
+        { p_lock_name: fixtureLease.name, p_owner_id: "d673a2ad-2be0-4f10-8e57-6dc202609139" }]) {
+        const response = await request("/rpc/publish_evidence_manifest", { body: JSON.stringify({ ...base, ...extra }) });
+        assert.equal(response.status, 409); assert.equal((await response.json()).code, "PT409");
+      }
+      assert.equal(await store.get("lease-http"), null);
+      await store.assertLease();
+    });
+    await t.test("HTTP service credentials cannot bypass the fenced publication functions", async () => {
+      const response = await request("/evidence_object_manifests", { body: JSON.stringify({ finding_id: "lease-http", revision: 1, finding_pointer: null }) });
+      assert.equal(response.status, 403); assert.equal((await response.json()).code, "42501");
+      const oldBatch = await request("/rpc/publish_evidence_manifests", { body: JSON.stringify({ p_publications: [] }) });
+      assert.equal(oldBatch.status, 404); assert.equal((await oldBatch.json()).code, "PGRST202");
+    });
+    await t.test("HTTP stale single and batch writers cannot publish after lease transfer", async () => {
+      const lease = { name: "http-takeover", owner: "d673a2ad-2be0-4f10-8e57-6dc202609133" };
+      await pool.query("select public.acquire_run_lock($1,$2,900)", [lease.name, lease.owner]);
+      const stale = privateManifestStore({ url: "https://fixture.invalid", serviceKey: tokens.service_role, fetchImpl: loopbackFetch, lease });
+      await seedFinding("http-takeover-a"); await seedFinding("http-takeover-b");
+      const next = { suppressed: false, finding: { object: "b".repeat(64), offset: 0, length: 100 }, sources: null };
+      await stale.compareAndSwap("http-takeover-a", 0, next); await stale.assertLease();
+      await pool.query("update public.run_locks set locked_until=clock_timestamp()-interval '1 second' where name=$1", [lease.name]);
+      await pool.query("select public.acquire_run_lock($1,$2,900)", [lease.name, "d673a2ad-2be0-4f10-8e57-6dc202609134"]);
+      await assert.rejects(stale.compareAndSwap("http-takeover-a", 1, next), /HTTP 409/);
+      await assert.rejects(stale.compareAndSwapMany([{ id: "http-takeover-a", expectedRevision: 1, next }, { id: "http-takeover-b", expectedRevision: 0, next }]), /HTTP 409/);
+      assert.equal((await stale.get("http-takeover-a")).revision, 1); assert.equal(await stale.get("http-takeover-b"), null);
     });
     await t.test("source adapter publishes through HTTP and makes identical retry a no-op", async () => {
       const [finding] = await seedFinding("adapter");
