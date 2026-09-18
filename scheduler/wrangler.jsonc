@@ -17,7 +17,7 @@
     "GITHUB_OWNER": "hongyime",
     "GITHUB_REPO": "sgCertWatch2026",
     "GITHUB_REF": "main",
-    "DISPATCH_ENABLED": "false"
+    "DISPATCH_ENABLED": "true"
   }
   // Set GITHUB_TOKEN (fine-grained PAT, this repository only, Actions: read/write)
   // and STATUS_TOKEN (random, at least 32 characters) using wrangler secret put.
