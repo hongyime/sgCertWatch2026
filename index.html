@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <header class="topbar">
       <div class="brand-block">
         <p class="eyebrow">Certificate Transparency</p>
@@ -22,13 +23,13 @@
       <nav class="primary-nav" aria-label="Primary">
         <button type="button" class="active" data-view="alerts">Domains</button>
         <button type="button" data-view="watch">Watchlist</button>
-        <button type="button" data-view="review">Review</button>
+        <button type="button" data-view="review">Ownership checks</button>
         <button type="button" data-view="monitor">Monitor</button>
       </nav>
       <div class="status" id="data-status">Loading data</div>
     </header>
 
-    <main>
+    <main id="main-content">
       <section class="view" data-view-panel="watch">
         <section class="watch-hero" aria-label="Domains to watch now">
           <div class="section-heading">
@@ -110,18 +111,38 @@
           <div class="triage-toolbar">
             <input id="finding-search" type="search" placeholder="Filter findings (domain, brand)..." class="triage-input" aria-label="Filter findings">
             <select id="severity-filter" class="triage-select" aria-label="Finding priority or CT severity">
-              <option value="watch">Watch now (priority >=70)</option>
-              <option value="">All stored findings</option>
-              <option value="critical">CT Critical (>=90)</option>
-              <option value="high">CT High (70–89)</option>
-              <option value="medium">CT Medium (40–69)</option>
-              <option value="low">CT Low (1–39)</option>
+              <option value="watch">Watch now (priority &gt;=70)</option>
+              <option value="">Recent findings (50 loaded)</option>
+              <option value="critical">CT Critical (&gt;=90)</option>
+              <option value="high">CT High (70&ndash;89)</option>
+              <option value="medium">CT Medium (40&ndash;69)</option>
+              <option value="low">CT Low (1&ndash;39)</option>
             </select>
             <button id="export-json-btn" type="button" class="btn-secondary">Export JSON</button>
             <button id="export-csv-btn" type="button" class="btn-secondary">Export CSV</button>
           </div>
+          <div id="saved-views-bar" class="saved-views-bar" aria-label="Saved views">
+            <span class="saved-views-label">Views:</span>
+            <div id="saved-views-list" class="saved-views-list"></div>
+            <button id="save-view-btn" type="button" class="btn-secondary btn-sm">Save view</button>
+            <button id="copy-view-link-btn" type="button" class="btn-secondary btn-sm">Copy link</button>
+            <span id="saved-views-msg" class="saved-views-msg" aria-live="polite"></span>
+          </div>
 
-          <ul class="watch-list" id="finding-list"></ul>
+          <div id="coverage-strip" class="coverage-strip" aria-label="Collection coverage">
+            <span id="coverage-collection">—</span>
+            <span id="coverage-last-scan">Last CT scan: —</span>
+            <span id="coverage-evidence">Evidence: —</span>
+          </div>
+
+          <div id="workbench-layout" class="workbench-layout">
+            <div id="finding-list-container">
+              <ul class="watch-list" id="finding-list"></ul>
+            </div>
+            <aside id="detail-panel" class="detail-panel" aria-label="Finding details" hidden>
+              <div id="detail-panel-inner" class="detail-panel-inner"></div>
+            </aside>
+          </div>
         </section>
       </section>
 

@@ -28,7 +28,8 @@ const state = {
   findingsRequest: 0,
   feedConfigured: false,
   feedLoading: false,
-  feedError: false
+  feedError: false,
+  selectedFindingId: null
 };
 
 const $ = (id) => document.getElementById(id);
@@ -225,42 +226,6 @@ function renderReasons(signals = []) {
   return reasons.length ? tokenList(reasons) : "";
 }
 
-function renderFindingCard(finding, index) {
-  const domains = (finding.domains || []).slice(0, 3).join(", ");
-  const sources = (finding.sources || []).map(sourceLabel).join(", ") || "unknown";
-  return `
-    <li class="watch-card finding-card interactive-card" data-finding-index="${index}" tabindex="0" role="button" aria-label="Review ${escapeHtml(finding.registrable)}">
-      <div class="watch-card-head">
-        <strong>${escapeHtml(finding.registrable)}</strong>
-        <span class="severity ${escapeHtml(finding.severity)}">CT ${escapeHtml(finding.severity)} ${escapeHtml(finding.score)}</span>
-      </div>
-      <p>${escapeHtml(domains || "No domain names stored")}</p>
-      ${renderPriority(finding)}
-      ${renderIntelBadges(finding)}
-      ${renderReasons(finding.signals)}
-      <div class="watch-meta">
-        <span>${escapeHtml(finding.source_count || 0)} CT source${finding.source_count === 1 ? "" : "s"}: ${escapeHtml(sources)}</span>
-        <span>Cert seen ${escapeHtml(formatTime(finding.observed_at))}</span>
-      </div>
-    </li>
-  `;
-}
-
-function renderReviewCard(entry) {
-  return `
-    <li class="watch-card review-card">
-      <div class="watch-card-head">
-        <strong>${escapeHtml(entry.registrable)}</strong>
-        <span class="review-badge">review</span>
-      </div>
-      <p>${escapeHtml(entry.brand)} is parked for human checking before it can suppress alerts.</p>
-      <div class="watch-meta">
-        <span>Not treated as official yet</span>
-        <span>Manual source proof needed</span>
-      </div>
-    </li>
-  `;
-}
 
 function currentRows() {
   const { data } = state;
@@ -410,13 +375,18 @@ function setView(view) {
   state.view = view;
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === view);
+    if (button.dataset.view === view) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
   });
   document.querySelectorAll("[data-view-panel]").forEach((panel) => {
     panel.classList.toggle("active", panel.dataset.viewPanel === view);
   });
 }
 
-function renderSummary() {
+async function renderSummary() {
   const { watchlist, keywords, allowlist, schemes } = state.data;
   const pending = allowlist.pending_verification?.entries || [];
   const unverifiedAllowlist = allowlist.entries.filter((entry) => !entry.verified).length;
@@ -429,21 +399,81 @@ function renderSummary() {
   $("allowlist-status").textContent = unverifiedAllowlist === 0 ? "Ready" : `${unverifiedAllowlist} unverified`;
   $("scheme-status").textContent = unverifiedSchemes === 0 ? "Ready" : `${unverifiedSchemes} unverified`;
   $("pending-status").textContent = pending.length === 0 ? "None" : `${pending.length} parked`;
-  $("pending-list").innerHTML = pending.length
-    ? pending.map(renderReviewCard).join("")
-    : '<li class="watch-card review-card"><div class="watch-card-head"><strong>No parked domains</strong><span class="review-badge ok">clear</span></div><p>Nothing is waiting for manual ownership review.</p></li>';
+  if (pending.length) {
+    const { renderReviewCard } = await import('./lib/ui/findings-list.js');
+    $("pending-list").innerHTML = pending.map(renderReviewCard).join("");
+  } else {
+    $("pending-list").innerHTML = '<li class="watch-card review-card"><div class="watch-card-head"><strong>No parked domains</strong><span class="review-badge ok">clear</span></div><p>Nothing is waiting for manual ownership review.</p></li>';
+  }
   $("data-status").textContent = `Watchlist loaded at ${new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-function renderFindingList() {
+async function renderFindingList() {
   if (state.feedError || (state.feedLoading && !state.findings.length)) return;
   const findings = filteredFindings();
-  $("feed-status").textContent = !state.feedConfigured ? "Database not connected"
-    : findings.length ? `${findings.length} domains need review`
-      : state.findingSeverity === "watch" ? "No domains at priority 70 or above" : "No matching stored findings";
-  $("finding-list").innerHTML = findings.length
-    ? findings.map((f, idx) => renderFindingCard(f, idx)).join("")
-    : '<li class="watch-card finding-card"><div class="watch-card-head"><strong>No matching findings</strong><span class="review-badge ok">clear</span></div><p>No alerts match current search/filter criteria.</p></li>';
+  $('feed-status').textContent = !state.feedConfigured ? 'Database not connected'
+    : findings.length ? `${findings.length} of ~50 loaded findings match`
+      : state.findingSeverity === 'watch' ? 'No domains at priority 70 or above' : 'No matches in loaded findings';
+
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+  const container = $('finding-list-container');
+
+  if (isDesktop && container) {
+    // Remove any existing table
+    const old = container.querySelector('.finding-list-table');
+    if (old) old.remove();
+    $('finding-list').style.display = 'none';
+    if (findings.length) {
+      const tbody = findings.map((f) => `
+        <tr data-finding-id="${escapeHtml(f.id)}" aria-selected="${f.id === state.selectedFindingId ? 'true' : 'false'}">
+          <td class="col-domain">${escapeHtml(f.registrable)}</td>
+          <td>${escapeHtml((f.matched_brands || []).join(', ') || '\u2014')}</td>
+          <td><span class="severity ${escapeHtml(f.severity)}">${escapeHtml(f.severity)} ${escapeHtml(f.priority_score ?? f.score ?? 0)}</span></td>
+          <td>${escapeHtml(intelHitCount(f))}</td>
+          <td>${escapeHtml(formatTime(f.observed_at))}</td>
+          <td class="col-review">Sign in to review</td>
+          <td><button type="button" class="btn-secondary" data-open-detail="${escapeHtml(f.id)}">Details</button></td>
+        </tr>`).join('');
+      const table = document.createElement('table');
+      table.className = 'finding-list-table';
+      table.innerHTML = `<thead><tr><th>Domain</th><th>Brand</th><th>Priority</th><th>Evidence</th><th>Observed</th><th>Review</th><th></th></tr></thead><tbody>${tbody}</tbody>`;
+      container.appendChild(table);
+    } else {
+      const table = document.createElement('table');
+      table.className = 'finding-list-table';
+      table.innerHTML = '<thead><tr><th>Domain</th><th>Brand</th><th>Priority</th><th>Evidence</th><th>Observed</th><th>Review</th><th></th></tr></thead><tbody><tr><td colspan="7">No matching findings</td></tr></tbody>';
+      container.appendChild(table);
+    }
+  } else {
+    if (container) {
+      const old = container.querySelector('.finding-list-table');
+      if (old) old.remove();
+      $('finding-list').style.display = '';
+    }
+    if (findings.length) {
+      const { renderFindingCard } = await import('./lib/ui/findings-list.js');
+      $('finding-list').innerHTML = findings.map((f, idx) => renderFindingCard(f, idx)).join('');
+    } else {
+      $('finding-list').innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>No matching findings</strong><span class="review-badge ok">clear</span></div><p>No alerts match current search/filter criteria.</p></li>';
+    }
+  }
+
+  // Refresh or stale-notice for the selected finding
+  if (state.selectedFindingId && isDesktop) {
+    const selected = findings.find((f) => f.id === state.selectedFindingId);
+    if (selected) {
+      openDetailPanel(selected);
+    } else {
+      const panel = $('detail-panel');
+      const inner = $('detail-panel-inner');
+      if (panel && inner) {
+        panel.hidden = false;
+        inner.innerHTML = `<div class="detail-stale-notice">Selected finding is no longer in the current view. <button type="button" id="close-stale-btn">Dismiss</button></div>`;
+        const dismissBtn = inner.querySelector('#close-stale-btn');
+        if (dismissBtn) dismissBtn.onclick = closeDetailPanel;
+      }
+    }
+  }
 }
 
 async function renderFindings(signal) {
@@ -575,6 +605,53 @@ function renderMonitorOperations(source, unavailable = false) {
   $("ct-run").textContent = [operations.run_id, operations.trigger].filter(Boolean).join(" / ") || "Not reported";
 }
 
+function renderCoverageStrip(source, unavailable = false) {
+  const operations = source.operations || {};
+
+  function formatSgt(value) {
+    if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return "Not reported";
+    return new Date(value).toLocaleString("en-SG", {
+      timeZone: "Asia/Singapore",
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZoneName: "short",
+    });
+  }
+
+  // Collection state — derived only from operations fields, never from storage_configured
+  let collectionText;
+  if (unavailable) {
+    collectionText = "Unknown";
+  } else if (operations.state === "running") {
+    collectionText = "Scan running";
+  } else if (operations.state === "completed") {
+    collectionText = `Last scan: ${formatSgt(operations.last_success_at)}`;
+  } else {
+    // absent, "pending", "failed", or any unrecognised state
+    collectionText = "Collection paused";
+  }
+
+  // Last CT scan time
+  const lsText = `Last CT scan: ${formatSgt(operations.last_success_at)}`;
+
+  // Evidence freshness
+  const freshnessMap = {
+    fresh: "Fresh",
+    warning: "Warning \u2014 scan overdue",
+    critical: "Critical \u2014 scan overdue",
+  };
+  const freshnessText = unavailable ? "Unknown" : (freshnessMap[operations.freshness] || "Unknown");
+
+  const collectionEl = $("coverage-collection");
+  const lastScanEl = $("coverage-last-scan");
+  const evidenceEl = $("coverage-evidence");
+  if (collectionEl) collectionEl.textContent = collectionText;
+  if (lastScanEl) lastScanEl.textContent = lsText;
+  if (evidenceEl) evidenceEl.textContent = `Evidence: ${freshnessText}`;
+}
+
 async function renderSourceStatus(signal) {
   try {
     const response = await fetch(CT_SOURCE_STATUS_URL, { signal });
@@ -594,6 +671,7 @@ async function renderSourceStatus(signal) {
     const sources = (source.display_sources || source.sources || []).filter((item) => !Object.hasOwn(INTEL_SOURCES, item.source));
     renderIntelSourceStatus(source);
     renderMonitorOperations(source);
+    renderCoverageStrip(source);
     const okCount = sources.filter((item) => item.ok || item.status === "ok").length;
     const health = source.health || source.overall;
     const primaryActive = sources.some((item) => item.source === "direct_ct" && item.ok)
@@ -641,6 +719,7 @@ async function renderSourceStatus(signal) {
   } catch (error) {
     if (signal.aborted && signal.reason?.name !== "TimeoutError") return false;
     renderMonitorOperations({}, true);
+    renderCoverageStrip({}, true);
     $("source-status").dataset.level = "unknown";
     $("source-status").textContent = error.maintenance ? "Collection paused · database recovery" : "scan status unknown";
     $("source-list").innerHTML = error.maintenance
@@ -654,11 +733,7 @@ async function renderSourceStatus(signal) {
   }
 }
 
-function openFindingDetails(finding) {
-  const dialog = $("finding-dialog");
-  const body = $("dialog-body");
-  if (!dialog || !body) return;
-
+function buildDialogBodyHtml(finding) {
   const signalsRows = (finding.signals || []).map((s) => `
     <tr>
       <td><code>${escapeHtml(s.type)}</code></td>
@@ -666,8 +741,7 @@ function openFindingDetails(finding) {
       <td>${escapeHtml(signalText(s))}</td>
     </tr>
   `).join("");
-
-  body.innerHTML = `
+  return `
     <div class="dialog-header">
       <div>
         <p class="eyebrow dark">Triage Investigation</p>
@@ -675,7 +749,6 @@ function openFindingDetails(finding) {
       </div>
       <button type="button" class="btn-close" id="close-dialog-btn" aria-label="Close finding details">&times;</button>
     </div>
-
     <div class="dialog-summary">
       <div class="summary-badge severity ${escapeHtml(finding.severity)}">
         CT ${escapeHtml(finding.severity).toUpperCase()} (${escapeHtml(finding.score)} pts)
@@ -686,83 +759,174 @@ function openFindingDetails(finding) {
         <span>SANs: ${escapeHtml((finding.domains || []).length)}</span>
       </div>
     </div>
-
     ${renderPriority(finding)}
     ${renderIntelEvidence(finding)}
-
     <section class="dialog-section">
       <h3>Analyst Actions</h3>
       <div class="dialog-actions">
         <button type="button" id="copy-triage-btn" class="btn-secondary">Copy Triage Report</button>
+        <button type="button" id="print-report-btn" class="btn-secondary">Print report</button>
       </div>
       <p class="muted-text">Live probing is performed by analysts off-platform; this dashboard never fetches a suspected hostile host from production.</p>
     </section>
-
     <section class="dialog-section">
       <h3>Triggered Scoring Signals</h3>
       <table class="signals-table">
-        <thead>
-          <tr><th>Signal</th><th>Points</th><th>Detail</th></tr>
-        </thead>
-        <tbody>
-          ${signalsRows || "<tr><td colspan='3'>No signals recorded</td></tr>"}
-        </tbody>
+        <thead><tr><th>Signal</th><th>Points</th><th>Detail</th></tr></thead>
+        <tbody>${signalsRows || "<tr><td colspan='3'>No signals recorded</td></tr>"}</tbody>
       </table>
     </section>
-
     <section class="dialog-section">
-      <h3>Certificate Identity & SANs</h3>
+      <h3>Certificate Identity &amp; SANs</h3>
       <p><strong>Domains:</strong> <code>${escapeHtml((finding.domains || []).join(", "))}</code></p>
       <p><strong>Serial:</strong> <code>${escapeHtml(finding.cert_serial || "N/A")}</code></p>
       <p><strong>Issuer DN SHA256:</strong> <code>${escapeHtml(finding.cert_issuer_dn_sha256 || "N/A")}</code></p>
     </section>
   `;
+}
 
-  dialog.showModal();
+/**
+ * Append impersonation, timeline and related-findings sections to a
+ * detail panel or dialog body after the synchronous body is rendered.
+ * Fires async so the initial render is never delayed.
+ * @param {object} finding
+ * @param {Element} container — inner panel or dialog-body element
+ */
+async function enhanceDetailPanel(finding, container) {
+  try {
+    const [
+      { buildTimeline, renderTimeline },
+      { renderRelated },
+      { explainImpersonation, renderImpersonation },
+    ] = await Promise.all([
+      import('./lib/ui/evidence-timeline.js'),
+      import('./lib/ui/related-findings.js'),
+      import('./lib/ui/impersonation.js'),
+    ]);
 
-  $("close-dialog-btn").onclick = () => dialog.close();
+    if (!container.isConnected) return;
 
+    let extraHtml = '';
 
-  $("copy-triage-btn").onclick = () => {
+    // Impersonation explanation (only if brand signals present and data loaded)
+    if (state.data && (finding.signals || []).some((s) => s.type?.startsWith('brand'))) {
+      const expls = explainImpersonation(
+        finding,
+        state.data.watchlist.brands,
+        state.data.allowlist.entries
+      );
+      if (expls.length) {
+        extraHtml += `<section class="dialog-section" aria-labelledby="imp-hd">
+          <h3 id="imp-hd">Brand Impersonation Analysis</h3>
+          ${renderImpersonation(expls, escapeHtml)}
+        </section>`;
+      }
+    }
+
+    // Evidence timeline
+    const events = buildTimeline(finding);
+    extraHtml += `<section class="dialog-section" aria-labelledby="timeline-hd">
+      <h3 id="timeline-hd">Evidence Timeline</h3>
+      ${renderTimeline(events, true)}
+    </section>`;
+
+    // Related findings in loaded set
+    extraHtml += `<section class="dialog-section" aria-labelledby="related-hd">
+      <h3 id="related-hd">Related Findings (loaded)</h3>
+      ${renderRelated(finding, state.findings, escapeHtml)}
+    </section>`;
+
+    if (!container.isConnected) return;
+    const extra = document.createElement('div');
+    extra.className = 'dialog-extra-sections';
+    extra.innerHTML = extraHtml;
+    container.appendChild(extra);
+  } catch {
+    // Module load or render error — extra sections unavailable
+  }
+}
+function wireCopyButton(finding, btn) {
+  if (!btn) return;
+  btn.onclick = async () => {
     const evidence = intelEvidence(finding).map((item) =>
       `  * ${sourceLabel(item.source)}: ${intelVerdict(item)}; host ${item.domain}; observed ${item.observed_at}; expires ${item.expires_at}; ${intelProviderUrl(item.source_ref, item.source) || "Provider reference unavailable"}`
     ).join("\n");
     const report = `# Triage Report: ${finding.registrable}\n- CT score: ${finding.score} (${finding.severity})\n- Priority: ${priorityScore(finding)} (intel +${finding.intel_priority_boost === 10 ? 10 : 0})\n- Intel hits: ${intelHitCount(finding)}\n${evidence}\n- Issuer: ${finding.issuer}\n- Observed: ${finding.observed_at}\n- Signals:\n${(finding.signals || []).map((s) => `  * ${s.type} (+${s.points})`).join("\n")}`;
-    navigator.clipboard.writeText(report);
-    $("copy-triage-btn").textContent = "Copied!";
-    setTimeout(() => { $("copy-triage-btn").textContent = "Copy Triage Report"; }, 2000);
+    try {
+      await navigator.clipboard.writeText(report);
+      btn.textContent = "Copied!";
+    } catch {
+      btn.textContent = "Copy failed";
+    }
+    setTimeout(() => { btn.textContent = "Copy Triage Report"; }, 2000);
   };
 }
 
-function exportFindingsJson() {
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filteredFindings(), null, 2));
-  const downloadAnchor = document.createElement("a");
-  downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", `sgcertwatch_findings_${new Date().toISOString().slice(0, 10)}.json`);
-  document.body.appendChild(downloadAnchor);
-  downloadAnchor.click();
-  downloadAnchor.remove();
+function openDetailPanel(finding) {
+  const panel = $("detail-panel");
+  const inner = $("detail-panel-inner");
+  if (!panel || !inner) return;
+  state.selectedFindingId = finding.id;
+  inner.innerHTML = buildDialogBodyHtml(finding);
+  panel.hidden = false;
+  const closeBtn = inner.querySelector("#close-dialog-btn");
+  if (closeBtn) closeBtn.onclick = closeDetailPanel;
+  const printBtn = inner.querySelector("#print-report-btn");
+  if (printBtn) printBtn.onclick = () => window.print();
+  wireCopyButton(finding, inner.querySelector("#copy-triage-btn"));
+  void enhanceDetailPanel(finding, inner);
 }
 
-function exportFindingsCsv() {
+function closeDetailPanel() {
+  const panel = $("detail-panel");
+  if (panel) panel.hidden = true;
+  state.selectedFindingId = null;
+}
+
+function openFindingDetails(finding) {
+  const dialog = $("finding-dialog");
+  const body = $("dialog-body");
+  if (!dialog || !body) return;
+  body.innerHTML = buildDialogBodyHtml(finding);
+  dialog.showModal();
+  const closeBtn = body.querySelector("#close-dialog-btn");
+  if (closeBtn) closeBtn.onclick = () => dialog.close();
+  const printBtn = body.querySelector("#print-report-btn");
+  if (printBtn) printBtn.onclick = () => window.print();
+  wireCopyButton(finding, body.querySelector("#copy-triage-btn"));
+  void enhanceDetailPanel(finding, body);
+}
+
+async function exportFindingsJson() {
+  const { toJson } = await import('./lib/ui/report.js');
   const findings = filteredFindings();
-  const headers = ["registrable", "score", "severity", "issuer", "observed_at", "matched_brands", "domains"];
-  const rows = findings.map((f) => [
-    `"${f.registrable}"`,
-    f.score,
-    `"${f.severity}"`,
-    `"${(f.issuer || "").replaceAll('"', '""')}"`,
-    `"${f.observed_at}"`,
-    `"${(f.matched_brands || []).join(";")}"`,
-    `"${(f.domains || []).join(";")}"`
-  ]);
-  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-  const downloadAnchor = document.createElement("a");
-  downloadAnchor.setAttribute("href", encodeURI(csvContent));
-  downloadAnchor.setAttribute("download", `sgcertwatch_findings_${new Date().toISOString().slice(0, 10)}.csv`);
-  document.body.appendChild(downloadAnchor);
-  downloadAnchor.click();
-  downloadAnchor.remove();
+  const scope = `Loaded findings (${findings.length} of ~50)`;
+  const data = toJson(findings, scope);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sgcertwatch_findings_${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+async function exportFindingsCsv() {
+  const { toCsv } = await import('./lib/ui/report.js');
+  const findings = filteredFindings();
+  const scope = `Loaded findings (${findings.length} of ~50)`;
+  const data = toCsv(findings, scope);
+  const blob = new Blob([data], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sgcertwatch_findings_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 function render() {
@@ -814,22 +978,128 @@ $("severity-filter").addEventListener("change", (event) => {
 $("export-json-btn").addEventListener("click", exportFindingsJson);
 $("export-csv-btn").addEventListener("click", exportFindingsCsv);
 
-$("finding-list").addEventListener("click", (event) => {
+// Handle clicks on both mobile cards (#finding-list) and desktop table buttons (#finding-list-container)
+document.addEventListener("click", (event) => {
+  // Desktop: [data-open-detail] button in table
+  const detailBtn = event.target.closest("[data-open-detail]");
+  if (detailBtn) {
+    const id = detailBtn.dataset.openDetail;
+    const finding = filteredFindings().find((f) => f.id === id);
+    if (finding) openDetailPanel(finding);
+    return;
+  }
+  // Mobile: [data-finding-index] card in list
   const card = event.target.closest("[data-finding-index]");
   if (!card) return;
   const idx = parseInt(card.dataset.findingIndex, 10);
   const findings = filteredFindings();
-  if (findings[idx]) {
-    openFindingDetails(findings[idx]);
-  }
+  if (findings[idx]) openFindingDetails(findings[idx]);
 });
 
-$("finding-list").addEventListener("keydown", (event) => {
+document.addEventListener("keydown", (event) => {
   if ((event.key === "Enter" || event.key === " ") && event.target.matches("[data-finding-index]")) {
     event.preventDefault();
     event.target.click();
   }
 });
+
+// ---------------------------------------------------------------------------
+// Saved views
+// ---------------------------------------------------------------------------
+
+function applyFilter(filter) {
+  state.findingQuery = filter.query || "";
+  state.findingSeverity = filter.severity || "watch";
+  const searchEl = $("finding-search");
+  const severityEl = $("severity-filter");
+  if (searchEl) searchEl.value = state.findingQuery;
+  if (severityEl) severityEl.value = state.findingSeverity;
+  state.findings = [];
+  $("feed-status").textContent = "Loading feed";
+  $("finding-list").innerHTML = '<li class="watch-card finding-card">Loading findings</li>';
+  findingsPoller.refresh();
+}
+
+function showViewsMsg(text, ms = 2000) {
+  const el = $("saved-views-msg");
+  if (!el) return;
+  el.textContent = text;
+  setTimeout(() => { if (el.textContent === text) el.textContent = ""; }, ms);
+}
+
+async function renderSavedViews() {
+  const { loadViews, PRESET_VIEWS } = await import('./lib/ui/saved-views.js');
+  const list = $("saved-views-list");
+  if (!list) return;
+  const saved = loadViews();
+  const all = [...PRESET_VIEWS, ...saved];
+  list.innerHTML = all.map((v, i) => {
+    const isPreset = i < PRESET_VIEWS.length;
+    const active = v.filter.query === state.findingQuery && v.filter.severity === state.findingSeverity;
+    return `<span class="saved-view-item">
+      <button type="button" class="saved-view-btn${active ? ' active' : ''}" data-view-idx="${i}" data-view-preset="${isPreset}">${escapeHtml(v.name)}</button>
+      ${!isPreset ? `<button type="button" class="saved-view-delete" data-delete-view="${escapeHtml(v.name)}" aria-label="Delete view ${escapeHtml(v.name)}">&times;</button>` : ''}
+    </span>`;
+  }).join("");
+}
+
+$("save-view-btn")?.addEventListener("click", async () => {
+  const name = prompt("Save view as:");
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim().slice(0, 60);
+  const { saveView } = await import('./lib/ui/saved-views.js');
+  const result = saveView(trimmed, { query: state.findingQuery, severity: state.findingSeverity });
+  if (result.ok) {
+    showViewsMsg("Saved");
+    renderSavedViews();
+  } else {
+    showViewsMsg(result.reason === "limit_reached" ? "Max 20 views" : "Save failed");
+  }
+});
+
+$("copy-view-link-btn")?.addEventListener("click", async () => {
+  const { encodeFilter } = await import('./lib/ui/saved-views.js');
+  const qs = encodeFilter({ query: state.findingQuery, severity: state.findingSeverity });
+  const url = `${location.origin}${location.pathname}${qs ? '?' + qs : ''}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    showViewsMsg("Link copied");
+  } catch {
+    showViewsMsg("Copy failed");
+  }
+});
+
+$("saved-views-list")?.addEventListener("click", async (event) => {
+  const deleteBtn = event.target.closest("[data-delete-view]");
+  if (deleteBtn) {
+    const { deleteView } = await import('./lib/ui/saved-views.js');
+    deleteView(deleteBtn.dataset.deleteView);
+    renderSavedViews();
+    return;
+  }
+  const viewBtn = event.target.closest("[data-view-idx]");
+  if (!viewBtn) return;
+  const idx = parseInt(viewBtn.dataset.viewIdx, 10);
+  const { loadViews, PRESET_VIEWS } = await import('./lib/ui/saved-views.js');
+  const all = [...PRESET_VIEWS, ...loadViews()];
+  if (all[idx]) {
+    applyFilter(all[idx].filter);
+    renderSavedViews();
+  }
+});
+
+// Restore filter from URL on load
+(async () => {
+  const search = location.search;
+  if (search) {
+    const { decodeFilter } = await import('./lib/ui/saved-views.js');
+    const filter = decodeFilter(search.slice(1));
+    if (filter.query || filter.severity !== "watch") {
+      applyFilter(filter);
+    }
+  }
+  renderSavedViews();
+})();
 
 document.querySelectorAll("[data-dataset]").forEach((element) => {
   element.addEventListener("click", () => setDataset(element.dataset.dataset));
@@ -850,3 +1120,4 @@ statusPoller.refresh();
 document.querySelectorAll("[data-view]").forEach((button) => {
   button.addEventListener("click", () => setView(button.dataset.view));
 });
+setView(state.view);
