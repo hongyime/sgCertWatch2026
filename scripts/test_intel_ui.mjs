@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { chromium } from "playwright";
 
 const root = new URL("../", import.meta.url);
-const assets = new Set(["index.html", "app.js", "refresh.js", "styles.css", "favicon.svg", "watchlist.json", "keywords.json", "allowlist.json", "schemes.json"]);
+const assets = new Set(["index.html", "app.js", "refresh.js", "styles.css", "favicon.svg", "watchlist.json", "keywords.json", "allowlist.json", "schemes.json", "lib/ui/findings-list.js", "lib/ui/finding-details.js", "lib/ui/saved-views.js", "lib/ui/evidence-timeline.js", "lib/ui/related-findings.js", "lib/ui/impersonation.js", "lib/ui/report.js", "lib/ui/reviewer-session.js"]);
 const mime = { html: "text/html", js: "text/javascript", css: "text/css", json: "application/json", svg: "image/svg+xml" };
 let streamFindings = false;
 const pendingResponses = new Set();

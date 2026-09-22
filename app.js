@@ -413,50 +413,21 @@ async function renderFindingList() {
   const findings = filteredFindings();
   $('feed-status').textContent = !state.feedConfigured ? 'Database not connected'
     : findings.length ? `${findings.length} of ~50 loaded findings match`
-      : state.findingSeverity === 'watch' ? 'No domains at priority 70 or above' : 'No matches in loaded findings';
+      : state.findingSeverity === 'watch' ? 'No domains at priority 70 or above' : 'No matching stored findings';
 
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
   const container = $('finding-list-container');
-
-  if (isDesktop && container) {
-    // Remove any existing table
+  if (container) {
     const old = container.querySelector('.finding-list-table');
     if (old) old.remove();
-    $('finding-list').style.display = 'none';
-    if (findings.length) {
-      const tbody = findings.map((f) => `
-        <tr data-finding-id="${escapeHtml(f.id)}" aria-selected="${f.id === state.selectedFindingId ? 'true' : 'false'}">
-          <td class="col-domain">${escapeHtml(f.registrable)}</td>
-          <td>${escapeHtml((f.matched_brands || []).join(', ') || '\u2014')}</td>
-          <td><span class="severity ${escapeHtml(f.severity)}">${escapeHtml(f.severity)} ${escapeHtml(f.priority_score ?? f.score ?? 0)}</span></td>
-          <td>${escapeHtml(intelHitCount(f))}</td>
-          <td>${escapeHtml(formatTime(f.observed_at))}</td>
-          <td class="col-review">Sign in to review</td>
-          <td><button type="button" class="btn-secondary" data-open-detail="${escapeHtml(f.id)}">Details</button></td>
-        </tr>`).join('');
-      const table = document.createElement('table');
-      table.className = 'finding-list-table';
-      table.innerHTML = `<thead><tr><th>Domain</th><th>Brand</th><th>Priority</th><th>Evidence</th><th>Observed</th><th>Review</th><th></th></tr></thead><tbody>${tbody}</tbody>`;
-      container.appendChild(table);
-    } else {
-      const table = document.createElement('table');
-      table.className = 'finding-list-table';
-      table.innerHTML = '<thead><tr><th>Domain</th><th>Brand</th><th>Priority</th><th>Evidence</th><th>Observed</th><th>Review</th><th></th></tr></thead><tbody><tr><td colspan="7">No matching findings</td></tr></tbody>';
-      container.appendChild(table);
-    }
-  } else {
-    if (container) {
-      const old = container.querySelector('.finding-list-table');
-      if (old) old.remove();
-      $('finding-list').style.display = '';
-    }
-    if (findings.length) {
-      const { renderFindingCard } = await import('./lib/ui/findings-list.js');
-      $('finding-list').innerHTML = findings.map((f, idx) => renderFindingCard(f, idx)).join('');
-    } else {
-      $('finding-list').innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>No matching findings</strong><span class="review-badge ok">clear</span></div><p>No alerts match current search/filter criteria.</p></li>';
-    }
   }
+  $('finding-list').style.display = '';
+  if (findings.length) {
+    const { renderFindingCard } = await import('./lib/ui/findings-list.js');
+    $('finding-list').innerHTML = findings.map((f, idx) => renderFindingCard(f, idx)).join('');
+  } else {
+    $('finding-list').innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>No matching findings</strong><span class="review-badge ok">clear</span></div><p>No alerts match current search/filter criteria.</p></li>';
+  }
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
   // Refresh or stale-notice for the selected finding
   if (state.selectedFindingId && isDesktop) {
@@ -507,7 +478,7 @@ async function renderFindings(signal) {
     $("feed-count").textContent = findings.length;
     $("last-feed-check").textContent = new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
 
-    renderFindingList();
+    await renderFindingList();
     return true;
   } catch (error) {
     if (request !== state.findingsRequest || (signal.aborted && signal.reason?.name !== "TimeoutError")) return false;
