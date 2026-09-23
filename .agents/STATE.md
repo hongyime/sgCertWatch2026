@@ -145,9 +145,33 @@ check that originally found these "unwired" was run against the STALE commit
     stale one) in the DOM. Reproduced 3/3 times via a MutationObserver
     diagnostic on the container's childList; fixed by moving the removal
     (now `removeAll`, not just the first match) to happen atomically with
-    the append, after the existing `findingsRequest` staleness guard. 5/5
-    clean reruns of the full 6-test file after both fixes, reproduced the
     failure 3/3 times before them.
+
+11. **Task 7/8 real-SQL verification — partial, then blocked by environment**:
+    stood up a disposable `postgres:16-alpine` container (Docker, port 5544)
+    to finally exercise the `WORKBENCH_*_DATABASE_URL` suites that had been
+    skipped all session. `test_workbench_capacity.mjs`'s
+    `real-disposable-postgres` test (Task 7's checker, incl. the previously-
+    suspected `SET statement_timeout=$1` bind-placeholder bug) now runs and
+    **PASSES cleanly** — both the generous-limit PASS case and the tight-
+    limit FAIL case work correctly against a real Postgres. The suspected
+    bind bug did NOT materialize; the checker is sound. (Needed
+    `?sslmode=disable` on the URL — the checker explicitly honours that,
+    intentionally distinct from `--insecure-tls`.) `test_workbench_search.mjs`
+    (`workbench-search.sql`) and `test_workbench_review.mjs`
+    (`workbench-review.sql`) both then failed with `role "anon" does not
+    exist` — both migrations `grant`/`revoke` against Supabase's built-in
+    `anon`/`authenticated`/`service_role` roles, which a vanilla Postgres
+    image doesn't have; these 3 roles need to be created before applying
+    either migration. Before that could be done, **Docker Desktop's backend
+    wedged** (`docker ps`/`docker version`/`wsl --shutdown` all unresponsive
+    90s+, after Windows-side processes still reported "Responding: True") —
+    stopped retrying per the no-shotgun-debugging rule rather than keep
+    burning time on an environment failure outside this session's control.
+    Container `sgcw-disposable-pg` on port 5544 may still exist; state
+    unknown until Docker recovers — **tear it down before reusing the name/
+    port**. Search/review SQL migrations remain genuinely unverified against
+    a real schema.
 
 **Confirmed still broken / not yet attempted this pass:**
 - `test_workbench_primitives.mjs` and `test_workbench_status.mjs` both show
@@ -162,12 +186,12 @@ check that originally found these "unwired" was run against the STALE commit
   not caused by any fix in this pass. Still not root-caused; do not keep
   papering over it with isolation flags forever.
 - `scripts/check_workbench_capacity.mjs`'s reported `SET statement_timeout =
-  $1` SQL bind-placeholder bug (Task 7) is UNVERIFIED either way: its
-  `real-disposable-postgres` test is skipped (no
-  `WORKBENCH_CAPACITY_DATABASE_URL` set) in every run so far this session.
-  Same for `test_workbench_search.mjs`'s `real-sql-rpc` test (no
-  `WORKBENCH_SQL_DATABASE_URL` set) — the actual SQL migrations have still
-  never been exercised against a real schema in this repair pass.
+  $1` SQL bind-placeholder bug (Task 7) is now VERIFIED SOUND — see item 11
+  above: `real-disposable-postgres` ran against a real Postgres and PASSED
+  cleanly (both the PASS and FAIL cases). `test_workbench_search.mjs`'s
+  `real-sql-rpc` and `test_workbench_review.mjs`'s equivalent are still
+  UNVERIFIED — both failed on missing Supabase roles (`anon`/
+  `authenticated`/`service_role`) before Docker wedged; see item 11.
 - Production SQL migrations (`supabase/workbench-search.sql`,
   `supabase/workbench-review.sql`) have never been applied to production
   Supabase. 0 auth users still exist; owner has not yet supplied an analyst
@@ -189,14 +213,17 @@ missing or broken and are now built/restored/added and passing, including
 a real debounce-timer race (Task 8) and two more real races/bugs (severity
 coercion + duplicate-table DOM race) caught while building the preset test.
 The primitives/status/views file-level flakiness (confirmed pre-existing, not
-caused by this pass) and all real-Postgres SQL verification remain open.
-Do NOT treat this as task-level plan completion — see reopened checkboxes in
+caused by this pass) and search/review real-Postgres SQL verification remain
+open (Task 7's capacity checker IS now verified sound). Do NOT treat this as
+task-level plan completion — see reopened checkboxes in
 `.omo/plans/free-tier-investigation-upgrade.md`.
 
 ## Next steps
 
-1. Set up a disposable Postgres and actually run the `WORKBENCH_*_DATABASE_URL`
-   real-SQL suites at least once before claiming Task 7/8 SQL is sound.
+1. Once Docker recovers: tear down `sgcw-disposable-pg` (port 5544) if it
+   still exists, recreate it, add `anon`/`authenticated`/`service_role`
+   roles, then run `test_workbench_search.mjs` and `test_workbench_review.mjs`
+   against real Postgres (Task 7's capacity checker is already verified).
 2. Root-cause (or file as a known/accepted flake with evidence) the
    primitives.mjs/status.mjs/views.mjs file-level-fail-despite-all-tests-
    passing pattern.
@@ -219,12 +246,12 @@ Do NOT treat this as task-level plan completion — see reopened checkboxes in
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-23 11:05:31 +08:00
+- Updated: 2026-09-23 19:37:21 +08:00
 - Machine: PRAWN-E14
 - Harness: claude
 - Event: stop
 - Branch: main
-- HEAD: b96e7eb
+- HEAD: a4893ab
 - Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
