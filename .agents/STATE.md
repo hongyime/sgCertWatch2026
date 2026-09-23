@@ -101,15 +101,37 @@ fresh browser test on current HEAD (the browser-based verify-user-flows.mjs
 check that originally found these "unwired" was run against the STALE commit
 62b36e3, eight commits behind current HEAD).
 
+8. **Task 9 (analyst sign-in + review UI, previously entirely missing)**: Built the
+   frontend for the already-tested backend (`api/reviewer-session.js`,
+   `api/reviews.js`, `lib/ui/reviewer-session.js`, `lib/reviewer-auth.js`).
+   Added `#reviewer-auth` sign-in/sign-out block to `index.html`; added
+   `reviewerSession` singleton, `updateReviewerAuthUI()`, and an "Analyst
+   Review" panel (desktop + mobile) with `loadReviewPanel()`/
+   `renderReviewForm()`/`submitReview()` (idempotent `request_uuid`, 409-
+   conflict reload) to `app.js`. `renderFindingRow`/`renderFindingTableBody`
+   in `lib/ui/findings-list.js` now take `isSignedIn` to show "Open to
+   review" vs "Sign in to review". New end-to-end test
+   `analyst-sign-in-and-review` in `test_workbench_review.mjs` passes
+   (intercepts `/api/reviewer-session` + `/api/reviews` at page level since
+   Supabase Auth itself is unreachable from the loopback fixture).
+9. **Task 8 (historical search UI, previously entirely missing)**: Wired the
+   already-tested `search=1` backend to a new search bar in `index.html`
+   (`#historical-search-btn`/`#historical-search-bar`) and `app.js`
+   (`runHistoricalSearch`, `exitHistoricalSearch`, `updateHistoricalSearchBar`,
+   debounced re-search on query/severity change). New end-to-end test
+   `historical-search-has-user-control` in `test_workbench_search.mjs`
+   proves it finds a record outside the normal 50-row batch. **Caught a real
+   race while building this, not by inspection**: the 300ms debounce timer
+   scheduled by typing a short (<3 char) query was not cancelled on exit or
+   on an explicit search click, so it could fire AFTER the user exited
+   historical mode and call `showHistoricalSearchError()`, which
+   unconditionally sets `bar.hidden = false` — forcibly re-showing the exited
+   search bar. Confirmed via a MutationObserver diagnostic on `bar.hidden`
+   (logged `true` then `false` 7ms later) before fixing by clearing the
+   timer in both `exitHistoricalSearch()` and the search-button handler.
+   5/5 clean reruns after the fix, 0/5 before it.
+
 **Confirmed still broken / not yet attempted this pass:**
-- No analyst sign-in UI anywhere in `index.html`/`app.js`. Backend
-  (`api/reviewer-session.js`, `lib/ui/reviewer-session.js`,
-  `lib/reviewer-auth.js`) is solid and already has 7 passing focused tests
-  plus real-Postgres review-table tests, but there is zero UI entry point —
-  Task 9's frontend integration has not been started.
-- No historical-search UI control; `search=1` backend (Task 8) is fully
-  built and its 9 non-real-DB tests all pass, but nothing in app.js ever
-  requests it.
 - `test_workbench_primitives.mjs` and `test_workbench_status.mjs` both show
   every individual assertion passing (✔) but the FILE exits failed — same
   pattern also seen transiently on `test_workbench_views.mjs` and confirmed
@@ -141,27 +163,29 @@ issue and got PR #19 merged. No teams from the earlier repair attempts
 
 ## Status
 
-IN PROGRESS — 7 confirmed bugs fixed with new passing regression tests;
+IN PROGRESS — 9 confirmed bugs/gaps fixed with new passing regression tests;
 `npm run test:unit` still fully green (34 tests, 0 failures). The desktop
-findings table (Task 5) was found deleted by the prior CI-fix and is now
-restored and passing. Login UI, historical-search UI, the primitives/status/
-views file-level flakiness (confirmed pre-existing, not caused by this pass),
-and all real-Postgres SQL verification remain open. Do NOT treat this as
-task-level plan completion — see reopened checkboxes in
+findings table (Task 5), analyst sign-in + review UI (Task 9), and historical-
+search UI (Task 8) were all missing or broken and are now built/restored and
+passing, including a real debounce-timer race caught while building Task 8.
+The primitives/status/views file-level flakiness (confirmed pre-existing, not
+caused by this pass) and all real-Postgres SQL verification remain open.
+Do NOT treat this as task-level plan completion — see reopened checkboxes in
 `.omo/plans/free-tier-investigation-upgrade.md`.
 
 ## Next steps
 
-1. Build the Task 9 login UI (backend is ready) and the Task 8 historical-
-   search UI (backend is ready) — biggest remaining chunks of real work.
-2. Set up a disposable Postgres and actually run the `WORKBENCH_*_DATABASE_URL`
+1. Set up a disposable Postgres and actually run the `WORKBENCH_*_DATABASE_URL`
    real-SQL suites at least once before claiming Task 7/8 SQL is sound.
-3. Add an end-to-end Playwright test proving the `category:`/`verdict:`
+2. Add an end-to-end Playwright test proving the `category:`/`verdict:`
    presets actually filter correctly against real brand data.
-4. Root-cause (or file as a known/accepted flake with evidence) the
+3. Root-cause (or file as a known/accepted flake with evidence) the
    primitives.mjs/status.mjs/views.mjs file-level-fail-despite-all-tests-
    passing pattern.
-5. Provision the owner-approved analyst email/password account and finish
+4. Diagnose the `corpus.json` invalid-JSON failure blocking `npm run validate`.
+5. Dedup `app.js`'s `buildDialogBodyHtml()` against `lib/ui/finding-details.js`'s
+   `renderDialogBody()` (moderate risk, deferred).
+6. Provision the owner-approved analyst email/password account and finish
    Vercel re-auth before any production rollout. Collection restart still
    requires explicit owner authorization.
 

@@ -1,3 +1,14 @@
+- 2026-09-23: Built the missing Task 9 (analyst sign-in + review) and Task 8
+  (historical search beyond the loaded batch) frontends for backends that
+  were already fully tested but had zero UI entry point. Chose to intercept
+  `/api/reviewer-session` and `/api/reviews` at the page level in the new
+  `analyst-sign-in-and-review` test rather than exercise real Supabase Auth,
+  since the loopback fixture cannot reach it. While building the historical-
+  search UI, empirically caught (via a MutationObserver on `bar.hidden`, not
+  by code reading) a real race: the 300ms debounce timer from typing a short
+  query was not cancelled on exit, so it could fire late and force the search
+  bar back open via `showHistoricalSearchError()`. Fixed by clearing the
+  timer on both exit and explicit search-button click.
 - 2026-09-16: Prepared supabase/space-recovery.sql to reclaim database bytes without deleting or altering any row. Drops finding_sources_source_idx and finding_sources_observed_at_idx (write-only indexes never read by the app; only the composite primary key is used for upserts and cascades), then VACUUM FULL findings, finding_sources and ct_source_runs to reclaim update-driven bloat, then REINDEX the retained indexes. Index drops are guarded, transactional and dependency-checked; VACUUM FULL is safe because collection is paused. Rollback recreates the two dropped indexes. Vercel hold is respected: pushed to maintenance/db-space-recovery-20260916, not main.
 
 # Agent Journal
