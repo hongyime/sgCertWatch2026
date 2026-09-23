@@ -13,7 +13,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { start } from "./workbench-fixture.mjs";
-import { toCsv } from "../lib/ui/report.js";
+import { toCsv, toJson } from "../lib/ui/report.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const EVIDENCE_DIR = resolve(
@@ -145,6 +145,50 @@ test("csv-roundtrip: special chars, Unicode, formula injection survive round-tri
   // Scope and time present
   assert.equal(row.export_scope, "test-scope");
   assert.ok(row.export_time, "export_time present");
+});
+
+// ---------------------------------------------------------------------------
+// Test 1b — domains-preserved-in-full
+// ---------------------------------------------------------------------------
+test("domains-preserved-in-full: JSON export keeps every domain as a real array, CSV keeps every domain too", async () => {
+  await ensureEvidence();
+
+  const finding = {
+    id: "test-002",
+    registrable: "many-domains.test",
+    score: 72,
+    severity: "high",
+    priority_score: 72,
+    intel_priority_boost: 0,
+    issuer: "Let's Encrypt",
+    observed_at: "2026-09-20T05:00:00.000Z",
+    sources: ["direct_ct"],
+    matched_brands: ["singpass"],
+    domains: ["a.example.test", "b.example.test", "c.example.test", "d.example.test"],
+    cert_serial: "abc123",
+    cert_issuer_dn_sha256: "deadbeef",
+    intel_hit_count: 0,
+    intel_evidence: [],
+  };
+
+  // JSON export must preserve the domains array shape, not flatten to a
+  // string, and must not drop the 4th domain.
+  const json = JSON.parse(toJson([finding], "test-scope"));
+  assert.equal(json.length, 1);
+  assert.ok(Array.isArray(json[0].domains), "domains must remain an array in JSON export");
+  assert.deepEqual(
+    json[0].domains,
+    finding.domains,
+    "JSON export must preserve every domain, not just the first 3"
+  );
+
+  // CSV export must not silently drop the 4th+ domain either.
+  const csv = toCsv([finding], "test-scope");
+  const rows = parseCsv(csv);
+  assert.equal(rows.length, 1);
+  for (const domain of finding.domains) {
+    assert.ok(rows[0].domains.includes(domain), `CSV domains cell missing "${domain}"`);
+  }
 });
 
 // ---------------------------------------------------------------------------
