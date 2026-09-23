@@ -440,6 +440,12 @@ async function renderSummary() {
 
 async function renderFindingList() {
   if (state.feedError || (state.feedLoading && !state.findings.length)) return;
+  // Captured so a render started by an older, already-superseded request
+  // (findingsRequest bumped again while this call was paused at an
+  // `await import(...)` below) can detect it lost the race and skip its
+  // own DOM mutation instead of appending a second, stale table/card list
+  // alongside the newer render's output.
+  const renderGen = state.findingsRequest;
   const findings = filteredFindings();
   const totalLoaded = state.findings.length;
   $('feed-status').textContent = !state.feedConfigured ? 'Database not connected'
@@ -452,24 +458,28 @@ async function renderFindingList() {
   const container = $('finding-list-container');
 
   if (isDesktop && container) {
-    const old = container.querySelector('.finding-list-table');
-    if (old) old.remove();
     $('finding-list').style.display = 'none';
     const { renderFindingTableBody } = await import('./lib/ui/findings-list.js');
+    if (renderGen !== state.findingsRequest) return;
+    // Remove ALL matching tables (not just the first) immediately before
+    // appending, in the same synchronous block as the guard check above —
+    // never split remove-then-await-then-append, which lets an older and
+    // a newer render's DOM writes interleave into duplicate/leaked tables.
+    container.querySelectorAll('.finding-list-table').forEach((el) => el.remove());
     const table = document.createElement('table');
     table.className = 'finding-list-table';
     table.innerHTML = renderFindingTableBody(findings, state.selectedFindingId, Boolean(reviewerSession?.currentToken()));
     container.appendChild(table);
   } else {
-    if (container) {
-      const old = container.querySelector('.finding-list-table');
-      if (old) old.remove();
-      $('finding-list').style.display = '';
-    }
     if (findings.length) {
       const { renderFindingCard } = await import('./lib/ui/findings-list.js');
+      if (renderGen !== state.findingsRequest) return;
+      if (container) container.querySelectorAll('.finding-list-table').forEach((el) => el.remove());
+      $('finding-list').style.display = '';
       $('finding-list').innerHTML = findings.map((f, idx) => renderFindingCard(f, idx)).join('');
     } else {
+      if (container) container.querySelectorAll('.finding-list-table').forEach((el) => el.remove());
+      $('finding-list').style.display = '';
       $('finding-list').innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>No matching findings</strong><span class="review-badge ok">clear</span></div><p>No alerts match current search/filter criteria.</p></li>';
     }
   }
@@ -1267,7 +1277,7 @@ document.addEventListener("keydown", (event) => {
 
 function applyFilter(filter) {
   state.findingQuery = filter.query || "";
-  state.findingSeverity = filter.severity || "watch";
+  state.findingSeverity = filter.severity ?? "watch";
   const searchEl = $("finding-search");
   const severityEl = $("severity-filter");
   if (searchEl) searchEl.value = state.findingQuery;

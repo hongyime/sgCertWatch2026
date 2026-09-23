@@ -273,3 +273,133 @@ test("all-severities-url-round-trips: an explicit empty-severity filter survives
   const qsDefault = encodeFilter({ query: "", severity: "watch" });
   assert.equal(qsDefault, "", "the default severity must not appear in the URL");
 });
+
+// ---------------------------------------------------------------------------
+// Test 6 — preset-views-match-real-brand-categories
+// ---------------------------------------------------------------------------
+test("preset-views-match-real-brand-categories: Government/Banks/phishing presets filter by real watchlist data, not literal text", async () => {
+  await ensureEvidence();
+
+  const fixture = await start();
+  const browser = await chromium.launch();
+
+  try {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await routeLibUi(page);
+
+    // Hand-crafted findings using REAL watchlist.json brand IDs (dbs=bank,
+    // singpass=government, shopee=commerce — confirmed via watchlist.json,
+    // not guessed). Two are scored BELOW the 70-point "Watch now" threshold:
+    // since every preset declares `severity: ""` (meaning "any severity"),
+    // a bank/phishing hit below 70 must still appear — this also exercises
+    // applyFilter()'s severity handling, not just the category/verdict match.
+    const now = new Date().toISOString();
+    const craftedFindings = [
+      { id: "finding-bank", registrable: "dbs-secure.test", domains: ["dbs-secure.test"],
+        score: 50, priority_score: 50, severity: "medium", matched_brands: ["dbs"],
+        signals: ["brand_match"], observed_at: now, issuer: "Let's Encrypt",
+        sources: ["direct_ct"], intel_evidence: [], intel_hit_count: 0, intel_priority_boost: 0 },
+      { id: "finding-gov", registrable: "singpass-login.test", domains: ["singpass-login.test"],
+        score: 85, priority_score: 85, severity: "high", matched_brands: ["singpass"],
+        signals: ["brand_match"], observed_at: now, issuer: "Let's Encrypt",
+        sources: ["direct_ct"], intel_evidence: [], intel_hit_count: 0, intel_priority_boost: 0 },
+      { id: "finding-other", registrable: "shopee-deal.test", domains: ["shopee-deal.test"],
+        score: 75, priority_score: 75, severity: "high", matched_brands: ["shopee"],
+        signals: ["brand_match"], observed_at: now, issuer: "Let's Encrypt",
+        sources: ["direct_ct"], intel_evidence: [], intel_hit_count: 0, intel_priority_boost: 0 },
+      { id: "finding-phish", registrable: "shopee-phish.test", domains: ["shopee-phish.test"],
+        score: 55, priority_score: 55, severity: "medium", matched_brands: ["shopee"],
+        signals: ["brand_match"], observed_at: now, issuer: "Let's Encrypt", sources: ["direct_ct"],
+        intel_evidence: [{ source: "openphish", verdict: "phishing", checked_at: now }],
+        intel_hit_count: 1, intel_priority_boost: 10 },
+      { id: "finding-clean-intel", registrable: "shopee-scan.test", domains: ["shopee-scan.test"],
+        score: 78, priority_score: 78, severity: "high", matched_brands: ["shopee"],
+        signals: ["brand_match"], observed_at: now, issuer: "Let's Encrypt", sources: ["direct_ct"],
+        intel_evidence: [{ source: "urlscan", verdict: "observed", checked_at: now }],
+        intel_hit_count: 1, intel_priority_boost: 0 },
+    ];
+
+    await page.route("**/api/findings**", (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ storage_configured: true, findings: craftedFindings }),
+      });
+    });
+
+    const initialFetch = page.waitForResponse(
+      (r) => r.url().includes("/api/findings") && r.status() === 200,
+      { timeout: 15_000 }
+    );
+    await page.goto(fixture.url);
+    await initialFetch;
+    await page.waitForSelector("#saved-views-list", { timeout: 8_000 });
+
+
+    async function listedIds() {
+      return await page.evaluate(() => {
+        const text = (document.getElementById("finding-list-container")?.textContent || "") +
+                     (document.getElementById("finding-list")?.textContent || "");
+        return {
+          bank: text.includes("dbs-secure.test"),
+          gov: text.includes("singpass-login.test"),
+          other: text.includes("shopee-deal.test"),
+          phish: text.includes("shopee-phish.test"),
+          cleanIntel: text.includes("shopee-scan.test"),
+        };
+      });
+    }
+
+    // Government preset (index 0): only the singpass finding, despite it
+    // being below the 70-point Watch threshold that severity:"" must bypass.
+    await page.click('[data-view-idx="0"]');
+    await page.waitForFunction(
+      () => (document.getElementById("finding-list-container")?.textContent || "").includes("singpass-login.test") ||
+            (document.getElementById("finding-list")?.textContent || "").includes("singpass-login.test"),
+      null, { timeout: 8_000 }
+    );
+    let seen = await listedIds();
+    assert.equal(seen.gov, true, "Government preset must show the singpass finding");
+    assert.equal(seen.bank, false, "Government preset must NOT show the dbs (bank) finding");
+    assert.equal(seen.other, false, "Government preset must NOT show the shopee (commerce) finding");
+    assert.equal(seen.phish, false, "Government preset must NOT show the phishing finding");
+    await page.screenshot({ path: join(EVIDENCE_DIR, "preset-government.png"), fullPage: false });
+
+    // Banks preset (index 1): only the dbs finding, INCLUDING the one scored
+    // 50 (below Watch) — proves severity:"" is not silently coerced to "watch".
+    await page.click('[data-view-idx="1"]');
+    await page.waitForFunction(
+      () => (document.getElementById("finding-list-container")?.textContent || "").includes("dbs-secure.test") ||
+            (document.getElementById("finding-list")?.textContent || "").includes("dbs-secure.test"),
+      null, { timeout: 8_000 }
+    );
+    seen = await listedIds();
+    assert.equal(seen.bank, true, "Banks preset must show the dbs finding even though its score (50) is below the Watch threshold");
+    assert.equal(seen.gov, false, "Banks preset must NOT show the singpass (government) finding");
+    assert.equal(seen.other, false, "Banks preset must NOT show the shopee (commerce) finding");
+    await page.screenshot({ path: join(EVIDENCE_DIR, "preset-banks.png"), fullPage: false });
+
+    // Provider-reported phishing preset (index 2): only the finding with a
+    // real verdict:"phishing" intel_evidence entry, INCLUDING one scored 55
+    // (below Watch) — and NOT the finding with non-phishing intel evidence.
+    await page.click('[data-view-idx="2"]');
+    await page.waitForFunction(
+      () => (document.getElementById("finding-list-container")?.textContent || "").includes("shopee-phish.test") ||
+            (document.getElementById("finding-list")?.textContent || "").includes("shopee-phish.test"),
+      null, { timeout: 8_000 }
+    );
+    seen = await listedIds();
+    assert.equal(seen.phish, true, "Phishing preset must show the finding with a real verdict:phishing intel entry, even below Watch threshold");
+    assert.equal(seen.cleanIntel, false, "Phishing preset must NOT show a finding whose intel evidence verdict is not phishing");
+    assert.equal(seen.other, false, "Phishing preset must NOT show the shopee finding with no intel evidence");
+    assert.equal(seen.gov, false, "Phishing preset must NOT show the singpass finding");
+    assert.equal(seen.bank, false, "Phishing preset must NOT show the dbs finding");
+    await page.screenshot({ path: join(EVIDENCE_DIR, "preset-phishing.png"), fullPage: false });
+
+    await context.close();
+  } finally {
+    await browser.close().catch(() => {});
+    await fixture.close().catch(() => {});
+  }
+});
