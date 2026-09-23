@@ -65,6 +65,25 @@ new regression tests added (all passing; full `npm run test:unit` still green,
    printed the entire background findings list. Added it to the hidden
    selector list. Not independently test-verified (no visual-print test
    exists yet); low risk, single CSS rule.
+7. **Desktop findings table deleted by the prior CI-fix**: commit `5dbf7483`
+   fixed "desktop-only table view hiding the card list needed by tests" by
+   deleting the ENTIRE `isDesktop` table-rendering branch in
+   `renderFindingList()`, leaving only card rendering at every viewport —
+   silently breaking Task 5's contract (no `.finding-list-table`, no
+   `data-finding-id`/`aria-selected` rows, no `[data-open-detail]` buttons at
+   >=1024px). This IS what made `selection-survives-refresh` fail. Confirmed
+   via `git show 4f31167:app.js` (the original table markup) and
+   `test_workbench_primitives.mjs`'s own comments ("Uses mobile viewport so
+   the app renders cards, not the desktop table") which show the suite always
+   expected both modes to coexist — the CI-fix's real regression was
+   elsewhere (most likely the missing-`await` race it fixed separately), not
+   the `isDesktop` branch itself. Restored the table, extracted as
+   `renderFindingRow`/`renderFindingTableBody` in `lib/ui/findings-list.js`
+   (matching the existing `renderFindingCard` pattern) rather than re-inlining
+   into app.js. `test_workbench_layout.mjs`: 1 FAIL -> 3/3 PASS. Re-verified
+   `test_workbench_primitives.mjs` (3/3 named tests still pass, same pre-
+   existing file-level-exit pattern as before, not a new regression) and
+   `test_workbench_scope.mjs` (2/2 pass). `npm run test:unit` still green.
 
 `lib/ui/finding-details.js` exists and is fully correct/tested standalone,
 but `app.js`'s `buildDialogBodyHtml()` still has its own 50-line duplicate
@@ -91,19 +110,17 @@ check that originally found these "unwired" was run against the STALE commit
 - No historical-search UI control; `search=1` backend (Task 8) is fully
   built and its 9 non-real-DB tests all pass, but nothing in app.js ever
   requests it.
-- `test_workbench_layout.mjs`'s `selection-survives-refresh` test FAILS (a
-  real, not-yet-diagnosed regression in Task 5's detail-panel-survives-
-  refresh contract) — root cause not found yet; needs reading
-  `lib/ui/findings-list.js` (not yet read this session) to see how
-  `data-finding-id`/`aria-selected` are actually rendered on rows.
 - `test_workbench_primitives.mjs` and `test_workbench_status.mjs` both show
   every individual assertion passing (✔) but the FILE exits failed — same
-  unexplained pattern also seen transiently on `test_workbench_views.mjs`
-  when its 5 tests run together in one `node --test` invocation, but each
-  passes cleanly when isolated with `--test-name-pattern`. Strong evidence
-  this is a Playwright/node:test/Windows environment teardown-timing issue,
-  not a functional bug — but not root-caused, so do not keep papering over it
-  with isolation flags forever.
+  pattern also seen transiently on `test_workbench_views.mjs` and confirmed
+  again on `test_workbench_layout.mjs`'s own run this pass. Each passes
+  cleanly when isolated with `--test-name-pattern`, and re-running
+  `test_workbench_primitives.mjs` after the desktop-table fix below showed
+  the identical pattern with zero new failures — so this is very likely a
+  Playwright/node:test/Windows environment teardown-timing issue common to
+  every multi-test Playwright file in this suite, not a functional bug and
+  not caused by any fix in this pass. Still not root-caused; do not keep
+  papering over it with isolation flags forever.
 - `scripts/check_workbench_capacity.mjs`'s reported `SET statement_timeout =
   $1` SQL bind-placeholder bug (Task 7) is UNVERIFIED either way: its
   `real-disposable-postgres` test is skipped (no
@@ -124,26 +141,27 @@ issue and got PR #19 merged. No teams from the earlier repair attempts
 
 ## Status
 
-IN PROGRESS — 6 confirmed bugs fixed with new passing regression tests;
-`npm run test:unit` still fully green (34 tests, 0 failures). Login UI,
-historical-search UI, selection-survives-refresh, the primitives/status
-file-level flakiness, and all real-Postgres SQL verification remain open.
-Do NOT treat this as task-level plan completion — see reopened checkboxes in
+IN PROGRESS — 7 confirmed bugs fixed with new passing regression tests;
+`npm run test:unit` still fully green (34 tests, 0 failures). The desktop
+findings table (Task 5) was found deleted by the prior CI-fix and is now
+restored and passing. Login UI, historical-search UI, the primitives/status/
+views file-level flakiness (confirmed pre-existing, not caused by this pass),
+and all real-Postgres SQL verification remain open. Do NOT treat this as
+task-level plan completion — see reopened checkboxes in
 `.omo/plans/free-tier-investigation-upgrade.md`.
 
 ## Next steps
 
-1. Read `lib/ui/findings-list.js` and diagnose `selection-survives-refresh`.
-2. Build the Task 9 login UI (backend is ready) and the Task 8 historical-
+1. Build the Task 9 login UI (backend is ready) and the Task 8 historical-
    search UI (backend is ready) — biggest remaining chunks of real work.
-3. Set up a disposable Postgres and actually run the `WORKBENCH_*_DATABASE_URL`
+2. Set up a disposable Postgres and actually run the `WORKBENCH_*_DATABASE_URL`
    real-SQL suites at least once before claiming Task 7/8 SQL is sound.
-4. Add an end-to-end Playwright test proving the `category:`/`verdict:`
+3. Add an end-to-end Playwright test proving the `category:`/`verdict:`
    presets actually filter correctly against real brand data.
-5. Root-cause (or file as a known/accepted flake with evidence) the
+4. Root-cause (or file as a known/accepted flake with evidence) the
    primitives.mjs/status.mjs/views.mjs file-level-fail-despite-all-tests-
    passing pattern.
-6. Provision the owner-approved analyst email/password account and finish
+5. Provision the owner-approved analyst email/password account and finish
    Vercel re-auth before any production rollout. Collection restart still
    requires explicit owner authorization.
 
@@ -155,3 +173,16 @@ Do NOT treat this as task-level plan completion — see reopened checkboxes in
   an evidence-timeline.js URL-sanitization XSS regression. Main CI green;
   PR #19 merged.
 - Earlier implementation history and open decisions in JOURNAL.md.
+
+<!-- MOLT_AUTO_START -->
+## Auto State
+
+- Updated: 2026-09-23 11:05:31 +08:00
+- Machine: PRAWN-E14
+- Harness: claude
+- Event: stop
+- Branch: main
+- HEAD: b96e7eb
+- Dirty files: 0
+- Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
+<!-- MOLT_AUTO_END -->
