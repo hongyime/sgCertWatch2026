@@ -442,19 +442,31 @@ async function renderFindingList() {
     : findings.length ? `${findings.length} of ${totalLoaded} loaded findings match`
       : state.findingSeverity === 'watch' ? 'No domains at priority 70 or above' : 'No matches in loaded findings';
 
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
   const container = $('finding-list-container');
-  if (container) {
+
+  if (isDesktop && container) {
     const old = container.querySelector('.finding-list-table');
     if (old) old.remove();
-  }
-  $('finding-list').style.display = '';
-  if (findings.length) {
-    const { renderFindingCard } = await import('./lib/ui/findings-list.js');
-    $('finding-list').innerHTML = findings.map((f, idx) => renderFindingCard(f, idx)).join('');
+    $('finding-list').style.display = 'none';
+    const { renderFindingTableBody } = await import('./lib/ui/findings-list.js');
+    const table = document.createElement('table');
+    table.className = 'finding-list-table';
+    table.innerHTML = renderFindingTableBody(findings, state.selectedFindingId);
+    container.appendChild(table);
   } else {
-    $('finding-list').innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>No matching findings</strong><span class="review-badge ok">clear</span></div><p>No alerts match current search/filter criteria.</p></li>';
+    if (container) {
+      const old = container.querySelector('.finding-list-table');
+      if (old) old.remove();
+      $('finding-list').style.display = '';
+    }
+    if (findings.length) {
+      const { renderFindingCard } = await import('./lib/ui/findings-list.js');
+      $('finding-list').innerHTML = findings.map((f, idx) => renderFindingCard(f, idx)).join('');
+    } else {
+      $('finding-list').innerHTML = '<li class="watch-card finding-card"><div class="watch-card-head"><strong>No matching findings</strong><span class="review-badge ok">clear</span></div><p>No alerts match current search/filter criteria.</p></li>';
+    }
   }
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
   // Refresh or stale-notice for the selected finding
   if (state.selectedFindingId && isDesktop) {
