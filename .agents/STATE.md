@@ -52,13 +52,10 @@ new regression tests added (all passing; full `npm run test:unit` still green,
    real intel-evidence verdicts, falling back to the original substring
    search for any other query. Filter storage SHAPE is unchanged (`{query,
    severity}`), so `private-data-never-saved`'s schema assertion still
-   passes. CAVEAT: verified the string round-trips and the matching logic was
-   traced by hand against confirmed real data shapes (brand.id="singpass"
-   etc. from watchlist.json, matched_brands:["singpass"] from
-   lib/scoring.js:964, verdict enum from app.js's intelVerdict()) — there is
-   NOT yet an end-to-end Playwright test that clicks the actual preset button
-   and asserts the rendered results are brand-category-correct. Do not treat
-   this as fully verified until that test exists.
+   passes. CAVEAT (now closed, see item 10 below): at the time this fix
+   landed, only hand-traced verification existed — no end-to-end Playwright
+   test yet clicked the actual preset button and asserted brand-category-
+   correct results.
 6. **Print report leaks background list**: `styles.css`'s `@media print`
    block hid nav/toolbar/coverage-strip/footer/export-buttons but never hid
    `#finding-list-container`, so printing a single finding's report also
@@ -131,6 +128,27 @@ check that originally found these "unwired" was run against the STALE commit
    timer in both `exitHistoricalSearch()` and the search-button handler.
    5/5 clean reruns after the fix, 0/5 before it.
 
+10. **Bug 5's caveat closed, and 2 more real bugs found while closing it**:
+    added `preset-views-match-real-brand-categories` to
+    `test_workbench_views.mjs` — an end-to-end test that clicks Government/
+    Banks/phishing and asserts against real `watchlist.json` brand IDs (dbs=
+    bank, singpass=government, shopee=commerce; findings scored BELOW 70 to
+    also prove severity isn't silently narrowed). Writing it surfaced:
+    (a) `applyFilter()` did `filter.severity || "watch"`, coercing an
+    explicit empty-string severity ("all severities", used by every preset)
+    back to "watch" — the SAME class of bug as the earlier `encodeFilter()`
+    fix, just in the click-to-apply path instead of the URL path. Fixed to
+    `??`. (b) `renderFindingList()`'s desktop-table swap did
+    `querySelector`+`remove()` BEFORE an `await import(...)`, then
+    `appendChild` AFTER — an older, already-superseded render and a newer
+    one could interleave across that gap and leave two tables (or a leaked
+    stale one) in the DOM. Reproduced 3/3 times via a MutationObserver
+    diagnostic on the container's childList; fixed by moving the removal
+    (now `removeAll`, not just the first match) to happen atomically with
+    the append, after the existing `findingsRequest` staleness guard. 5/5
+    clean reruns of the full 6-test file after both fixes, reproduced the
+    failure 3/3 times before them.
+
 **Confirmed still broken / not yet attempted this pass:**
 - `test_workbench_primitives.mjs` and `test_workbench_status.mjs` both show
   every individual assertion passing (✔) but the FILE exits failed — same
@@ -163,11 +181,13 @@ issue and got PR #19 merged. No teams from the earlier repair attempts
 
 ## Status
 
-IN PROGRESS — 9 confirmed bugs/gaps fixed with new passing regression tests;
+IN PROGRESS — 10 confirmed bugs/gaps fixed with new passing regression tests;
 `npm run test:unit` still fully green (34 tests, 0 failures). The desktop
-findings table (Task 5), analyst sign-in + review UI (Task 9), and historical-
-search UI (Task 8) were all missing or broken and are now built/restored and
-passing, including a real debounce-timer race caught while building Task 8.
+findings table (Task 5), analyst sign-in + review UI (Task 9), historical-
+search UI (Task 8), and Bug 5's category/verdict preset e2e test were all
+missing or broken and are now built/restored/added and passing, including
+a real debounce-timer race (Task 8) and two more real races/bugs (severity
+coercion + duplicate-table DOM race) caught while building the preset test.
 The primitives/status/views file-level flakiness (confirmed pre-existing, not
 caused by this pass) and all real-Postgres SQL verification remain open.
 Do NOT treat this as task-level plan completion — see reopened checkboxes in
@@ -177,15 +197,13 @@ Do NOT treat this as task-level plan completion — see reopened checkboxes in
 
 1. Set up a disposable Postgres and actually run the `WORKBENCH_*_DATABASE_URL`
    real-SQL suites at least once before claiming Task 7/8 SQL is sound.
-2. Add an end-to-end Playwright test proving the `category:`/`verdict:`
-   presets actually filter correctly against real brand data.
-3. Root-cause (or file as a known/accepted flake with evidence) the
+2. Root-cause (or file as a known/accepted flake with evidence) the
    primitives.mjs/status.mjs/views.mjs file-level-fail-despite-all-tests-
    passing pattern.
-4. Diagnose the `corpus.json` invalid-JSON failure blocking `npm run validate`.
-5. Dedup `app.js`'s `buildDialogBodyHtml()` against `lib/ui/finding-details.js`'s
+3. Diagnose the `corpus.json` invalid-JSON failure blocking `npm run validate`.
+4. Dedup `app.js`'s `buildDialogBodyHtml()` against `lib/ui/finding-details.js`'s
    `renderDialogBody()` (moderate risk, deferred).
-6. Provision the owner-approved analyst email/password account and finish
+5. Provision the owner-approved analyst email/password account and finish
    Vercel re-auth before any production rollout. Collection restart still
    requires explicit owner authorization.
 

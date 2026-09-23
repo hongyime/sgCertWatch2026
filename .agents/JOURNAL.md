@@ -1,3 +1,15 @@
+- 2026-09-23: Closed Bug 5's caveat (category:/verdict: preset matching was
+  only hand-traced) with a real end-to-end Playwright test against real
+  watchlist.json brand IDs. Writing that test surfaced two more real bugs:
+  applyFilter() coercing an explicit empty-string severity back to "watch"
+  (same class as the earlier encodeFilter() fix, different code path), and
+  a genuine DOM race in renderFindingList()'s desktop-table swap where an
+  older, superseded render could interleave across an `await import(...)`
+  with a newer one and leave duplicate/stale tables. Reproduced 3/3 times
+  with a MutationObserver diagnostic before fixing; chose to fix by making
+  the remove+append atomic (post-guard, removeAll) rather than trying to
+  perfectly sequence the two concurrent renders, since that's robust to
+  any interleaving order, not just the one exact ordering diagnosed.
 - 2026-09-23: Built the missing Task 9 (analyst sign-in + review) and Task 8
   (historical search beyond the loaded batch) frontends for backends that
   were already fully tested but had zero UI entry point. Chose to intercept
