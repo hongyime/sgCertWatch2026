@@ -448,6 +448,28 @@ test("cursor-envelope-bounded: encodeCursor rejects huge inputs; decode rejects 
 });
 
 // ---------------------------------------------------------------------------
+// 7b. invalid-cursor-expiry-is-rejected — a malformed expires_at must not
+// bypass expiry via NaN <= Date.now() always evaluating to false.
+// ---------------------------------------------------------------------------
+test("invalid-cursor-expiry-is-rejected: malformed expires_at is rejected, not treated as unexpired", () => {
+  const params = { q: "abc", severity: "", verdict: "", source: "", sort: "observed",
+                    brand_id: "", from_at: "", to_at: "", priority_min: null, priority_max: null };
+  const good = encodeCursor({
+    params,
+    last_id: "record-050",
+    last_observed_at: new Date().toISOString(),
+    last_priority: 70,
+    evaluated_at: new Date().toISOString(),
+  });
+  const envelope = JSON.parse(Buffer.from(good, "base64url").toString("utf8"));
+  envelope.expires_at = "not-a-date";
+  const tampered = Buffer.from(JSON.stringify(envelope)).toString("base64url");
+
+  const dec = decodeCursor(tampered, params);
+  assert.equal(dec.ok, false, "a cursor with a non-parseable expires_at must never decode as valid");
+});
+
+// ---------------------------------------------------------------------------
 // 8. invalid-enum — 400 with a stable error code
 // ---------------------------------------------------------------------------
 test("invalid-enum: unknown severity value returns 400", async () => {
