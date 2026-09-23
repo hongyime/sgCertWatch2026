@@ -1144,3 +1144,15 @@ button:disabled {
 .btn-sm { padding: 3px 10px; font-size: 12px; }
 .saved-views-msg { color: var(--teal); font-size: 12px; min-width: 80px; }
 }
+
+/* Analyst sign-in (Task 9) */
+.reviewer-auth { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 10px; padding: 6px 2px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.reviewer-signin-form { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.reviewer-signin-form input { height: 32px; padding: 0 8px; font-size: 13px; border: 1px solid var(--line); border-radius: 6px; }
+.reviewer-signin-error { color: var(--red); font-size: 12px; }
+.reviewer-signed-in { display: flex; align-items: center; gap: 8px; color: var(--teal); font-weight: 700; font-size: 12px; }
+.review-form { display: grid; gap: 10px; margin-top: 8px; }
+.review-form label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.review-actions { display: flex; align-items: center; gap: 10px; }
+.review-form-msg { font-size: 12px; color: var(--teal); }
+.review-meta { margin-top: 4px; }

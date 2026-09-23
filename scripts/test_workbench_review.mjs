@@ -617,3 +617,134 @@ test("real-sql-rpc: exercise upsert_finding_review against a disposable Postgres
     await client.end().catch(() => {});
   }
 });
+
+// ---------------------------------------------------------------------------
+// 15. analyst-sign-in-and-review — real browser: sign in, edit a review,
+//     save, then sign out. Exercises the actual UI wiring in
+//     app.js/index.html against the real lib/ui/reviewer-session.js session.
+//     /api/reviewer-session and /api/reviews are intercepted at the page
+//     level (Supabase Auth itself is not reachable from this loopback-only
+//     page fixture); the handler-level tests above already prove the real
+//     server routes work end to end.
+// ---------------------------------------------------------------------------
+test("analyst-sign-in-and-review: sign in, edit and save a review, then sign out", async () => {
+  const { chromium } = await import("playwright");
+  const { start: startPageFixture } = await import("./workbench-fixture.mjs");
+  await ensureEvidence();
+
+  const pageFixture = await startPageFixture();
+  const browser = await chromium.launch();
+
+  try {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    let liveReview = null; // simulated server-side review row
+
+    await page.route("**/api/reviewer-session", (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "Cache-Control": "no-store" },
+        body: JSON.stringify({
+          access_token: "fixture-access-token",
+          user: { id: "33333333-3333-3333-3333-333333333333" },
+          expires_at: new Date(Date.now() + 3600_000).toISOString(),
+        }),
+      });
+    });
+
+    await page.route("**/api/reviews**", (route) => {
+      const request = route.request();
+      if (request.method() === "GET") {
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ review: liveReview }),
+        });
+        return;
+      }
+      const body = JSON.parse(request.postData() || "{}");
+      liveReview = {
+        finding_id: body.finding_id,
+        status: body.status,
+        disposition: body.disposition,
+        note: body.note,
+        revision: (liveReview?.revision ?? 0) + 1,
+        updated_at: new Date().toISOString(),
+        updated_by: "33333333-3333-3333-3333-333333333333",
+      };
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, review: liveReview }),
+      });
+    });
+
+    const initialFetch = page.waitForResponse(
+      (r) => r.url().includes("/api/findings") && r.status() === 200,
+      { timeout: 15_000 }
+    );
+    await page.goto(pageFixture.url);
+    await initialFetch;
+
+    // Switch to "Recent findings" (all) so the desktop table and its
+    // Details buttons render for every loaded record.
+    const allFetch = page.waitForResponse(
+      (r) => r.url().includes("/api/findings") && r.status() === 200,
+      { timeout: 15_000 }
+    );
+    await page.selectOption("#severity-filter", "");
+    await allFetch;
+    await page.waitForSelector(".finding-list-table", { timeout: 10_000 });
+
+    // --- Sign-in control is reachable -------------------------------------
+    await page.waitForSelector("#reviewer-signin-btn:not([hidden])", { timeout: 8_000 });
+    await page.click("#reviewer-signin-btn");
+    await page.waitForSelector("#reviewer-signin-form:not([hidden])", { timeout: 5_000 });
+    await page.fill("#reviewer-email", "reviewer@test");
+    await page.fill("#reviewer-password", "correct-horse-battery");
+
+    await page.screenshot({ path: resolve(EVIDENCE_DIR, "signin-form.png"), fullPage: false });
+
+    await page.click("#reviewer-signin-form button[type=submit]");
+    await page.waitForSelector("#reviewer-signed-in:not([hidden])", { timeout: 8_000 });
+    const signedInText = await page.locator("#reviewer-signed-in-label").textContent();
+    assert.ok(signedInText.includes("Signed in"), `Expected signed-in indicator, got: "${signedInText}"`);
+
+    // --- Open a finding's details and edit the review ---------------------
+    const firstDetailBtn = page.locator("[data-open-detail]").first();
+    const findingId = await firstDetailBtn.getAttribute("data-open-detail");
+    await firstDetailBtn.click();
+    await page.waitForSelector(".review-form", { timeout: 10_000 });
+
+    await page.selectOption(".review-form select[name=status]", "investigating");
+    await page.fill(".review-form textarea[name=note]", "Looked into this — pending confirmation.");
+    await page.click(".review-form button[type=submit]");
+
+    await page.waitForFunction(
+      () => document.querySelector(".review-form-msg")?.textContent === "Saved.",
+      null,
+      { timeout: 8_000 }
+    );
+
+    await page.screenshot({ path: resolve(EVIDENCE_DIR, "review-saved.png"), fullPage: false });
+
+    assert.equal(liveReview.finding_id, findingId);
+    assert.equal(liveReview.status, "investigating");
+    assert.equal(liveReview.note, "Looked into this — pending confirmation.");
+
+    // --- Sign out clears the private UI ------------------------------------
+    await page.click("#reviewer-signout-btn");
+    await page.waitForSelector("#reviewer-signin-btn:not([hidden])", { timeout: 8_000 });
+    const signinBtnVisible = await page.locator("#reviewer-signin-btn").isVisible();
+    assert.ok(signinBtnVisible, "Sign-in button must reappear after sign-out");
+
+    await context.close();
+  } finally {
+    await browser.close().catch(() => {});
+    await pageFixture.close().catch(() => {});
+  }
+});

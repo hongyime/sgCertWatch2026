@@ -107,6 +107,20 @@
             </div>
             <span id="feed-status" role="status">Loading feed</span>
           </div>
+          <div id="reviewer-auth" class="reviewer-auth" aria-label="Analyst sign-in">
+            <button type="button" id="reviewer-signin-btn" class="btn-secondary btn-sm">Sign in to review</button>
+            <form id="reviewer-signin-form" class="reviewer-signin-form" hidden>
+              <input id="reviewer-email" type="email" placeholder="Analyst email" autocomplete="username" aria-label="Analyst email" required>
+              <input id="reviewer-password" type="password" placeholder="Password" autocomplete="current-password" aria-label="Password" required>
+              <button type="submit" class="btn-primary btn-sm">Sign in</button>
+              <button type="button" id="reviewer-signin-cancel" class="btn-secondary btn-sm">Cancel</button>
+            </form>
+            <span id="reviewer-signin-error" class="reviewer-signin-error" role="alert"></span>
+            <div id="reviewer-signed-in" class="reviewer-signed-in" hidden>
+              <span id="reviewer-signed-in-label">Signed in</span>
+              <button type="button" id="reviewer-signout-btn" class="btn-secondary btn-sm">Sign out</button>
+            </div>
+          </div>
 
           <div class="triage-toolbar">
             <input id="finding-search" type="search" placeholder="Filter findings (domain, brand)..." class="triage-input" aria-label="Filter findings">

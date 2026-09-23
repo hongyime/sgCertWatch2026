@@ -32,6 +32,9 @@ const state = {
   selectedFindingId: null
 };
 
+// Populated once lib/ui/reviewer-session.js resolves (see bottom of file).
+let reviewerSession = null;
+
 const $ = (id) => document.getElementById(id);
 
 function unique(values) {
@@ -452,7 +455,7 @@ async function renderFindingList() {
     const { renderFindingTableBody } = await import('./lib/ui/findings-list.js');
     const table = document.createElement('table');
     table.className = 'finding-list-table';
-    table.innerHTML = renderFindingTableBody(findings, state.selectedFindingId);
+    table.innerHTML = renderFindingTableBody(findings, state.selectedFindingId, Boolean(reviewerSession?.currentToken()));
     container.appendChild(table);
   } else {
     if (container) {
@@ -846,11 +849,28 @@ async function enhanceDetailPanel(finding, container) {
       ${renderRelated(finding, state.findings, escapeHtml)}
     </section>`;
 
+    // Analyst review (Task 9) — requires sign-in; loaded async after the
+    // synchronous body renders, matching the pattern for the sections above.
+    if (reviewerSession?.currentToken()) {
+      extraHtml += `<section class="dialog-section" aria-labelledby="review-hd">
+        <h3 id="review-hd">Analyst Review</h3>
+        <div id="${reviewSectionElId(finding.id)}" class="review-content">Loading review state…</div>
+      </section>`;
+    } else {
+      extraHtml += `<section class="dialog-section" aria-labelledby="review-hd">
+        <h3 id="review-hd">Analyst Review</h3>
+        <p class="muted-text">Sign in to review this finding.</p>
+      </section>`;
+    }
+
     if (!container.isConnected) return;
     const extra = document.createElement('div');
     extra.className = 'dialog-extra-sections';
     extra.innerHTML = extraHtml;
     container.appendChild(extra);
+    if (reviewerSession?.currentToken()) {
+      void loadReviewPanel(finding, container);
+    }
   } catch {
     // Module load or render error — extra sections unavailable
   }
@@ -870,6 +890,130 @@ function wireCopyButton(finding, btn) {
     }
     setTimeout(() => { btn.textContent = "Copy Triage Report"; }, 2000);
   };
+}
+
+function reviewSectionElId(findingId) {
+  return `review-content-${String(findingId).replace(/[^a-zA-Z0-9_-]/g, '')}`;
+}
+
+function renderReviewMessage(container, findingId, message) {
+  const target = container.querySelector(`#${reviewSectionElId(findingId)}`);
+  if (target) target.innerHTML = `<p class="muted-text">${escapeHtml(message)}</p>`;
+}
+
+async function loadReviewPanel(finding, container) {
+  const token = reviewerSession?.currentToken();
+  if (!token) return;
+  try {
+    const resp = await fetch(`/api/reviews?finding_id=${encodeURIComponent(finding.id)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!container.isConnected) return;
+    if (resp.status === 401) {
+      renderReviewMessage(container, finding.id, 'Session expired. Sign in again.');
+      return;
+    }
+    if (!resp.ok) {
+      renderReviewMessage(container, finding.id, 'Could not load review state.');
+      return;
+    }
+    const body = await resp.json();
+    if (!container.isConnected) return;
+    renderReviewForm(finding, container, body.review);
+  } catch {
+    if (container.isConnected) renderReviewMessage(container, finding.id, 'Could not load review state.');
+  }
+}
+
+function renderReviewForm(finding, container, review) {
+  const target = container.querySelector(`#${reviewSectionElId(finding.id)}`);
+  if (!target) return;
+  const status = review?.status || 'new';
+  const disposition = review?.disposition || 'unassessed';
+  const note = review?.note || '';
+  const revision = review?.revision ?? 1;
+  target.innerHTML = `
+    <form class="review-form" data-revision="${escapeHtml(revision)}">
+      <label>Status
+        <select name="status" class="triage-select">
+          <option value="new" ${status === 'new' ? 'selected' : ''}>New</option>
+          <option value="investigating" ${status === 'investigating' ? 'selected' : ''}>Investigating</option>
+          <option value="resolved" ${status === 'resolved' ? 'selected' : ''}>Resolved</option>
+        </select>
+      </label>
+      <label>Disposition
+        <select name="disposition" class="triage-select">
+          <option value="unassessed" ${disposition === 'unassessed' ? 'selected' : ''}>Unassessed</option>
+          <option value="false_positive" ${disposition === 'false_positive' ? 'selected' : ''}>False positive</option>
+          <option value="reported_phishing" ${disposition === 'reported_phishing' ? 'selected' : ''}>Reported phishing</option>
+        </select>
+      </label>
+      <label>Note
+        <textarea name="note" maxlength="2000" rows="3" class="triage-input">${escapeHtml(note)}</textarea>
+      </label>
+      <div class="review-actions">
+        <button type="submit" class="btn-primary btn-sm">Save review</button>
+        <span class="review-form-msg" role="status"></span>
+      </div>
+      ${review ? `<p class="muted-text review-meta">Last updated ${escapeHtml(formatTime(review.updated_at))} (revision ${escapeHtml(review.revision)})</p>` : '<p class="muted-text review-meta">No review recorded yet.</p>'}
+    </form>
+  `;
+  const form = target.querySelector('.review-form');
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    void submitReview(finding, container, form);
+  });
+}
+
+async function submitReview(finding, container, form) {
+  const token = reviewerSession?.currentToken();
+  const msgEl = form.querySelector('.review-form-msg');
+  if (!token) {
+    if (msgEl) msgEl.textContent = 'Session expired. Sign in again.';
+    return;
+  }
+  const fd = new FormData(form);
+  const payload = {
+    finding_id: finding.id,
+    status: fd.get('status'),
+    disposition: fd.get('disposition'),
+    note: fd.get('note') || '',
+    revision: Number(form.dataset.revision) || 1,
+    request_uuid: crypto.randomUUID(),
+  };
+  if (msgEl) msgEl.textContent = 'Saving…';
+  try {
+    const resp = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    const body = await resp.json().catch(() => ({}));
+    if (resp.status === 409) {
+      if (msgEl) msgEl.textContent = 'Someone else updated this review. Reloaded the latest state — please retry.';
+      void loadReviewPanel(finding, container);
+      return;
+    }
+    if (resp.status === 400 && body.error === 'disposition_required_for_resolved') {
+      if (msgEl) msgEl.textContent = 'Choose a disposition before marking Resolved.';
+      return;
+    }
+    if (resp.status === 401) {
+      if (msgEl) msgEl.textContent = 'Session expired. Sign in again.';
+      return;
+    }
+    if (!resp.ok) {
+      if (msgEl) msgEl.textContent = 'Save failed.';
+      return;
+    }
+    if (msgEl) msgEl.textContent = 'Saved.';
+    form.dataset.revision = String(body.review.revision);
+    const meta = form.querySelector('.review-meta');
+    if (meta) meta.textContent = `Last updated ${formatTime(body.review.updated_at)} (revision ${body.review.revision})`;
+    setTimeout(() => { if (msgEl && msgEl.textContent === 'Saved.') msgEl.textContent = ''; }, 2500);
+  } catch {
+    if (msgEl) msgEl.textContent = 'Save failed (network).';
+  }
 }
 
 function openDetailPanel(finding) {
@@ -1131,3 +1275,96 @@ document.querySelectorAll("[data-view]").forEach((button) => {
   button.addEventListener("click", () => setView(button.dataset.view));
 });
 setView(state.view);
+
+// ---------------------------------------------------------------------------
+// Analyst sign-in (Task 9) — memory-only session, same-origin password
+// grant proxied through api/reviewer-session.js. Backed by the already-
+// tested lib/ui/reviewer-session.js singleton.
+// ---------------------------------------------------------------------------
+
+function reviewerSignInErrorMessage(code) {
+  const messages = {
+    invalid_credentials: 'Incorrect email or password.',
+    not_a_reviewer: 'This account is not an authorized reviewer.',
+    reviewer_not_configured: 'Analyst sign-in is not configured yet.',
+    auth_unavailable: 'Sign-in service unavailable. Try again shortly.',
+    auth_stale: 'Sign-in was interrupted. Try again.',
+  };
+  return messages[code] || 'Sign-in failed.';
+}
+
+function updateReviewerAuthUI() {
+  const user = reviewerSession?.currentUser?.();
+  const signinBtn = $('reviewer-signin-btn');
+  const signinForm = $('reviewer-signin-form');
+  const signedInBox = $('reviewer-signed-in');
+  const signedInLabel = $('reviewer-signed-in-label');
+  if (user) {
+    if (signinBtn) signinBtn.hidden = true;
+    if (signinForm) signinForm.hidden = true;
+    if (signedInBox) signedInBox.hidden = false;
+    if (signedInLabel) signedInLabel.textContent = `Signed in as ${user.id.slice(0, 8)}…`;
+  } else {
+    if (signinBtn) signinBtn.hidden = false;
+    if (signinForm) signinForm.hidden = true;
+    if (signedInBox) signedInBox.hidden = true;
+  }
+  // Re-render the desktop table's Review column and any open detail view
+  // now that sign-in state changed. The mobile dialog is modal and blocks
+  // interaction with the sign-in control while open, so it needs no refresh.
+  void renderFindingList();
+  if (state.selectedFindingId) {
+    const panel = $('detail-panel');
+    if (panel && !panel.hidden) {
+      const selected = filteredFindings().find((f) => f.id === state.selectedFindingId);
+      if (selected) openDetailPanel(selected);
+    }
+  }
+}
+
+$('reviewer-signin-btn')?.addEventListener('click', () => {
+  $('reviewer-signin-btn').hidden = true;
+  const form = $('reviewer-signin-form');
+  if (form) { form.hidden = false; $('reviewer-email')?.focus(); }
+});
+
+$('reviewer-signin-cancel')?.addEventListener('click', () => {
+  const form = $('reviewer-signin-form');
+  if (form) form.hidden = true;
+  const btn = $('reviewer-signin-btn');
+  if (btn) btn.hidden = false;
+  const err = $('reviewer-signin-error');
+  if (err) err.textContent = '';
+});
+
+$('reviewer-signin-form')?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const errorEl = $('reviewer-signin-error');
+  if (errorEl) errorEl.textContent = '';
+  if (!reviewerSession) {
+    if (errorEl) errorEl.textContent = 'Still loading, try again.';
+    return;
+  }
+  const email = $('reviewer-email')?.value.trim() ?? '';
+  const password = $('reviewer-password')?.value ?? '';
+  try {
+    await reviewerSession.signIn(email, password);
+    const pwField = $('reviewer-password');
+    if (pwField) pwField.value = '';
+    updateReviewerAuthUI();
+  } catch (err) {
+    if (errorEl) errorEl.textContent = reviewerSignInErrorMessage(err.message);
+  }
+});
+
+$('reviewer-signout-btn')?.addEventListener('click', async () => {
+  await reviewerSession?.signOut();
+  updateReviewerAuthUI();
+});
+
+(async () => {
+  const { reviewerSession: session } = await import('./lib/ui/reviewer-session.js');
+  reviewerSession = session;
+  reviewerSession.onChange(() => updateReviewerAuthUI());
+  updateReviewerAuthUI();
+})();
