@@ -1156,3 +1156,7 @@ button:disabled {
 .review-actions { display: flex; align-items: center; gap: 10px; }
 .review-form-msg { font-size: 12px; color: var(--teal); }
 .review-meta { margin-top: 4px; }
+
+/* Historical search (Task 8) */
+.historical-search-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: -4px 0 12px; padding: 8px 10px; background: var(--teal-soft); border: 1px solid #9ddfd5; border-radius: 6px; font-size: 13px; }
+#historical-search-label { color: #17332f; font-weight: 700; }

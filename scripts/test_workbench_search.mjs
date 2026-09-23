@@ -619,3 +619,115 @@ test("real-sql-rpc: exercise workbench_search_findings against a disposable Post
     await client.end().catch(() => {});
   }
 });
+
+// ---------------------------------------------------------------------------
+// 15. historical-search-has-user-control — real browser: the UI can reach
+//     stored history beyond the loaded batch via the Search stored history
+//     control, rejects too-short queries client-side, and Back to live feed
+//     exits cleanly. Exercises the real app.js/index.html wiring; the
+//     handler-level tests above already prove the real search=1 route works.
+// ---------------------------------------------------------------------------
+test("historical-search-has-user-control: UI can search stored history beyond the loaded batch", async () => {
+  const { chromium } = await import("playwright");
+  const { start: startPageFixture, generateFindings } = await import("./workbench-fixture.mjs");
+  await ensureEvidence();
+
+  const pageFixture = await startPageFixture();
+  const browser = await chromium.launch();
+
+  try {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // Simulate the real search=1 contract: prefix-match against the full
+    // 51-record generator (including record-075.test, the entry the plain
+    // /api/findings route never serves).
+    const allFindings = generateFindings(50);
+    await page.route("**/api/findings**", (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get("search") !== "1") return route.continue();
+      const q = (url.searchParams.get("q") || "").toLowerCase();
+      const matches = q
+        ? allFindings.filter((f) => f.registrable.toLowerCase().startsWith(q))
+        : allFindings.slice(0, 50);
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          storage_configured: true,
+          findings: matches,
+          page: { has_more: false, next_cursor: null, scope: "stored_history", evaluated_at: new Date().toISOString() },
+        }),
+      });
+    });
+
+    const initialFetch = page.waitForResponse(
+      (r) => r.url().includes("/api/findings") && r.status() === 200,
+      { timeout: 15_000 }
+    );
+    await page.goto(pageFixture.url);
+    await initialFetch;
+
+    // record-075.test is the 51st generated record — never in the loaded 50,
+    // so a normal client-side filter finds nothing for it.
+    await page.fill("#finding-search", "record-075");
+
+    const searchFetch = page.waitForResponse(
+      (r) => r.url().includes("search=1") && r.status() === 200,
+      { timeout: 10_000 }
+    );
+    await page.click("#historical-search-btn");
+    await searchFetch;
+
+    await page.waitForFunction(
+      () => document.getElementById("historical-search-bar")?.hidden === false,
+      null,
+      { timeout: 8_000 }
+    );
+
+    const feedStatus = await page.locator("#feed-status").textContent();
+    assert.ok(feedStatus.includes("stored history"),
+      `Expected feed-status to acknowledge stored-history scope, got: "${feedStatus}"`);
+
+    await page.waitForFunction(
+      () => (document.getElementById("finding-list-container")?.textContent || "").includes("record-075") ||
+            (document.getElementById("finding-list")?.textContent || "").includes("record-075"),
+      null,
+      { timeout: 8_000 }
+    );
+
+    await page.screenshot({ path: resolve(EVIDENCE_DIR, "historical-search.png"), fullPage: false });
+
+    // A short (<3 char) query must be rejected client-side, never reaching the server.
+    await page.fill("#finding-search", "re");
+    await page.click("#historical-search-btn");
+    await page.waitForFunction(
+      () => (document.getElementById("historical-search-label")?.textContent || "").includes("at least 3 characters"),
+      null,
+      { timeout: 5_000 }
+    );
+
+    // Back to live feed exits historical mode and refetches the live batch.
+    // (historicalSearch.active is still true from the earlier successful
+    // search — the short-query check above returns before touching it —
+    // so this also proves the pending 300ms debounce timer from the short
+    // query above does not resurrect the bar after exit.)
+    const liveFetch = page.waitForResponse(
+      (r) => r.url().includes("/api/findings") && !r.url().includes("search=1"),
+      { timeout: 10_000 }
+    );
+    await page.click("#historical-search-exit-btn");
+    await liveFetch;
+    await page.waitForFunction(
+      () => document.getElementById("historical-search-bar")?.hidden === true,
+      null,
+      { timeout: 8_000 }
+    );
+
+    await context.close();
+  } finally {
+    await browser.close().catch(() => {});
+    await pageFixture.close().catch(() => {});
+  }
+});

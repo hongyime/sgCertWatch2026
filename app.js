@@ -29,7 +29,8 @@ const state = {
   feedConfigured: false,
   feedLoading: false,
   feedError: false,
-  selectedFindingId: null
+  selectedFindingId: null,
+  historicalSearch: { active: false, cursor: null, hasMore: false }
 };
 
 // Populated once lib/ui/reviewer-session.js resolves (see bottom of file).
@@ -442,8 +443,10 @@ async function renderFindingList() {
   const findings = filteredFindings();
   const totalLoaded = state.findings.length;
   $('feed-status').textContent = !state.feedConfigured ? 'Database not connected'
-    : findings.length ? `${findings.length} of ${totalLoaded} loaded findings match`
-      : state.findingSeverity === 'watch' ? 'No domains at priority 70 or above' : 'No matches in loaded findings';
+    : state.historicalSearch.active
+      ? (findings.length ? `${findings.length} of ${totalLoaded} from stored history match` : 'No matches in stored history')
+      : findings.length ? `${findings.length} of ${totalLoaded} loaded findings match`
+        : state.findingSeverity === 'watch' ? 'No domains at priority 70 or above' : 'No matches in loaded findings';
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
   const container = $('finding-list-container');
@@ -1016,6 +1019,90 @@ async function submitReview(finding, container, form) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Historical search (Task 8) — bounded stored-history search beyond the
+// loaded batch, backed by the already-tested search=1 API in
+// api/findings.js / lib/findings-query.js.
+// ---------------------------------------------------------------------------
+
+function historicalSeverityParams() {
+  if (state.findingSeverity === 'watch') return { priority_min: '70' };
+  if (!state.findingSeverity) return {};
+  return { severity: state.findingSeverity };
+}
+
+function showHistoricalSearchError(message) {
+  const bar = $('historical-search-bar');
+  const label = $('historical-search-label');
+  const moreBtn = $('historical-search-more-btn');
+  if (bar) bar.hidden = false;
+  if (label) label.textContent = message;
+  if (moreBtn) moreBtn.hidden = true;
+}
+
+function updateHistoricalSearchBar() {
+  const bar = $('historical-search-bar');
+  const label = $('historical-search-label');
+  const moreBtn = $('historical-search-more-btn');
+  if (!bar) return;
+  bar.hidden = !state.historicalSearch.active;
+  if (label) label.textContent = `Searching stored history — ${state.findings.length} loaded`;
+  if (moreBtn) moreBtn.hidden = !state.historicalSearch.hasMore;
+}
+
+async function runHistoricalSearch(reset = true) {
+  const q = state.findingQuery;
+  if (q && q.length > 0 && q.length < 3) {
+    showHistoricalSearchError('Type at least 3 characters to search stored history.');
+    return;
+  }
+  const params = new URLSearchParams({ search: '1', limit: '50', ...historicalSeverityParams() });
+  if (q) params.set('q', q);
+  if (!reset && state.historicalSearch.cursor) params.set('cursor', state.historicalSearch.cursor);
+
+  const btn = $('historical-search-btn');
+  const moreBtn = $('historical-search-more-btn');
+  if (btn) btn.disabled = true;
+  if (moreBtn) moreBtn.disabled = true;
+  try {
+    const resp = await fetch(`/api/findings?${params.toString()}`);
+    const body = await resp.json().catch(() => ({}));
+    if (resp.status === 400 && body.error === 'cursor_invalid' && !reset) {
+      // Filters changed since the cursor was issued — restart the search.
+      state.historicalSearch.cursor = null;
+      if (btn) btn.disabled = false;
+      if (moreBtn) moreBtn.disabled = false;
+      return runHistoricalSearch(true);
+    }
+    if (!resp.ok) {
+      showHistoricalSearchError(body.message || 'Historical search failed.');
+      return;
+    }
+    state.historicalSearch.active = true;
+    state.historicalSearch.cursor = body.page?.next_cursor ?? null;
+    state.historicalSearch.hasMore = Boolean(body.page?.has_more);
+    state.findings = reset ? (body.findings || []) : [...state.findings, ...(body.findings || [])];
+    state.feedConfigured = Boolean(body.storage_configured);
+    updateHistoricalSearchBar();
+    await renderFindingList();
+  } catch {
+    showHistoricalSearchError('Historical search failed (network).');
+  } finally {
+    if (btn) btn.disabled = false;
+    if (moreBtn) moreBtn.disabled = false;
+  }
+}
+
+function exitHistoricalSearch() {
+  clearTimeout(historicalSearchDebounce);
+  state.historicalSearch.active = false;
+  state.historicalSearch.cursor = null;
+  state.historicalSearch.hasMore = false;
+  const bar = $('historical-search-bar');
+  if (bar) bar.hidden = true;
+  findingsPoller.refresh();
+}
+
 function openDetailPanel(finding) {
   const panel = $("detail-panel");
   const inner = $("detail-panel-inner");
@@ -1116,13 +1203,23 @@ $("category-filter").addEventListener("change", (event) => {
   renderTable();
 });
 
+let historicalSearchDebounce = null;
 $("finding-search").addEventListener("input", (event) => {
   state.findingQuery = event.target.value.trim().toLowerCase();
+  if (state.historicalSearch.active) {
+    clearTimeout(historicalSearchDebounce);
+    historicalSearchDebounce = setTimeout(() => { void runHistoricalSearch(true); }, 300);
+    return;
+  }
   renderFindingList();
 });
 
 $("severity-filter").addEventListener("change", (event) => {
   state.findingSeverity = event.target.value;
+  if (state.historicalSearch.active) {
+    void runHistoricalSearch(true);
+    return;
+  }
   state.findings = [];
   $("feed-status").textContent = "Loading feed";
   $("finding-list").innerHTML = '<li class="watch-card finding-card">Loading findings</li>';
@@ -1131,6 +1228,13 @@ $("severity-filter").addEventListener("change", (event) => {
 
 $("export-json-btn").addEventListener("click", exportFindingsJson);
 $("export-csv-btn").addEventListener("click", exportFindingsCsv);
+
+$('historical-search-btn')?.addEventListener('click', () => {
+  clearTimeout(historicalSearchDebounce);
+  void runHistoricalSearch(true);
+});
+$('historical-search-more-btn')?.addEventListener('click', () => { void runHistoricalSearch(false); });
+$('historical-search-exit-btn')?.addEventListener('click', exitHistoricalSearch);
 
 // Handle clicks on both mobile cards (#finding-list) and desktop table buttons (#finding-list-container)
 document.addEventListener("click", (event) => {

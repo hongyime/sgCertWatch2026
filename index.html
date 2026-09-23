@@ -124,6 +124,7 @@
 
           <div class="triage-toolbar">
             <input id="finding-search" type="search" placeholder="Filter findings (domain, brand)..." class="triage-input" aria-label="Filter findings">
+            <button type="button" id="historical-search-btn" class="btn-secondary" title="Search stored history by hostname prefix, beyond the loaded batch">Search stored history</button>
             <select id="severity-filter" class="triage-select" aria-label="Finding priority or CT severity">
               <option value="watch">Watch now (priority &gt;=70)</option>
               <option value="">Recent findings (50 loaded)</option>
@@ -134,6 +135,11 @@
             </select>
             <button id="export-json-btn" type="button" class="btn-secondary">Export JSON</button>
             <button id="export-csv-btn" type="button" class="btn-secondary">Export CSV</button>
+          </div>
+          <div id="historical-search-bar" class="historical-search-bar" aria-label="Historical search" hidden>
+            <span id="historical-search-label" role="status"></span>
+            <button type="button" id="historical-search-more-btn" class="btn-secondary btn-sm" hidden>Load more</button>
+            <button type="button" id="historical-search-exit-btn" class="btn-secondary btn-sm">Back to live feed</button>
           </div>
           <div id="saved-views-bar" class="saved-views-bar" aria-label="Saved views">
             <span class="saved-views-label">Views:</span>
