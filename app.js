@@ -274,14 +274,40 @@ function filteredRows() {
   });
 }
 
+// "category:<id>" and "verdict:<id>" are reserved sentinel query values used
+// by the built-in preset views (lib/ui/saved-views.js PRESET_VIEWS) so that
+// "Government"/"Banks" match real watchlist.json brand category membership
+// and "Provider-reported phishing" matches a real intel verdict, instead of
+// a hardcoded English word that may never appear in any finding's fields.
+const CATEGORY_QUERY_RE = /^category:([a-z0-9_-]+)$/i;
+const VERDICT_QUERY_RE = /^verdict:([a-z0-9_-]+)$/i;
+
+function matchesFindingQuery(finding, query) {
+  if (!query) return true;
+  const categoryMatch = query.match(CATEGORY_QUERY_RE);
+  if (categoryMatch) {
+    const category = categoryMatch[1].toLowerCase();
+    const brands = state.data?.watchlist?.brands || [];
+    const brandIds = new Set(
+      brands.filter((b) => String(b.category).toLowerCase() === category).map((b) => b.id)
+    );
+    return (finding.matched_brands || []).some((b) => brandIds.has(b));
+  }
+  const verdictMatch = query.match(VERDICT_QUERY_RE);
+  if (verdictMatch) {
+    const verdict = verdictMatch[1].toLowerCase();
+    return intelEvidence(finding).some((item) => intelVerdict(item) === verdict);
+  }
+  const searchTarget = `${finding.registrable} ${(finding.domains || []).join(" ")} ${(finding.matched_brands || []).join(" ")} ${(finding.matched_schemes || []).join(" ")}`.toLowerCase();
+  return searchTarget.includes(query);
+}
+
 function filteredFindings() {
   return (state.findings || []).filter((f) => {
     const sevMatch = state.findingSeverity === "watch"
       ? priorityScore(f) >= 70
       : (!state.findingSeverity || f.severity === state.findingSeverity);
-    const searchTarget = `${f.registrable} ${(f.domains || []).join(" ")} ${(f.matched_brands || []).join(" ")} ${(f.matched_schemes || []).join(" ")}`.toLowerCase();
-    const queryMatch = !state.findingQuery || searchTarget.includes(state.findingQuery);
-    return sevMatch && queryMatch;
+    return sevMatch && matchesFindingQuery(f, state.findingQuery);
   }).sort((a, b) => priorityScore(b) - priorityScore(a));
 }
 
@@ -411,9 +437,10 @@ async function renderSummary() {
 async function renderFindingList() {
   if (state.feedError || (state.feedLoading && !state.findings.length)) return;
   const findings = filteredFindings();
+  const totalLoaded = state.findings.length;
   $('feed-status').textContent = !state.feedConfigured ? 'Database not connected'
-    : findings.length ? `${findings.length} of ~50 loaded findings match`
-      : state.findingSeverity === 'watch' ? 'No domains at priority 70 or above' : 'No matching stored findings';
+    : findings.length ? `${findings.length} of ${totalLoaded} loaded findings match`
+      : state.findingSeverity === 'watch' ? 'No domains at priority 70 or above' : 'No matches in loaded findings';
 
   const container = $('finding-list-container');
   if (container) {
@@ -871,7 +898,7 @@ function openFindingDetails(finding) {
 async function exportFindingsJson() {
   const { toJson } = await import('./lib/ui/report.js');
   const findings = filteredFindings();
-  const scope = `Loaded findings (${findings.length} of ~50)`;
+  const scope = `Loaded findings (${findings.length} of ${state.findings.length})`;
   const data = toJson(findings, scope);
   const blob = new Blob([data], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -887,7 +914,7 @@ async function exportFindingsJson() {
 async function exportFindingsCsv() {
   const { toCsv } = await import('./lib/ui/report.js');
   const findings = filteredFindings();
-  const scope = `Loaded findings (${findings.length} of ~50)`;
+  const scope = `Loaded findings (${findings.length} of ${state.findings.length})`;
   const data = toCsv(findings, scope);
   const blob = new Blob([data], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);

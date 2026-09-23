@@ -1054,6 +1054,7 @@ button:disabled {
   .triage-dialog .dialog-actions,
   .btn-close,
   .site-footer,
+  #finding-list-container,
   #export-json-btn,
   #export-csv-btn { display: none !important; }
 
