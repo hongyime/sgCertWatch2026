@@ -1,3 +1,18 @@
+- 2026-09-23: Root-caused the multi-session "primitives/status/views/layout
+  file-level-fail-despite-tests-passing" mystery: not a Playwright/node:test
+  bug, just these files' cumulative runtime (100-130s+) exceeding whatever
+  external shell-tool timeout was used to invoke the full file, causing a
+  mid-test SIGKILL that node:test reports as a generic file-level failure.
+  Proved directly on test_workbench_status.mjs: 120s timeout -> killed at
+  105s mid-3rd-test; 300s timeout -> same file, 3/3 pass, exit 0, 129296ms.
+  No code fix needed, just use a bigger timeout or --test-name-pattern.
+  Also confirmed corpus.json's earlier "invalid JSON" note was stale/wrong:
+  npm run validate loads and checks it (validate_data.py:371) and passes
+  cleanly right now. Docker Desktop's backend stayed wedged after further
+  recovery attempts (docker desktop restart, wsl --shutdown, both hung 90s+);
+  stopped retrying per no-shotgun-debugging and pivoted to non-Docker work
+  instead of idling, since the user asked for speed, not for me to wait on
+  a stuck daemon.
 - 2026-09-23: Task 7's capacity checker verified sound against real Postgres
   (disposable container) - suspected statement_timeout bind bug did NOT
   materialize. Task 8 search + Task 9 review SQL still unverified: both
@@ -229,3 +244,23 @@
 
 - 2026-09-23: Diagnosed and fixed the selection-survives-refresh failure: commit 5dbf7483's fix for "desktop-only table view hiding the card list needed by tests" had deleted the ENTIRE isDesktop table-rendering branch in renderFindingList(), not just the bug causing that symptom - leaving zero .finding-list-table, data-finding-id, aria-selected or [data-open-detail] markup at >=1024px, which is exactly what Task 5's contract and this test require. git show 4f31167:app.js confirmed the original table markup; test_workbench_primitives.mjs's own comments ("Uses mobile viewport so the app renders cards, not the desktop table") show the suite always expected both render modes to coexist, so the CI-fix's real regression must have been elsewhere (most likely the missing-await race it fixed separately in the same commit). Restored the table, extracted as renderFindingRow/renderFindingTableBody in lib/ui/findings-list.js to match the existing renderFindingCard pattern rather than re-inlining into app.js. test_workbench_layout.mjs: 1 FAIL -> 3/3 pass. Re-ran test_workbench_primitives.mjs and test_workbench_scope.mjs to confirm no regression (same pre-existing file-level-exit flakiness as before, no new failures); npm run test:unit stayed green. Also discovered mid-session: a concurrent `claude`-harness session on machine PRAWN-E14 is actively working in this same repo (its stop-hook auto-appended a MOLT state block to STATE.md between my commits), confirming multi-agent concurrent access; and git push via the configured credential.helper=manager hung indefinitely (Windows Git Credential Manager trying to prompt interactively in a headless shell) - worked around by pushing through an explicit https://x-access-token:$GITHUB_TOKEN@... URL using the existing GITHUB_TOKEN env var, which also surfaced one transient WSL2 ERROR_SHARING_VIOLATION on the ext4.vhdx disk (cleared on retry, consistent with concurrent process contention).
 - 2026-09-23 19:37:21 +08:00 [PRAWN-E14/claude/stop] branch=main head=a4893ab dirty=0
+- 2026-09-23 21:45:21 +08:00 [PRAWN-E14/claude/stop] branch=main head=20735ed dirty=0
+
+
+- 2026-09-23: Storage-side pass (separate from the app/test work above) --
+  found 6 indexes on `findings` with literally zero scans since the DB was
+  rebuilt (idx_scan=0 in pg_stat_user_indexes), totaling ~9MB: 
+  findings_intel_domains_idx (7.7MB, unused - supports the not-yet-wired-in
+  intel/workbench feature noted above), findings_registrable_idx (1MB),
+  findings_matched_brands_idx, findings_matched_schemes_idx,
+  findings_intel_registrable_score_idx, findings_intel_empty_domains_idx.
+  Dropped all 6 with DROP INDEX CONCURRENTLY (no table lock, no data touched,
+  trivially recreatable with one CREATE INDEX if/when the intel feature
+  actually ships and needs them). Verified zero duplicate rows in both
+  findings (by id) and finding_sources (by finding_id+source+source_ref) --
+  the fast growth toward 500MB is genuinely from new CT-log findings via the
+  15-min cron, not a dedup bug. DB was 122MB after the drop. No app code or
+  git-tracked files touched; this was pure Supabase-side SQL via the
+  Management API. Also independently hit the exact same Docker Desktop/WSL2
+  wedge noted above (docker desktop restart + wsl --shutdown both hung 90s+)
+  -- corroborates it's a real machine-level issue, not tool-specific.

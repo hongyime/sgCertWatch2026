@@ -174,17 +174,23 @@ check that originally found these "unwired" was run against the STALE commit
     a real schema.
 
 **Confirmed still broken / not yet attempted this pass:**
-- `test_workbench_primitives.mjs` and `test_workbench_status.mjs` both show
-  every individual assertion passing (✔) but the FILE exits failed — same
-  pattern also seen transiently on `test_workbench_views.mjs` and confirmed
-  again on `test_workbench_layout.mjs`'s own run this pass. Each passes
-  cleanly when isolated with `--test-name-pattern`, and re-running
-  `test_workbench_primitives.mjs` after the desktop-table fix below showed
-  the identical pattern with zero new failures — so this is very likely a
-  Playwright/node:test/Windows environment teardown-timing issue common to
-  every multi-test Playwright file in this suite, not a functional bug and
-  not caused by any fix in this pass. Still not root-caused; do not keep
-  papering over it with isolation flags forever.
+- **ROOT-CAUSED (closing a multi-session-old "not root-caused" item)**:
+  `test_workbench_primitives.mjs`/`status.mjs`/`views.mjs`/`layout.mjs`
+  showing every individual assertion passing (✔) but the FILE reporting a
+  generic file-level `'test failed'` (no specific test named) is **not** a
+  Playwright/node:test/Windows bug at all. These multi-test files have a
+  cumulative runtime of 100–130+ seconds; whenever the external shell-tool
+  timeout used to invoke `node --test` (60s/90s/100s/120s, whichever was
+  picked that call) is shorter than the actual cumulative runtime, the tool
+  harness SIGKILLs the node process mid-test, and node:test reports the
+  incomplete run as a file-level failure with no named test — while tests
+  that finished before the kill still show their correct checkmarks.
+  Reproduced directly on `test_workbench_status.mjs`: with a 120000ms
+  timeout it died at 105s mid-3rd-test (`'test failed'`, no test named,
+  only 2/3 checkmarks shown); with a 300000ms timeout the SAME file ran to
+  completion in 129296ms, 3/3 pass, exit code 0. No code fix needed — always
+  give these files a timeout comfortably above ~150s (or use
+  `--test-name-pattern` isolation) when running the full file in one call.
 - `scripts/check_workbench_capacity.mjs`'s reported `SET statement_timeout =
   $1` SQL bind-placeholder bug (Task 7) is now VERIFIED SOUND — see item 11
   above: `real-disposable-postgres` ran against a real Postgres and PASSED
@@ -224,13 +230,9 @@ task-level plan completion — see reopened checkboxes in
    still exists, recreate it, add `anon`/`authenticated`/`service_role`
    roles, then run `test_workbench_search.mjs` and `test_workbench_review.mjs`
    against real Postgres (Task 7's capacity checker is already verified).
-2. Root-cause (or file as a known/accepted flake with evidence) the
-   primitives.mjs/status.mjs/views.mjs file-level-fail-despite-all-tests-
-   passing pattern.
-3. Diagnose the `corpus.json` invalid-JSON failure blocking `npm run validate`.
-4. Dedup `app.js`'s `buildDialogBodyHtml()` against `lib/ui/finding-details.js`'s
+2. Dedup `app.js`'s `buildDialogBodyHtml()` against `lib/ui/finding-details.js`'s
    `renderDialogBody()` (moderate risk, deferred).
-5. Provision the owner-approved analyst email/password account and finish
+3. Provision the owner-approved analyst email/password account and finish
    Vercel re-auth before any production rollout. Collection restart still
    requires explicit owner authorization.
 
@@ -246,12 +248,12 @@ task-level plan completion — see reopened checkboxes in
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-23 19:37:21 +08:00
+- Updated: 2026-09-23 21:45:21 +08:00
 - Machine: PRAWN-E14
 - Harness: claude
 - Event: stop
 - Branch: main
-- HEAD: a4893ab
+- HEAD: 20735ed
 - Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
