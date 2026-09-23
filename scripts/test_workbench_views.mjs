@@ -247,3 +247,29 @@ test("private-data-never-saved: localStorage contains only filter state, not fin
     await fixture.close().catch(() => {});
   }
 });
+
+// ---------------------------------------------------------------------------
+// Test 5 — all-severities-url-round-trips (pure, no browser)
+// ---------------------------------------------------------------------------
+test("all-severities-url-round-trips: an explicit empty-severity filter survives encode+decode, not just non-empty ones", async () => {
+  const { encodeFilter, decodeFilter } = await import("../lib/ui/saved-views.js");
+
+  // severity: "" means "show every severity" (the "Recent findings" / All
+  // view). It must NOT be indistinguishable from "no filter was ever set"
+  // (which defaults to "watch"), or a shared link/reload silently reverts
+  // to Watch.
+  const qs = encodeFilter({ query: "", severity: "" });
+  assert.ok(qs.length > 0, "an explicit empty severity must produce a non-empty query string");
+
+  const restored = decodeFilter(qs);
+  assert.equal(restored.severity, "", "decoding must restore severity as empty, not fall back to watch");
+
+  // Non-default, non-empty severities must still round-trip as before.
+  const qsHigh = encodeFilter({ query: "singpass", severity: "high" });
+  assert.equal(decodeFilter(qsHigh).severity, "high");
+  assert.equal(decodeFilter(qsHigh).query, "singpass");
+
+  // The default ("watch") is still omitted from the URL for a clean link.
+  const qsDefault = encodeFilter({ query: "", severity: "watch" });
+  assert.equal(qsDefault, "", "the default severity must not appear in the URL");
+});
