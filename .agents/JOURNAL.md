@@ -279,4 +279,5 @@
   git-tracked files touched; this was pure Supabase-side SQL via the
   Management API. Also independently hit the exact same Docker Desktop/WSL2
   wedge noted above (docker desktop restart + wsl --shutdown both hung 90s+)
-  -- corroborates it's a real machine-level issue, not tool-specific.
+  -- corroborates it's a real machine-level issue, not tool-specific.- 2026-09-24 13:24:25 +08:00 [PRAWN-E14/claude/stop] branch=main head=8afb093 dirty=0
+- 2026-09-24 13:29:42 +08:00 [PRAWN-E14/claude/stop] branch=main head=8afb093 dirty=0
