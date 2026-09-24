@@ -292,12 +292,12 @@ against real Postgres, including one more genuine test bug found and fixed
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-25 00:31:50 +08:00
+- Updated: 2026-09-25 03:28:13 +08:00
 - Machine: PRAWN-E14
 - Harness: claude
 - Event: stop
 - Branch: main
-- HEAD: fd29604
+- HEAD: 710ac34
 - Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
