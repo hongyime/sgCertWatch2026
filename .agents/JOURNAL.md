@@ -1,3 +1,19 @@
+- 2026-09-24: Root-caused why every `git push` (and even plain `curl -u`)
+  to github.com over HTTPS hung indefinitely all session: authenticated
+  HTTP/2 requests stalled after headers were sent (TLS handshake + request
+  succeed per GIT_CURL_VERBOSE=1, then no response ever arrives), while
+  unauthenticated requests to the same host returned instantly. Forcing
+  HTTP/1.1 (`git -c http.version=HTTP/1.1 push`) fixed it on the first try.
+  Set `git config --local http.version HTTP/1.1` so future sessions in this
+  shared checkout don't have to rediscover this. Root cause is almost
+  certainly a local network intermediary (AV/WAF doing HTTP/2 deep packet
+  inspection on Authorization headers), not GitHub or git itself. Also hit
+  a genuine multi-agent git collision this session: a concurrent agent's
+  "test(pipeline): add 129 evidence layer" commit existed locally as one
+  SHA and on origin as a different SHA (same shared checkout, different
+  push timing) - resolved by hard-resetting to origin's version and
+  cherry-picking only my own unique commit on top, rather than risk
+  duplicating their work via a naive merge/rebase.
 - 2026-09-23: Root-caused the multi-session "primitives/status/views/layout
   file-level-fail-despite-tests-passing" mystery: not a Playwright/node:test
   bug, just these files' cumulative runtime (100-130s+) exceeding whatever

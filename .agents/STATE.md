@@ -173,6 +173,24 @@ check that originally found these "unwired" was run against the STALE commit
     port**. Search/review SQL migrations remain genuinely unverified against
     a real schema.
 
+12. **`git push` was hanging indefinitely all session — root-caused and fixed**:
+    every `git push` (and even plain `curl -u ...`) to github.com over
+    HTTPS hung forever specifically on AUTHENTICATED requests —
+    unauthenticated GETs (curl, git-receive-pack info/refs 401 check)
+    returned instantly, but the moment credentials were included, the TLS
+    handshake and HTTP/2 request headers sent cleanly (`GIT_CURL_VERBOSE=1`
+    showed the full handshake + headers-sent trace) and then just hung
+    waiting for a response that never arrived. Forcing HTTP/1.1
+    (`git -c http.version=HTTP/1.1 push ...`) fixed it immediately — push
+    completed on the first try. Set persistently via
+    `git config --local http.version HTTP/1.1` so this doesn't have to be
+    rediscovered by the next session (this local checkout is shared across
+    multiple concurrent agents per AGENTS.md). Root cause is almost
+    certainly some local network intermediary (AV/WAF/DLP doing HTTP/2 deep
+    packet inspection that stalls on Authorization headers specifically) on
+    this machine, not a GitHub-side or git-version issue — unauthenticated
+    HTTP/2 traffic to the same host was unaffected.
+
 **Confirmed still broken / not yet attempted this pass:**
 - **ROOT-CAUSED (closing a multi-session-old "not root-caused" item)**:
   `test_workbench_primitives.mjs`/`status.mjs`/`views.mjs`/`layout.mjs`
