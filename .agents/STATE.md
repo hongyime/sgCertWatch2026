@@ -191,6 +191,33 @@ check that originally found these "unwired" was run against the STALE commit
     this machine, not a GitHub-side or git-version issue — unauthenticated
     HTTP/2 traffic to the same host was unaffected.
 
+13. **Task 8/9 real-SQL verification — complete, Docker recovered, found and
+    fixed one more real bug**: Docker Desktop's backend recovered on its
+    own after the earlier wedge (confirmed via `docker ps` returning all
+    pre-existing unrelated containers healthy). Recreated
+    `sgcw-disposable-pg`, added the missing `anon`/`authenticated`/
+    `service_role` roles (absent on vanilla `postgres:16-alpine`, required
+    by both migrations' `grant`/`revoke` statements), created
+    `workbench_search_fixture_1` and `workbench_review_fixture_1`.
+    `test_workbench_search.mjs`'s `real-sql-rpc` **PASSES** cleanly against
+    real `workbench-search.sql`. `test_workbench_review.mjs`'s equivalent
+    **FAILED first, on a genuine test bug** (never caught before since this
+    path was always skipped for lack of a DB URL): the test used `"req-1"`/
+    `"req-2"`/`"req-3"`/`"req-9"` as `request_uuid` values, all only 5
+    characters — but `upsert_finding_review()`'s own validation
+    (`workbench-review.sql:127`) correctly requires `length(p_request_uuid)
+    >= 8`, raising `invalid_request_uuid`. The SQL's guard is correct (a
+    length floor prevents trivially-guessable/colliding idempotency keys);
+    fixed the test by padding the values to `"request-1"`/`"request-2"`/
+    `"request-3"`/`"request-9"` (9 chars each), preserving the same
+    distinct semantics. Both files' full regression + `npm run test:unit`
+    stayed green after the fix. Container torn down and verified removed
+    (`docker ps -a` returns no matching container). **All three
+    `WORKBENCH_*_DATABASE_URL` real-SQL suites (Task 7 capacity, Task 8
+    search, Task 9 review) are now genuinely verified against real
+    Postgres, closing out the last item from the original repair-pass
+    checklist that depended on a database.**
+
 **Confirmed still broken / not yet attempted this pass:**
 - **ROOT-CAUSED (closing a multi-session-old "not root-caused" item)**:
   `test_workbench_primitives.mjs`/`status.mjs`/`views.mjs`/`layout.mjs`
@@ -210,12 +237,11 @@ check that originally found these "unwired" was run against the STALE commit
   give these files a timeout comfortably above ~150s (or use
   `--test-name-pattern` isolation) when running the full file in one call.
 - `scripts/check_workbench_capacity.mjs`'s reported `SET statement_timeout =
-  $1` SQL bind-placeholder bug (Task 7) is now VERIFIED SOUND — see item 11
-  above: `real-disposable-postgres` ran against a real Postgres and PASSED
-  cleanly (both the PASS and FAIL cases). `test_workbench_search.mjs`'s
-  `real-sql-rpc` and `test_workbench_review.mjs`'s equivalent are still
-  UNVERIFIED — both failed on missing Supabase roles (`anon`/
-  `authenticated`/`service_role`) before Docker wedged; see item 11.
+  $1` SQL bind-placeholder bug (Task 7) is VERIFIED SOUND, and
+  `test_workbench_search.mjs`'s `real-sql-rpc` / `test_workbench_review.mjs`'s
+  equivalent are ALSO now VERIFIED (the latter after fixing a genuine
+  request_uuid-too-short test bug) — see item 13. All three
+  `WORKBENCH_*_DATABASE_URL` real-SQL suites are closed out.
 - Production SQL migrations (`supabase/workbench-search.sql`,
   `supabase/workbench-review.sql`) have never been applied to production
   Supabase. 0 auth users still exist; owner has not yet supplied an analyst
@@ -229,30 +255,30 @@ issue and got PR #19 merged. No teams from the earlier repair attempts
 
 ## Status
 
-IN PROGRESS — 10 confirmed bugs/gaps fixed with new passing regression tests;
+IN PROGRESS — 13 confirmed bugs/gaps fixed with new passing regression tests;
 `npm run test:unit` still fully green (34 tests, 0 failures). The desktop
 findings table (Task 5), analyst sign-in + review UI (Task 9), historical-
 search UI (Task 8), and Bug 5's category/verdict preset e2e test were all
 missing or broken and are now built/restored/added and passing, including
 a real debounce-timer race (Task 8) and two more real races/bugs (severity
 coercion + duplicate-table DOM race) caught while building the preset test.
-The primitives/status/views file-level flakiness (confirmed pre-existing, not
-caused by this pass) and search/review real-Postgres SQL verification remain
-open (Task 7's capacity checker IS now verified sound). Do NOT treat this as
-task-level plan completion — see reopened checkboxes in
-`.omo/plans/free-tier-investigation-upgrade.md`.
+The primitives/status/views file-level flakiness is root-caused (shell-tool
+timeout, not a real bug) and all three `WORKBENCH_*_DATABASE_URL` real-SQL
+suites (Task 7 capacity, Task 8 search, Task 9 review) are now verified
+against real Postgres, including one more genuine test bug found and fixed
+(request_uuid too short). Do NOT treat this as task-level plan completion
+— see reopened checkboxes in `.omo/plans/free-tier-investigation-upgrade.md`.
 
 ## Next steps
 
-1. Once Docker recovers: tear down `sgcw-disposable-pg` (port 5544) if it
-   still exists, recreate it, add `anon`/`authenticated`/`service_role`
-   roles, then run `test_workbench_search.mjs` and `test_workbench_review.mjs`
-   against real Postgres (Task 7's capacity checker is already verified).
-2. Dedup `app.js`'s `buildDialogBodyHtml()` against `lib/ui/finding-details.js`'s
+1. Dedup `app.js`'s `buildDialogBodyHtml()` against `lib/ui/finding-details.js`'s
    `renderDialogBody()` (moderate risk, deferred).
-3. Provision the owner-approved analyst email/password account and finish
+2. Provision the owner-approved analyst email/password account and finish
    Vercel re-auth before any production rollout. Collection restart still
    requires explicit owner authorization.
+3. Apply `supabase/workbench-search.sql` and `supabase/workbench-review.sql`
+   to production Supabase (only with explicit owner go-ahead — both are now
+   verified against real Postgres, see item 13).
 
 ## History
 
@@ -266,12 +292,12 @@ task-level plan completion — see reopened checkboxes in
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-24 13:29:42 +08:00
+- Updated: 2026-09-25 00:31:50 +08:00
 - Machine: PRAWN-E14
 - Harness: claude
 - Event: stop
 - Branch: main
-- HEAD: 8afb093
+- HEAD: fd29604
 - Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->

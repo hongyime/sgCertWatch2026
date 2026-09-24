@@ -1,3 +1,17 @@
+- 2026-09-25: Docker Desktop recovered on its own; completed all three
+  WORKBENCH_*_DATABASE_URL real-SQL suites (Task 7 capacity, Task 8 search,
+  Task 9 review) against a fresh disposable postgres:16-alpine container.
+  Had to create anon/authenticated/service_role roles first (both
+  migrations grant/revoke against them, absent on vanilla Postgres).
+  Capacity and search RPCs passed cleanly. Review RPC failed first on a
+  genuine test bug never caught before (path always skipped for lack of a
+  DB URL): request_uuid values like "req-1" were only 5 chars, but
+  upsert_finding_review()'s own length>=8 guard (a reasonable anti-collision
+  floor for idempotency keys) correctly rejected them. Fixed the test
+  (padded to "request-1" etc.), not the SQL - the SQL's validation was
+  right. Full regression + npm run test:unit stayed green. Container torn
+  down and confirmed removed. This closes the last item from the original
+  free-tier-investigation-upgrade repair pass that depended on a database.
 - 2026-09-24: Root-caused why every `git push` (and even plain `curl -u`)
   to github.com over HTTPS hung indefinitely all session: authenticated
   HTTP/2 requests stalled after headers were sent (TLS handshake + request
@@ -281,3 +295,5 @@
   wedge noted above (docker desktop restart + wsl --shutdown both hung 90s+)
   -- corroborates it's a real machine-level issue, not tool-specific.- 2026-09-24 13:24:25 +08:00 [PRAWN-E14/claude/stop] branch=main head=8afb093 dirty=0
 - 2026-09-24 13:29:42 +08:00 [PRAWN-E14/claude/stop] branch=main head=8afb093 dirty=0
+- 2026-09-25 00:31:49 +08:00 [PRAWN-E14/claude/stop] branch=main head=fd29604 dirty=0
+- 2026-09-25 00:31:50 +08:00 [PRAWN-E14/claude/stop] branch=main head=fd29604 dirty=0

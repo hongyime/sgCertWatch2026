@@ -546,14 +546,14 @@ test("real-sql-rpc: exercise upsert_finding_review against a disposable Postgres
     // First write.
     const r1 = await client.query(
       `select public.upsert_finding_review($1,$2,$3,$4,$5,$6,$7) as r`,
-      ["sql-001", "investigating", "unassessed", "note", VALID_USER_ID, 1, "req-1"]
+      ["sql-001", "investigating", "unassessed", "note", VALID_USER_ID, 1, "request-1"]
     );
     assert.equal(r1.rows[0].r.status, "investigating");
 
     // Idempotency: identical retry
     const r2 = await client.query(
       `select public.upsert_finding_review($1,$2,$3,$4,$5,$6,$7) as r`,
-      ["sql-001", "investigating", "unassessed", "note", VALID_USER_ID, 1, "req-1"]
+      ["sql-001", "investigating", "unassessed", "note", VALID_USER_ID, 1, "request-1"]
     );
     assert.equal(r2.rows[0].r.revision, 1, "idempotent retry does not bump revision");
     const evtCount1 = await client.query(
@@ -566,7 +566,7 @@ test("real-sql-rpc: exercise upsert_finding_review against a disposable Postgres
     try {
       await client.query(
         `select public.upsert_finding_review($1,$2,$3,$4,$5,$6,$7)`,
-        ["sql-001", "resolved", "false_positive", "different", VALID_USER_ID, 1, "req-1"]
+        ["sql-001", "resolved", "false_positive", "different", VALID_USER_ID, 1, "request-1"]
       );
     } catch (err) {
       idempotencyConflict = /idempotency_conflict/.test(err.message);
@@ -578,7 +578,7 @@ test("real-sql-rpc: exercise upsert_finding_review against a disposable Postgres
     try {
       await client.query(
         `select public.upsert_finding_review($1,$2,$3,$4,$5,$6,$7)`,
-        ["sql-001", "resolved", "false_positive", "note", VALID_USER_ID, 0, "req-2"]
+        ["sql-001", "resolved", "false_positive", "note", VALID_USER_ID, 0, "request-2"]
       );
     } catch (err) {
       revConflict = /revision_conflict/.test(err.message);
@@ -588,7 +588,7 @@ test("real-sql-rpc: exercise upsert_finding_review against a disposable Postgres
     // Successful transition: revision 1 → 2
     const r3 = await client.query(
       `select public.upsert_finding_review($1,$2,$3,$4,$5,$6,$7) as r`,
-      ["sql-001", "resolved", "false_positive", "confirmed", VALID_USER_ID, 1, "req-3"]
+      ["sql-001", "resolved", "false_positive", "confirmed", VALID_USER_ID, 1, "request-3"]
     );
     assert.equal(r3.rows[0].r.revision, 2);
     assert.equal(r3.rows[0].r.status, "resolved");
@@ -598,7 +598,7 @@ test("real-sql-rpc: exercise upsert_finding_review against a disposable Postgres
     try {
       await client.query(
         `select public.upsert_finding_review($1,$2,$3,$4,$5,$6,$7)`,
-        ["sql-999", "investigating", "unassessed", "", VALID_USER_ID, 1, "req-9"]
+        ["sql-999", "investigating", "unassessed", "", VALID_USER_ID, 1, "request-9"]
       );
     } catch (err) { notFound = /finding_not_found/.test(err.message); }
     assert.ok(notFound, "unknown finding must be rejected");
