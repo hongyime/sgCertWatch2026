@@ -244,6 +244,7 @@ try {
     await checkLayout(page);
     await page.screenshot({ path: join(screenshots, `evidence-${width}.png`) });
     await page.click("#close-dialog-btn");
+    await dialog.waitFor({ state: "hidden" });
 
     await switchFilter("");
     assert.equal(requests.at(-1).search, "?limit=50");
@@ -347,6 +348,7 @@ try {
     await cards.first().click();
     assert.equal(await dialog.locator("h2").innerText(), baseline.registrable);
     await page.click("#close-dialog-btn");
+    await dialog.waitFor({ state: "hidden" });
     await heldRoute.fulfill({ json: { storage_configured: true, findings: watchFindings } });
     await waitForFeed();
     holdWatch = false;
