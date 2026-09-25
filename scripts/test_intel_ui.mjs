@@ -346,6 +346,7 @@ try {
     await page.fill("#finding-search", "baseline");
     assert.equal(await cards.count(), 1, "Search remains usable during an automatic refresh");
     await cards.first().click();
+    await dialog.locator("h2").filter({ hasText: baseline.registrable }).waitFor();
     assert.equal(await dialog.locator("h2").innerText(), baseline.registrable);
     await page.click("#close-dialog-btn");
     await dialog.waitFor({ state: "hidden" });
