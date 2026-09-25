@@ -1,3 +1,21 @@
+- 2026-09-25: User explicitly authorized proceeding without deferral ("go
+  ahead now and do not defer items, push to main will auto deploy to
+  vercel"). Deduped buildDialogBodyHtml() against lib/ui/finding-details.js
+  (async + dynamic import, matching the existing evidence-timeline/related-
+  findings/impersonation lazy-load convention); full regression across
+  every workbench test file + npm run test:unit stayed green. Then applied
+  both workbench-search.sql and workbench-review.sql to PRODUCTION Supabase
+  (project xznuvxduwkfxljpezufa) via the Management API - pre-verified both
+  are additive-only (if-not-exists / create-or-replace, zero alter/drop on
+  existing objects) and pre-flighted that neither existed yet before
+  applying. Smoke-tested workbench_search_findings live against real
+  production data successfully. Deliberately skipped a live write-test for
+  upsert_finding_review to avoid seeding fake analyst-review rows into
+  production; relied on its already-passing real-Postgres verification
+  from earlier today with the identical SQL instead. Both RPCs are live.
+  The reviewer-login UI still can't be used end-to-end until the owner
+  supplies a real analyst email/password - applying SQL alone doesn't
+  create that Supabase auth account.
 - 2026-09-25: Docker Desktop recovered on its own; completed all three
   WORKBENCH_*_DATABASE_URL real-SQL suites (Task 7 capacity, Task 8 search,
   Task 9 review) against a fresh disposable postgres:16-alpine container.

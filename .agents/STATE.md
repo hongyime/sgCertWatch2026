@@ -218,6 +218,35 @@ check that originally found these "unwired" was run against the STALE commit
     Postgres, closing out the last item from the original repair-pass
     checklist that depended on a database.**
 
+14. **Dedup + production SQL migration applied — user explicitly authorized**:
+    converted `buildDialogBodyHtml()` in app.js to delegate to
+    `lib/ui/finding-details.js`'s `renderDialogBody()` via dynamic import
+    (matching the existing lazy-load convention used for evidence-timeline/
+    related-findings/impersonation), eliminating the 50-line duplicate.
+    `openDetailPanel`/`openFindingDetails` converted to async; all 4
+    external call sites updated to `void`. Full regression across every
+    workbench test file (layout, primitives, export, views, search, review)
+    plus `npm run test:unit` stayed green — zero behavior change. **Then,
+    per explicit user instruction ("go ahead now and do not defer items,
+    push to main will auto deploy to vercel"), applied both
+    `supabase/workbench-search.sql` and `supabase/workbench-review.sql` to
+    PRODUCTION Supabase** (project `xznuvxduwkfxljpezufa`, via the
+    Management API using `SUPABASE_ACCESS_TOKEN`). Pre-checked both
+    migrations are additive-only (create index/table/function `if not
+    exists` or `create or replace function`; zero `alter`/`drop` on
+    existing objects; zero writes to existing data) before applying.
+    Pre-flight confirmed neither existed yet (fresh apply, not a re-apply).
+    Post-apply verified all 4 new functions/tables/RLS flags exist, AND
+    smoke-tested `workbench_search_findings` live against real production
+    data (returned real findings correctly). Deliberately did NOT smoke-
+    test `upsert_finding_review` against production (write-oriented; would
+    pollute real analyst-review state with fake data) — relied instead on
+    its already-passing real-Postgres test from item 13 with the identical
+    SQL. **Both RPCs are now live in production.** The reviewer-login UI
+    (Task 9) remains non-functional end-to-end in production until the
+    owner supplies a real analyst email/password (0 Supabase auth users
+    still exist) — applying the SQL alone does not create that account.
+
 **Confirmed still broken / not yet attempted this pass:**
 - **ROOT-CAUSED (closing a multi-session-old "not root-caused" item)**:
   `test_workbench_primitives.mjs`/`status.mjs`/`views.mjs`/`layout.mjs`
@@ -243,9 +272,11 @@ check that originally found these "unwired" was run against the STALE commit
   request_uuid-too-short test bug) — see item 13. All three
   `WORKBENCH_*_DATABASE_URL` real-SQL suites are closed out.
 - Production SQL migrations (`supabase/workbench-search.sql`,
-  `supabase/workbench-review.sql`) have never been applied to production
-  Supabase. 0 auth users still exist; owner has not yet supplied an analyst
-  email. Vercel CLI auth is still a stored-403; needs a fresh `vercel login`.
+  `supabase/workbench-review.sql`) ARE NOW APPLIED to production Supabase
+  (project `xznuvxduwkfxljpezufa`) — see item 14. 0 auth users still exist;
+  owner has not yet supplied an analyst email, so the reviewer-login UI is
+  still non-functional end-to-end in production despite the SQL being live.
+  Vercel CLI auth is still a stored-403; needs a fresh `vercel login`.
 
 Git: local `main` and `origin/main` were already in sync at `25cfd5d` before
 this pass (nothing to pull/push) — a prior session (commit 5dbf7483) already
@@ -255,7 +286,7 @@ issue and got PR #19 merged. No teams from the earlier repair attempts
 
 ## Status
 
-IN PROGRESS — 13 confirmed bugs/gaps fixed with new passing regression tests;
+IN PROGRESS — 14 confirmed bugs/gaps fixed with new passing regression tests;
 `npm run test:unit` still fully green (34 tests, 0 failures). The desktop
 findings table (Task 5), analyst sign-in + review UI (Task 9), historical-
 search UI (Task 8), and Bug 5's category/verdict preset e2e test were all
@@ -263,22 +294,21 @@ missing or broken and are now built/restored/added and passing, including
 a real debounce-timer race (Task 8) and two more real races/bugs (severity
 coercion + duplicate-table DOM race) caught while building the preset test.
 The primitives/status/views file-level flakiness is root-caused (shell-tool
-timeout, not a real bug) and all three `WORKBENCH_*_DATABASE_URL` real-SQL
-suites (Task 7 capacity, Task 8 search, Task 9 review) are now verified
-against real Postgres, including one more genuine test bug found and fixed
-(request_uuid too short). Do NOT treat this as task-level plan completion
-— see reopened checkboxes in `.omo/plans/free-tier-investigation-upgrade.md`.
+timeout, not a real bug), all three `WORKBENCH_*_DATABASE_URL` real-SQL
+suites are verified against real Postgres, `buildDialogBodyHtml()` is
+deduped, and — per explicit user authorization — both workbench SQL
+migrations are now LIVE ON PRODUCTION Supabase. Remaining blocker for the
+reviewer feature to be usable end-to-end: an owner-supplied analyst
+email/password (0 auth users exist). Do NOT treat this as task-level plan
+completion — see reopened checkboxes in
+`.omo/plans/free-tier-investigation-upgrade.md`.
 
 ## Next steps
 
-1. Dedup `app.js`'s `buildDialogBodyHtml()` against `lib/ui/finding-details.js`'s
-   `renderDialogBody()` (moderate risk, deferred).
-2. Provision the owner-approved analyst email/password account and finish
-   Vercel re-auth before any production rollout. Collection restart still
-   requires explicit owner authorization.
-3. Apply `supabase/workbench-search.sql` and `supabase/workbench-review.sql`
-   to production Supabase (only with explicit owner go-ahead — both are now
-   verified against real Postgres, see item 13).
+1. Provision the owner-approved analyst email/password account (0 Supabase
+   auth users exist) so the already-live reviewer feature becomes usable
+   end-to-end in production.
+2. Finish Vercel re-auth (`vercel login` — stored credential is 403).
 
 ## History
 
