@@ -759,56 +759,21 @@ async function renderSourceStatus(signal) {
   }
 }
 
-function buildDialogBodyHtml(finding) {
-  const signalsRows = (finding.signals || []).map((s) => `
-    <tr>
-      <td><code>${escapeHtml(s.type)}</code></td>
-      <td><strong>+${escapeHtml(s.points || 0)}</strong></td>
-      <td>${escapeHtml(signalText(s))}</td>
-    </tr>
-  `).join("");
-  return `
-    <div class="dialog-header">
-      <div>
-        <p class="eyebrow dark">Triage Investigation</p>
-        <h2 id="finding-dialog-title">${escapeHtml(finding.registrable)}</h2>
-      </div>
-      <button type="button" class="btn-close" id="close-dialog-btn" aria-label="Close finding details">&times;</button>
-    </div>
-    <div class="dialog-summary">
-      <div class="summary-badge severity ${escapeHtml(finding.severity)}">
-        CT ${escapeHtml(finding.severity).toUpperCase()} (${escapeHtml(finding.score)} pts)
-      </div>
-      <div class="summary-info">
-        <span>Observed: ${escapeHtml(formatTime(finding.observed_at))}</span>
-        <span>Issuer: ${escapeHtml(finding.issuer || "Unknown CA")}</span>
-        <span>SANs: ${escapeHtml((finding.domains || []).length)}</span>
-      </div>
-    </div>
-    ${renderPriority(finding)}
-    ${renderIntelEvidence(finding)}
-    <section class="dialog-section">
-      <h3>Analyst Actions</h3>
-      <div class="dialog-actions">
-        <button type="button" id="copy-triage-btn" class="btn-secondary">Copy Triage Report</button>
-        <button type="button" id="print-report-btn" class="btn-secondary">Print report</button>
-      </div>
-      <p class="muted-text">Live probing is performed by analysts off-platform; this dashboard never fetches a suspected hostile host from production.</p>
-    </section>
-    <section class="dialog-section">
-      <h3>Triggered Scoring Signals</h3>
-      <table class="signals-table">
-        <thead><tr><th>Signal</th><th>Points</th><th>Detail</th></tr></thead>
-        <tbody>${signalsRows || "<tr><td colspan='3'>No signals recorded</td></tr>"}</tbody>
-      </table>
-    </section>
-    <section class="dialog-section">
-      <h3>Certificate Identity &amp; SANs</h3>
-      <p><strong>Domains:</strong> <code>${escapeHtml((finding.domains || []).join(", "))}</code></p>
-      <p><strong>Serial:</strong> <code>${escapeHtml(finding.cert_serial || "N/A")}</code></p>
-      <p><strong>Issuer DN SHA256:</strong> <code>${escapeHtml(finding.cert_issuer_dn_sha256 || "N/A")}</code></p>
-    </section>
-  `;
+async function buildDialogBodyHtml(finding) {
+  const { renderDialogBody } = await import('./lib/ui/finding-details.js');
+  return renderDialogBody(finding, {
+    escapeHtml,
+    formatTime,
+    signalText,
+    renderPriority,
+    renderIntelEvidence,
+    intelEvidence,
+    intelProviderUrl,
+    intelHitCount,
+    priorityScore,
+    sourceLabel,
+    intelVerdict,
+  });
 }
 
 /**
@@ -1113,12 +1078,12 @@ function exitHistoricalSearch() {
   findingsPoller.refresh();
 }
 
-function openDetailPanel(finding) {
+async function openDetailPanel(finding) {
   const panel = $("detail-panel");
   const inner = $("detail-panel-inner");
   if (!panel || !inner) return;
   state.selectedFindingId = finding.id;
-  inner.innerHTML = buildDialogBodyHtml(finding);
+  inner.innerHTML = await buildDialogBodyHtml(finding);
   panel.hidden = false;
   const closeBtn = inner.querySelector("#close-dialog-btn");
   if (closeBtn) closeBtn.onclick = closeDetailPanel;
@@ -1134,11 +1099,11 @@ function closeDetailPanel() {
   state.selectedFindingId = null;
 }
 
-function openFindingDetails(finding) {
+async function openFindingDetails(finding) {
   const dialog = $("finding-dialog");
   const body = $("dialog-body");
   if (!dialog || !body) return;
-  body.innerHTML = buildDialogBodyHtml(finding);
+  body.innerHTML = await buildDialogBodyHtml(finding);
   dialog.showModal();
   const closeBtn = body.querySelector("#close-dialog-btn");
   if (closeBtn) closeBtn.onclick = () => dialog.close();
@@ -1253,7 +1218,7 @@ document.addEventListener("click", (event) => {
   if (detailBtn) {
     const id = detailBtn.dataset.openDetail;
     const finding = filteredFindings().find((f) => f.id === id);
-    if (finding) openDetailPanel(finding);
+    if (finding) void openDetailPanel(finding);
     return;
   }
   // Mobile: [data-finding-index] card in list
