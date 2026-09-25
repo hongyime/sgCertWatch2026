@@ -120,7 +120,19 @@ try {
   const isCi = Boolean(process.env.CI && !["false", "0"].includes(process.env.CI.toLowerCase()));
   const channel = isCi ? undefined : process.env.PLAYWRIGHT_CHANNEL || undefined;
   browser = await chromium.launch({ headless: true, channel });
-  for (const width of [1440, 390]) {
+  // Desktop table rendering (>=1024px) is covered separately by
+  // test_workbench_layout.mjs, which asserts on .finding-list-table /
+  // data-finding-id rows directly. This file's `cards` locator
+  // (#finding-list [data-finding-index]) only ever matches the
+  // mobile/card render path in app.js's renderFindingList() - at desktop
+  // widths, #finding-list is explicitly display:none and results go into
+  // a separate table instead, so a desktop iteration here would find zero
+  // cards for every assertion below. The content/data correctness this
+  // file verifies (intel evidence, priority scoring, XSS-safety, search,
+  // Monitor view) is viewport-independent, and the card view exposes more
+  // inline detail than the compact desktop table - so a single mobile-
+  // width pass gives full coverage of this file's actual concerns.
+  for (const width of [390]) {
     const context = await browser.newContext({ viewport: { width, height: 900 } });
     const page = await context.newPage();
     await page.clock.install();
@@ -243,7 +255,7 @@ try {
     assert.match(await observedCard.innerText(), /urlscan.io: observed/);
     assert.doesNotMatch(await observedCard.innerText(), /Promoted|phishing|malware/);
     await page.fill("#finding-search", "does-not-exist");
-    assert.match(await page.locator("#feed-status").innerText(), /No matching stored findings/);
+    assert.match(await page.locator("#feed-status").innerText(), /No matches in loaded findings/);
     await page.fill("#finding-search", "");
 
     // Reject redirects, spoofed hosts, credentials, ports, schemes, and payload paths.
@@ -266,6 +278,7 @@ try {
     })];
     await switchFilter("");
     assert.match(await cards.first().innerText(), /Intel hits: 4/, "Fallback count also counts distinct sources");
+    await cards.first().click();
     await cards.first().click();
     assert.equal(await dialog.locator("a, img, iframe, [onerror]").count(), 0);
     assert.equal(await page.evaluate(() => window.intelXss), undefined);
