@@ -280,6 +280,7 @@ try {
     await switchFilter("");
     assert.match(await cards.first().innerText(), /Intel hits: 4/, "Fallback count also counts distinct sources");
     await cards.first().click();
+    await dialog.locator("h2").filter({ hasText: "unsafe-evidence.example.test" }).waitFor();
     assert.equal(await dialog.locator("a, img, iframe, [onerror]").count(), 0);
     assert.equal(await page.evaluate(() => window.intelXss), undefined);
     await checkLayout(page);
