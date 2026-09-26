@@ -8,6 +8,7 @@ node_modules/
 eval_baseline.json
 supabase/
 plan.html
+.postplan/
 scheduler/
 lib/notify.js
 lib/notification-outbox.js
