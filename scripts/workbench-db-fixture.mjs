@@ -69,9 +69,10 @@ async function getAssignedPort(name) {
   return parseInt(match[1], 10);
 }
 
+// Use -f so cleanup always works even if the container is still running
+// (e.g. docker stop timed out while PG was applying the schema).
 async function stopContainer(name) {
-  try { await docker(["stop", name], 30_000); } catch { /* best-effort */ }
-  try { await docker(["rm",   name], 15_000); } catch { /* best-effort */ }
+  try { await docker(["rm", "-f", name], 30_000); } catch { /* best-effort */ }
 }
 
 async function waitForReady(Client, port, database, maxWaitMs = 120_000) {
@@ -219,7 +220,7 @@ export async function createFixture({
       let removed = null;
       try {
         const { stdout } = await docker(
-          ["inspect", containerName, "--format", "{{.ID}}"], 5_000
+          ["inspect", containerName, "--format", "{{.ID}}"], 30_000
         );
         if (stdout.trim()) {
           // inspect returned output — container still exists

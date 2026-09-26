@@ -1143,9 +1143,9 @@ button:disabled {
 .saved-view-delete:hover { color: var(--red); }
 .btn-sm { padding: 3px 10px; font-size: 12px; }
 .saved-views-msg { color: var(--teal); font-size: 12px; min-width: 80px; }
-}
 
 /* Analyst sign-in (Task 9) */
+.reviewer-auth [hidden] { display: none; }
 .reviewer-auth { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 10px; padding: 6px 2px; border-bottom: 1px solid var(--line); font-size: 13px; }
 .reviewer-signin-form { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .reviewer-signin-form input { height: 32px; padding: 0 8px; font-size: 13px; border: 1px solid var(--line); border-radius: 6px; }

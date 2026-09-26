@@ -46,6 +46,7 @@ async function writeArtifact(dir, name, content) {
 
 // ── Test state ────────────────────────────────────────────────────────────────
 let fx;
+let originalReview = null;   // captured by DB-01, compared by DB-05
 
 const ACTOR_UUID   = "11111111-1111-1111-1111-111111111111";
 const ACTOR2_UUID  = "22222222-2222-2222-2222-222222222222";
@@ -87,22 +88,28 @@ after(async () => {
   if (fx) {
     const r = await fx.close();
     teardown = { container: r.containerName, removed_verified: r.removed };
+    assert.notStrictEqual(r.removed, false,
+      `fixture container ${r.containerName} must not be confirmed-still-running after close()`);
   }
   await writeArtifact(EVIDENCE_DIR, "db-fixture-teardown.json", teardown);
-}, { timeout: 60_000 });
+}, { timeout: 120_000 });
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-// DB-01: create new review
+// DB-01: create new review — capture full original response for DB-05 deepEqual
 test("DB-01: upsert_finding_review creates initial review at revision=1", async () => {
   const r = await fx.client.query(
     `select public.upsert_finding_review($1,$2,$3,$4,$5::uuid,$6,$7) as rv`,
     [FINDING_A, "investigating", "unassessed", "Initial note", ACTOR_UUID, 1, "req-db-01"]
   );
-  const row = r.rows[0].rv;
-  assert.equal(row.finding_id, FINDING_A);
-  assert.equal(row.status,     "investigating");
-  assert.equal(row.revision,   1);
+  originalReview = r.rows[0].rv;  // save for DB-05 deepEqual
+  assert.equal(originalReview.finding_id,  FINDING_A,      "finding_id");
+  assert.equal(originalReview.status,      "investigating", "status");
+  assert.equal(originalReview.disposition, "unassessed",   "disposition");
+  assert.equal(originalReview.note,        "Initial note", "note");
+  assert.equal(originalReview.updated_by,  ACTOR_UUID,     "updated_by");
+  assert.equal(originalReview.revision,    1,              "revision");
+  assert.ok(originalReview.updated_at,                     "updated_at present");
 });
 
 // DB-02: idempotent replay before any later update → same revision
@@ -139,9 +146,9 @@ test("DB-04: advance review to resolved at revision=2", async () => {
 });
 
 // DB-05: idempotent replay of req-db-01 AFTER a later update must return the
-// ORIGINAL response (revision=1, status=investigating), not the current row.
-// RED: old SQL returned revision=2.  GREEN: fixed SQL returns revision=1.
-test("DB-05: idempotent replay after later update returns ORIGINAL revision=1", async () => {
+// EXACT original response — deepEqual including timestamp.
+// RED: old SQL returned {revision:2}. GREEN: fixed SQL returns original object.
+test("DB-05: idempotent replay after later update returns exact original response", async () => {
   const r = await fx.client.query(
     `select public.upsert_finding_review($1,$2,$3,$4,$5::uuid,$6,$7) as rv`,
     [FINDING_A, "investigating", "unassessed", "Initial note", ACTOR_UUID, 1, "req-db-01"]
@@ -156,14 +163,9 @@ test("DB-05: idempotent replay after later update returns ORIGINAL revision=1", 
     bug_confirmed: false,
   });
 
-  // Must return the EXACT values recorded at first-write, not the current row.
-  assert.equal(row.revision,    1,              "replay must return original revision=1");
-  assert.equal(row.status,      "investigating", "replay must return original status");
-  assert.equal(row.disposition, "unassessed",   "replay must return original disposition");
-  assert.equal(row.finding_id,  FINDING_A,      "replay must return correct finding_id");
-  assert.equal(row.note,        "Initial note", "replay must return original note");
-  assert.equal(row.updated_by,  ACTOR_UUID,     "replay must return original actor uuid");
-  assert.ok(row.updated_at, "replay must include updated_at (= event created_at)");
+  // deepEqual confirms every field — including updated_at — matches DB-01.
+  assert.deepEqual(row, originalReview,
+    "replay after update must be deepEqual to the original first-write response");
 });
 
 // DB-06: list_finding_review_events returns at least 2 events for FINDING_A
@@ -245,8 +247,8 @@ test("DB-10: search with SQL-special chars (%, _, \\) does not throw", async () 
     "special-char query must return 0 rows (no match expected)");
 });
 
-// DB-11: SET statement_timeout = $1 fails on real PostgreSQL (capacity script bug)
-test("DB-11: SET statement_timeout = $1 is rejected by PostgreSQL (documents capacity script bug)", async () => {
+// DB-11: exercise PostgreSQL parameter syntax without inferring a production bug.
+test("DB-11: parameterized SET is rejected; set_config accepts parameters", async () => {
   let setBugThrew = false;
   try {
     await fx.client.query("SET statement_timeout = $1", ["3000ms"]);
@@ -258,7 +260,7 @@ test("DB-11: SET statement_timeout = $1 is rejected by PostgreSQL (documents cap
     ["statement_timeout", "3000ms"]
   );
   assert.ok(setBugThrew,
-    "SET statement_timeout = $1 must fail on PostgreSQL (confirms capacity script bug)");
+    "SET statement_timeout = $1 must fail on PostgreSQL");
   assert.ok(r.rows[0].v,
     "set_config() must succeed as the correct alternative");
   await writeArtifact(EVIDENCE_DIR, "DB-11-set-timeout-bug.json", {
@@ -330,46 +332,69 @@ test("DB-15: anon cannot call upsert_finding_review (permission check)", async (
   assert.ok(threw, "anon must not be able to call upsert_finding_review");
 });
 
-// DB-16: concurrent first-write serialization via parent lock
-// Two connections send the same UUID for the same finding.  The parent-lock
-// ensures only one row is ever inserted; the second connection gets an
-// idempotent replay (revision=1), not an error or a double-insert.
-test("DB-16: concurrent first-write: parent lock prevents duplicate insert", async () => {
-  const c1 = fx.newClient();
-  const c2 = fx.newClient();
+// DB-16: true concurrency — c1 holds BEGIN + FOR UPDATE on the parent finding row,
+// c2 calls upsert_finding_review (blocks inside the function at its own FOR UPDATE),
+// pg_stat_activity confirms a Lock waiter, then c1 commits, c2 creates the review,
+// and exactly one event exists.
+test("DB-16: parent FOR UPDATE lock serialises concurrent first-writes", async () => {
+  const c1      = fx.newClient();
+  const c2      = fx.newClient();
+  const monitor = fx.newClient();
   await c1.connect();
   await c2.connect();
+  await monitor.connect();
 
-  let result1, result2, err1, err2;
+  let c2Result;
   try {
-    [result1, err1] = await c1.query(
-      `select public.upsert_finding_review($1,$2,$3,$4,$5::uuid,$6,$7) as rv`,
-      [FINDING_C, "investigating", "unassessed", "concurrent", ACTOR_UUID, 1, "req-db-16a"]
-    ).then(r => [r, null]).catch(e => [null, e]);
+    // c1 acquires exclusive lock on the FINDING_B parent row.
+    await c1.query("BEGIN");
+    await c1.query(
+      "SELECT id FROM public.findings WHERE id = $1 FOR UPDATE",
+      [FINDING_B]
+    );
 
-    // Same UUID → idempotent replay path after first write committed.
-    [result2, err2] = await c2.query(
-      `select public.upsert_finding_review($1,$2,$3,$4,$5::uuid,$6,$7) as rv`,
-      [FINDING_C, "investigating", "unassessed", "concurrent", ACTOR_UUID, 1, "req-db-16a"]
-    ).then(r => [r, null]).catch(e => [null, e]);
+    // c2 starts upsert — will block at the function's FOR UPDATE on findings.
+    const c2Promise = c2.query(
+      `SELECT public.upsert_finding_review($1,$2,$3,$4,$5::uuid,$6,$7) AS rv`,
+      [FINDING_B, "investigating", "unassessed", "from-c2", ACTOR_UUID, 1, "req-db-16-c2"]
+    );
+
+    // Poll pg_stat_activity until c2 appears as a Lock waiter (up to 4 s).
+    let lockRows = [];
+    for (let i = 0; i < 20 && lockRows.length === 0; i++) {
+      await new Promise(res => setTimeout(res, 200));
+      const { rows } = await monitor.query(`
+        SELECT pid, wait_event_type, wait_event, state
+        FROM pg_stat_activity
+        WHERE wait_event_type = 'Lock'
+          AND state = 'active'
+          AND query LIKE '%upsert_finding_review%'
+      `);
+      lockRows = rows;
+    }
+    assert.ok(lockRows.length >= 1,
+      `c2 must be blocked on a Lock; found ${lockRows.length} waiter(s) in pg_stat_activity`);
+
+    // Release lock — c2 can now proceed.
+    await c1.query("COMMIT");
+    c2Result = await c2Promise;
   } finally {
+    await c1.query("ROLLBACK").catch(() => {});
     await c1.end().catch(() => {});
     await c2.end().catch(() => {});
+    await monitor.end().catch(() => {});
   }
 
-  assert.ok(!err1, `first write must succeed; got: ${err1?.message}`);
-  assert.equal(result1.rows[0].rv.revision, 1, "first write revision must be 1");
+  assert.equal(c2Result.rows[0].rv.revision, 1,
+    "c2 must create the first review at revision=1");
 
-  assert.ok(!err2, `idempotent replay must succeed; got: ${err2?.message}`);
-  assert.equal(result2.rows[0].rv.revision, 1, "replay must also return revision=1");
-
-  // Exactly one review row must exist — parent lock prevented double-insert.
+  // Exactly one event — parent lock prevented any double-insert.
   const { rows } = await fx.client.query(
-    "SELECT count(*)::int as n FROM public.finding_reviews WHERE finding_id = $1",
-    [FINDING_C]
+    "SELECT count(*)::int AS n FROM public.finding_review_events WHERE finding_id = $1",
+    [FINDING_B]
   );
   assert.equal(rows[0].n, 1,
-    "exactly one finding_review row must exist after concurrent first-write");
+    "exactly one event after serialised concurrent first-write");
 });
 
 // DB-17: createFixture removes container on startup failure (bad migration file).
@@ -393,7 +418,7 @@ test("DB-17: createFixture removes container on startup failure", { timeout: 300
         "docker", ["inspect", failedContainer, "--format", "{{.ID}}"],
         { timeout: 30_000 }
       );
-      cleanupVerified = !stdout.trim();  // empty stdout = inconclusive (treat as removed)
+      cleanupVerified = false;  // inspect succeeded but container still exists (or empty)
     } catch (inspectErr) {
       const msg = String(inspectErr.stderr || inspectErr.message || "").toLowerCase();
       cleanupVerified = msg.includes("no such object") || msg.includes("no such container");

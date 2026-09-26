@@ -138,6 +138,12 @@ jobs:
       - name: Install browser for dashboard verification
         run: npx playwright install --with-deps chromium
 
+      - name: Test reviewer sessions and sign-in UI
+        run: node --test scripts/test_reviewer_session.mjs scripts/test_reviewer_ui.mjs scripts/test_workbench_review.mjs
+
+      - name: Test workbench SQL replay, locking and fixture cleanup
+        run: node --test scripts/test_workbench_database.mjs
+
       - name: Test desktop and mobile dashboard flows
         run: node scripts/test_intel_ui.mjs
 

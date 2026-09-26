@@ -1426,6 +1426,8 @@ $('reviewer-signin-form')?.addEventListener('submit', async (event) => {
   }
   const email = $('reviewer-email')?.value.trim() ?? '';
   const password = $('reviewer-password')?.value ?? '';
+  const submit = event.currentTarget.querySelector('button[type=submit]');
+  if (submit) submit.disabled = true;
   try {
     await reviewerSession.signIn(email, password);
     const pwField = $('reviewer-password');
@@ -1433,6 +1435,10 @@ $('reviewer-signin-form')?.addEventListener('submit', async (event) => {
     updateReviewerAuthUI();
   } catch (err) {
     if (errorEl) errorEl.textContent = reviewerSignInErrorMessage(err.message);
+    const pwField = $('reviewer-password');
+    if (pwField) { pwField.value = ''; pwField.focus(); }
+  } finally {
+    if (submit) submit.disabled = false;
   }
 });
 

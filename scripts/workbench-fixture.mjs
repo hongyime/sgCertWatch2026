@@ -234,6 +234,43 @@ export function start() {
       return;
     }
 
+    if (pathname === "/api/reviewer-session") {
+      // Read body for POST
+      let raw = "";
+      for await (const chunk of req) raw += chunk;
+      let body = {};
+      try { body = raw ? JSON.parse(raw) : {}; } catch { /* ignore */ }
+
+      if (req.method === "POST") {
+        // Synthetic auth for UI tests only; production handlers have their own
+        // tests. Accept only this fixture's explicit credential pair.
+        const isBadCreds =
+          body.email !== "reviewer@test.local" ||
+          body.password !== "correct-horse-battery";
+        if (!isBadCreds) {
+          const expiresAt = new Date(Date.now() + 3_600_000).toISOString();
+          writeJson(res, 200, {
+            access_token: "fixture-reviewer-token-" + Date.now(),
+            user: { id: "11111111-1111-1111-1111-111111111111" },
+            expires_at: expiresAt,
+          });
+        } else {
+          writeJson(res, 401, { error: "invalid_credentials" });
+        }
+        return;
+      }
+
+      if (req.method === "DELETE") {
+        res.writeHead(204, { "Cache-Control": "no-store" });
+        res.end();
+        return;
+      }
+
+      writeJson(res, 405, { error: "method_not_allowed" });
+      return;
+    }
+
+
     // --- Static files (allowlist only) ---------------------------------------
     const name = pathname === "/" ? "index.html" : pathname.slice(1);
 
