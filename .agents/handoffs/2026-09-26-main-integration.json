@@ -1,0 +1,25 @@
+{
+  "date": "2026-09-26",
+  "task": "Integrate outstanding project code from branches and local files into main",
+  "starting_main": "5cc06eb6353768623f0e6f8a0800f6865628c98a",
+  "status": "inventory in progress",
+  "boundaries": [
+    "Keep CT collection running",
+    "Do not enable separate intel or capture workflows",
+    "Do not publish credentials, local environment files or generated dependencies",
+    "Preserve branch history and stashes; do not delete files or force push"
+  ],
+  "inventory": {
+    "open_pull_requests": 0,
+    "remote_non_main_branches": ["maintenance/storage-adapter-20260912"],
+    "local_non_main_branches": 8,
+    "stashes": 6,
+    "registered_other_worktrees": "five absent/prunable registrations"
+  },
+  "next_steps": [
+    "Classify branches by ancestry and patch equivalence",
+    "Inspect stash changes and ignored source candidates without exposing secrets",
+    "Integrate outstanding implementation and run affected verification",
+    "Push main and verify remote/local agreement and audit coverage"
+  ]
+}
