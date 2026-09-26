@@ -341,3 +341,6 @@
 - 2026-09-26 02:26:44 +08:00 [PRAWN-E14/claude/stop] branch=main head=d28e265 dirty=1
 - 2026-09-26 02:26:44 +08:00 [PRAWN-E14/claude/stop] branch=main head=d28e265 dirty=1
 - 2026-09-26 02:49:09 +08:00 [PRAWN-E14/claude/stop] branch=main head=d28e265 dirty=1
+- 2026-09-26 11:08:23 +08:00 [PRAWN-E14/claude/stop] branch=main head=b52c4e5 dirty=0
+
+- 2026-09-26: Completed owner-authorized reviewer configuration after pulling main (already current at b52c4e5): set and read back the existing analyst account in Vercel production REVIEWER_USER_IDS, deployed b52c4e5 as dpl_H2WWNFkL7D1Tm2Ds9PVBJXfXDWhr (READY/PROMOTED), and verified public 200 responses plus closed review authentication. Added setup instructions to README and .env.example. Focused reviewer/session tests: 22 pass, 0 fail, 1 real-Postgres skip; production password login/save remains unverified. Earlier uncommitted handoff evidence of reviewer_not_configured is retained in the condensed STATE; long history remains in Git. Live CT Ingest is active with scheduled successes despite the old pause note; asked owner, changed no collection settings. No credentials recorded.

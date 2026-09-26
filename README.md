@@ -30,6 +30,31 @@ up to 30 scheduled findings checks per hour instead of 60, plus initial, return
 and filter-triggered checks; caching and API fan-out affect actual resource use.
 Monthly egress and cost savings have not been measured.
 
+### Analyst sign-in and reviews
+
+The dashboard can save private analyst reviews for approved Supabase Auth users.
+Signing in alone does not grant review access: the server checks the account's
+user UUID against `REVIEWER_USER_IDS` on every review request.
+
+To configure an existing analyst account:
+
+1. In the matching Supabase project's **Authentication > Users**, copy the
+   account's **User UID**. Use its UUID, not its email address or password.
+2. In Vercel project `sgcertwatch`, open **Settings > Environment Variables**.
+   Add `REVIEWER_USER_IDS` for **Production**, with the UUID as its value. For
+   multiple reviewers, separate their UUIDs with commas.
+3. Redeploy the production deployment so the new setting takes effect. An
+   environment-only change does not need another code commit.
+4. On the dashboard, use **Sign in** with that account's email and password,
+   then open a finding's **Analyst Review** panel.
+
+The review API also needs `SUPABASE_URL`, `SUPABASE_ANON_KEY` and
+`SUPABASE_SERVICE_ROLE_KEY`, plus the `supabase/workbench-review.sql` migration.
+Keep actual credentials and reviewer IDs in server configuration, outside Git.
+An empty allowlist closes reviewer access; public findings stay available.
+The browser holds the login session only in memory, so a page reload requires
+signing in again. Enabling reviews does not restart collection.
+
 ### Database storage maintenance
 
 `supabase/source-index-cleanup.sql` separately removes the overlapping
@@ -86,7 +111,7 @@ Cursors stay in Supabase `ingest_state`, so a delayed or skipped run catches up 
 
 GitHub's fallback schedule targets `:07`, `:22`, `:37`, and `:52` UTC each hour. A September 8 audit found gaps of several hours. The independent Cloudflare dispatcher in `scheduler/` targets the same workflow every 15 minutes, with hourly intelligence. It dispatches and watches only these two scan workflows; scanning never runs on Cloudflare or Vercel. GitHub runner queues can still delay starts. See [GitHub's schedule limitations](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
 
-Required repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. The dashboard functions need `SUPABASE_URL` and `SUPABASE_ANON_KEY` only. Apply `supabase/schema.sql` for a new database, then `supabase/run-locks.sql` before deploying the reliability runners. No messaging credentials are required.
+Required repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Public dashboard reads need `SUPABASE_URL` and `SUPABASE_ANON_KEY`; private analyst reviews additionally need the service role key and `REVIEWER_USER_IDS` as described above. Apply `supabase/schema.sql` for a new database, then `supabase/run-locks.sql` before deploying the reliability runners. No messaging credentials are required.
 
 During a database recovery, set Vercel production `SGCERTWATCH_STORAGE_RECOVERY=true`
 and deploy. Findings, source status and authenticated triage then return a no-store
