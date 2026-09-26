@@ -1,3 +1,23 @@
+- 2026-09-26: User handing off to another machine's agents; pushed
+  everything and made sure state is fully tracked here. Provisioned a
+  real Supabase Auth analyst account for the owner's personal email
+  (redacted here per AGENTS.md - never store personal identifiers in this
+  shared, permanent file; UUID 9c6f8490-9028-45b2-b476-77e5b4e16862) via
+  the GoTrue Admin API using a
+  fresh Supabase PAT the user supplied; generated a strong password and
+  gave it to the user directly in chat rather than logging it anywhere.
+  The reviewer feature is now exactly ONE step from working end-to-end in
+  production: that UUID needs to land in Vercel's REVIEWER_USER_IDS env
+  var. Local Vercel CLI credential is confirmed genuinely dead (not a
+  network flake - explicit 'token is not valid' error), no VERCEL_TOKEN
+  env var exists, and vercel login needs an interactive browser this
+  headless session doesn't have. Left full API-call instructions in
+  STATE.md item 15 so whoever has Vercel access (this session's user, or
+  the next agent once given a token) can finish it in one call. Also
+  found and verified (not blindly trusted) a concurrent agent's completed
+  but uncommitted fix to scripts/test_intel_ui.mjs sitting in this shared
+  checkout - ran it standalone and against the full suite before
+  committing, rather than either discarding it or committing it unverified.
 - 2026-09-25: User explicitly authorized proceeding without deferral ("go
   ahead now and do not defer items, push to main will auto deploy to
   vercel"). Deduped buildDialogBodyHtml() against lib/ui/finding-details.js
@@ -316,3 +336,8 @@
 - 2026-09-25 00:31:49 +08:00 [PRAWN-E14/claude/stop] branch=main head=fd29604 dirty=0
 - 2026-09-25 00:31:50 +08:00 [PRAWN-E14/claude/stop] branch=main head=fd29604 dirty=0
 - 2026-09-25 03:28:13 +08:00 [PRAWN-E14/claude/stop] branch=main head=710ac34 dirty=0
+- 2026-09-25 13:22:11 +08:00 [PRAWN-E14/claude/stop] branch=main head=d28e265 dirty=0
+- 2026-09-26 01:29:51 +08:00 [PRAWN-E14/claude/stop] branch=main head=d28e265 dirty=1
+- 2026-09-26 02:26:44 +08:00 [PRAWN-E14/claude/stop] branch=main head=d28e265 dirty=1
+- 2026-09-26 02:26:44 +08:00 [PRAWN-E14/claude/stop] branch=main head=d28e265 dirty=1
+- 2026-09-26 02:49:09 +08:00 [PRAWN-E14/claude/stop] branch=main head=d28e265 dirty=1

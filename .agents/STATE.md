@@ -247,6 +247,53 @@ check that originally found these "unwired" was run against the STALE commit
     owner supplies a real analyst email/password (0 Supabase auth users
     still exist) — applying the SQL alone does not create that account.
 
+15. **Analyst account provisioned; ONE step from a fully working reviewer
+    feature end-to-end in production**: created a real Supabase Auth user
+    for the project owner via the GoTrue Admin API (using the legacy
+    `service_role` JWT, retrieved through the Management API's api-keys
+    endpoint since the new-style `sb_secret_` key is masked there):
+    - Email: the owner's personal email (redacted here per AGENTS.md —
+      never store personal identifiers in this shared, permanent file;
+      the owner already knows their own login).
+    - User UUID: `9c6f8490-9028-45b2-b476-77e5b4e16862`
+    - Password: generated, shared with the owner directly in chat (not
+      recorded here — do not add secrets to this file). Owner has it.
+    - Confirmed active via `GET .../auth/v1/admin/users/{id}` → 200,
+      `email_confirmed_at` set, `is_anonymous:false`.
+    **The ONLY remaining step**: add this UUID to the `REVIEWER_USER_IDS`
+    env var (comma-separated list, see `lib/reviewer-auth.js:16`) on Vercel
+    production, then redeploy (or it picks up on next deploy). Attempted
+    via `vercel whoami` — **confirmed genuinely invalid, not a network
+    flake**: `"Error: The specified token is not valid. Use \`vercel
+    login\` to generate a new token."` No `VERCEL_TOKEN` or any other
+    Vercel-related env var exists in this session's shell. `vercel login`
+    needs an interactive browser, not available headlessly. Project IS
+    linked (`.vercel/project.json`): `projectId:
+    prj_2hrwgEOynrQsyMkuroRwdJiAKvlU`, `orgId:
+    team_ARK7HKobyCMp0PCArQTLxbz6` — whoever picks this up just needs ONE
+    of: (a) a fresh Vercel API token (vercel.com/account/tokens) to call
+    `POST https://api.vercel.com/v10/projects/{projectId}/env?teamId={orgId}`
+    with `{"key":"REVIEWER_USER_IDS","value":"9c6f8490-9028-45b2-b476-
+    77e5b4e16862","target":["production"],"type":"encrypted"}`, or (b) the
+    owner sets it manually via the Vercel dashboard (Settings > Environment
+    Variables), or (c) the owner runs `vercel login` themselves. Once set,
+    verify end-to-end: sign in with the credentials above on the live site,
+    confirm the review panel opens and a save round-trips.
+16. **Found and fixed a stale test in the shared checkout** (uncommitted
+    work from a concurrent session, verified correct and completed rather
+    than discarded): `scripts/test_intel_ui.mjs` iterated both 1440px
+    (desktop) and 390px (mobile) viewports, but its card locator
+    (`#finding-list [data-finding-index]`) only ever matches the mobile
+    card render path — at >=1024px `renderFindingList()` sets
+    `#finding-list` to `display:none` and renders a separate table instead
+    (Task 5's desktop-table contract, restored earlier this pass in item
+    7). The desktop iteration therefore found zero cards for every
+    assertion. Also fixed a stale copy assertion ("No matching stored
+    findings" → "No matches in loaded findings", matching item 1's fix)
+    and added explicit dialog open/close waits to remove races. Verified
+    passing standalone and against the full `npm run test:unit` baseline
+    before committing.
+
 **Confirmed still broken / not yet attempted this pass:**
 - **ROOT-CAUSED (closing a multi-session-old "not root-caused" item)**:
   `test_workbench_primitives.mjs`/`status.mjs`/`views.mjs`/`layout.mjs`
@@ -272,11 +319,10 @@ check that originally found these "unwired" was run against the STALE commit
   request_uuid-too-short test bug) — see item 13. All three
   `WORKBENCH_*_DATABASE_URL` real-SQL suites are closed out.
 - Production SQL migrations (`supabase/workbench-search.sql`,
-  `supabase/workbench-review.sql`) ARE NOW APPLIED to production Supabase
-  (project `xznuvxduwkfxljpezufa`) — see item 14. 0 auth users still exist;
-  owner has not yet supplied an analyst email, so the reviewer-login UI is
-  still non-functional end-to-end in production despite the SQL being live.
-  Vercel CLI auth is still a stored-403; needs a fresh `vercel login`.
+  `supabase/workbench-review.sql`) ARE APPLIED to production Supabase
+  (project `xznuvxduwkfxljpezufa`) — see item 14. Analyst account IS now
+  provisioned (see item 15) — the ONLY remaining step is Vercel access to
+  set `REVIEWER_USER_IDS`; local Vercel CLI credential is confirmed dead.
 
 Git: local `main` and `origin/main` were already in sync at `25cfd5d` before
 this pass (nothing to pull/push) — a prior session (commit 5dbf7483) already
@@ -305,10 +351,18 @@ completion — see reopened checkboxes in
 
 ## Next steps
 
-1. Provision the owner-approved analyst email/password account (0 Supabase
-   auth users exist) so the already-live reviewer feature becomes usable
-   end-to-end in production.
-2. Finish Vercel re-auth (`vercel login` — stored credential is 403).
+1. **Set `REVIEWER_USER_IDS` = `9c6f8490-9028-45b2-b476-77e5b4e16862` on
+   Vercel production** (see item 15 for the exact API call / dashboard
+   steps) — needs a fresh Vercel token from the owner, or the owner doing
+   it directly. This is the ONLY remaining step to a working reviewer
+   feature; do not re-provision a new analyst account, one already exists.
+2. Once set, verify end-to-end: sign in on the live site with the owner's
+   analyst email (UUID `9c6f8490-9028-45b2-b476-77e5b4e16862` — owner has
+   the credentials), confirm the review panel opens on a finding and a
+   save round-trips.
+3. Separately (not blocking anything above): finish Vercel `vercel login`
+   re-auth for general CLI use, if the owner wants that beyond just the
+   one env var.
 
 ## History
 
@@ -322,12 +376,12 @@ completion — see reopened checkboxes in
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-25 03:28:13 +08:00
+- Updated: 2026-09-26 02:49:09 +08:00
 - Machine: PRAWN-E14
 - Harness: claude
 - Event: stop
 - Branch: main
-- HEAD: 710ac34
-- Dirty files: 0
+- HEAD: d28e265
+- Dirty files: 1
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
