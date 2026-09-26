@@ -1,25 +1,340 @@
 {
-  "date": "2026-09-26",
-  "task": "Integrate outstanding project code from branches and local files into main",
-  "starting_main": "5cc06eb6353768623f0e6f8a0800f6865628c98a",
-  "status": "inventory in progress",
-  "boundaries": [
-    "Keep CT collection running",
-    "Do not enable separate intel or capture workflows",
-    "Do not publish credentials, local environment files or generated dependencies",
-    "Preserve branch history and stashes; do not delete files or force push"
+  "branches": [
+    {
+      "ref": "feat/lossless-evidence-storage",
+      "sha": "5d46f04e8b40b87c33a23e3f290c7680049fc478",
+      "ahead": 9,
+      "changes": [
+        ".agents/handoffs/certwatch-finding-writer-20260913.json",
+        ".agents/handoffs/certwatch-http-20260913.json",
+        ".agents/handoffs/certwatch-lease-20260913.json",
+        ".agents/handoffs/certwatch-source-writer-20260913.json",
+        ".github/workflows/evidence-objects.yml",
+        "README.md",
+        "lib/run-lease.js",
+        "lib/storage/evidence-frames.js",
+        "lib/storage/evidence-ingest-writer.js",
+        "lib/storage/evidence-repository.js",
+        "lib/storage/evidence-source-writer.js",
+        "lib/storage/supabase-manifests.js",
+        "lib/storage/supabase-objects.js",
+        "scripts/run-ingest.mjs",
+        "scripts/test_evidence_finding_cases.mjs",
+        "scripts/test_evidence_http.mjs",
+        "scripts/test_evidence_lease_cases.mjs",
+        "scripts/test_evidence_metadata.mjs",
+        "scripts/test_evidence_objects.mjs",
+        "scripts/test_evidence_postgres.mjs",
+        "scripts/test_evidence_rows.mjs",
+        "scripts/test_evidence_source_cases.mjs",
+        "supabase/experimental/evidence-finding-writer.sql",
+        "supabase/experimental/evidence-manifests.sql",
+        "supabase/experimental/evidence-row-contracts.sql",
+        "supabase/experimental/evidence-source-writer.sql"
+      ],
+      "identical_to_main": [
+        ".agents/handoffs/certwatch-finding-writer-20260913.json",
+        ".agents/handoffs/certwatch-http-20260913.json",
+        ".agents/handoffs/certwatch-lease-20260913.json",
+        ".agents/handoffs/certwatch-source-writer-20260913.json",
+        "lib/run-lease.js",
+        "lib/storage/evidence-frames.js",
+        "lib/storage/evidence-ingest-writer.js",
+        "lib/storage/evidence-repository.js",
+        "lib/storage/evidence-source-writer.js",
+        "lib/storage/supabase-manifests.js",
+        "lib/storage/supabase-objects.js",
+        "scripts/run-ingest.mjs",
+        "scripts/test_evidence_finding_cases.mjs",
+        "scripts/test_evidence_http.mjs",
+        "scripts/test_evidence_lease_cases.mjs",
+        "scripts/test_evidence_metadata.mjs",
+        "scripts/test_evidence_objects.mjs",
+        "scripts/test_evidence_postgres.mjs",
+        "scripts/test_evidence_rows.mjs",
+        "scripts/test_evidence_source_cases.mjs",
+        "supabase/experimental/evidence-finding-writer.sql",
+        "supabase/experimental/evidence-manifests.sql",
+        "supabase/experimental/evidence-row-contracts.sql",
+        "supabase/experimental/evidence-source-writer.sql"
+      ],
+      "resolution": "Implementation, SQL and tests match main exactly. Retain newer pinned workflow actions and reviewer setup docs; merge history only."
+    },
+    {
+      "ref": "maintenance/cert-index-20260910",
+      "sha": "d8bebc0c7ab59c27887490ccddbc871f3cf9f2f5",
+      "ahead": 0,
+      "changes": [],
+      "identical_to_main": [],
+      "resolution": "Already an ancestor of starting main; no restoration needed."
+    },
+    {
+      "ref": "maintenance/cert-refresh-20260911",
+      "sha": "073daa9bc909eb47dad863223cdc6c88d477af4a",
+      "ahead": 0,
+      "changes": [],
+      "identical_to_main": [],
+      "resolution": "Already an ancestor of starting main; no restoration needed."
+    },
+    {
+      "ref": "maintenance/certwatch-packed-20260911",
+      "sha": "46958b60a4e3c9e760905bc2a0cd8b44b7527be3",
+      "ahead": 0,
+      "changes": [],
+      "identical_to_main": [],
+      "resolution": "Already an ancestor of starting main; no restoration needed."
+    },
+    {
+      "ref": "maintenance/certwatch-source-index-20260911",
+      "sha": "46958b60a4e3c9e760905bc2a0cd8b44b7527be3",
+      "ahead": 0,
+      "changes": [],
+      "identical_to_main": [],
+      "resolution": "Already an ancestor of starting main; no restoration needed."
+    },
+    {
+      "ref": "maintenance/cpu-protection-20260914",
+      "sha": "9b622a34a585369ff5ea7bfe89900431df580548",
+      "ahead": 0,
+      "changes": [],
+      "identical_to_main": [],
+      "resolution": "Already an ancestor of starting main; no restoration needed."
+    },
+    {
+      "ref": "maintenance/db-space-recovery-20260916",
+      "sha": "445119b6a4f0a4203dfce361ed376df1f2d1ee70",
+      "ahead": 1,
+      "changes": [
+        ".agents/STATE.md"
+      ],
+      "identical_to_main": [],
+      "resolution": "Documentation commit has a patch-equivalent commit on main; retain current state and merge history only."
+    },
+    {
+      "ref": "wip/perf-memoization",
+      "sha": "950c304420ec0dca4af09a78563b0f4d061f6e0b",
+      "ahead": 1,
+      "changes": [
+        "lib/data.js",
+        "lib/domain/confusables.js",
+        "lib/domain/registrable.js",
+        "lib/scoring.js",
+        "scripts/eval.js"
+      ],
+      "identical_to_main": [
+        "lib/domain/confusables.js"
+      ],
+      "resolution": "Recover evaluator progress output. Main already has token/IDN caches and newer precision fixes; preserve real PSL parsing instead of the obsolete FLAT_GTLDS shortcut and preserve corrected fuzzy matching. Merge remaining historical snapshot without reverting main."
+    },
+    {
+      "ref": "origin/maintenance/storage-adapter-20260912",
+      "sha": "5a821ee30a644db3faf5c6815fddf9d347ff45d6",
+      "ahead": 9,
+      "changes": [
+        ".agents/JOURNAL.md",
+        ".agents/STATE.md",
+        ".agents/handoffs/certwatch-finding-writer-20260913.json",
+        ".agents/handoffs/certwatch-http-20260913.json",
+        ".agents/handoffs/certwatch-lease-20260913.json",
+        ".agents/handoffs/certwatch-source-writer-20260913.json",
+        ".github/workflows/evidence-objects.yml",
+        "README.md",
+        "lib/run-lease.js",
+        "lib/storage/evidence-frames.js",
+        "lib/storage/evidence-ingest-writer.js",
+        "lib/storage/evidence-repository.js",
+        "lib/storage/evidence-source-writer.js",
+        "lib/storage/supabase-manifests.js",
+        "lib/storage/supabase-objects.js",
+        "scripts/run-ingest.mjs",
+        "scripts/test_evidence_finding_cases.mjs",
+        "scripts/test_evidence_http.mjs",
+        "scripts/test_evidence_lease_cases.mjs",
+        "scripts/test_evidence_metadata.mjs",
+        "scripts/test_evidence_objects.mjs",
+        "scripts/test_evidence_postgres.mjs",
+        "scripts/test_evidence_rows.mjs",
+        "scripts/test_evidence_source_cases.mjs",
+        "supabase/experimental/evidence-finding-writer.sql",
+        "supabase/experimental/evidence-manifests.sql",
+        "supabase/experimental/evidence-row-contracts.sql",
+        "supabase/experimental/evidence-source-writer.sql"
+      ],
+      "identical_to_main": [
+        ".agents/handoffs/certwatch-finding-writer-20260913.json",
+        ".agents/handoffs/certwatch-http-20260913.json",
+        ".agents/handoffs/certwatch-lease-20260913.json",
+        ".agents/handoffs/certwatch-source-writer-20260913.json",
+        "lib/run-lease.js",
+        "lib/storage/evidence-frames.js",
+        "lib/storage/evidence-ingest-writer.js",
+        "lib/storage/evidence-repository.js",
+        "lib/storage/evidence-source-writer.js",
+        "lib/storage/supabase-manifests.js",
+        "lib/storage/supabase-objects.js",
+        "scripts/run-ingest.mjs",
+        "scripts/test_evidence_finding_cases.mjs",
+        "scripts/test_evidence_http.mjs",
+        "scripts/test_evidence_lease_cases.mjs",
+        "scripts/test_evidence_metadata.mjs",
+        "scripts/test_evidence_objects.mjs",
+        "scripts/test_evidence_postgres.mjs",
+        "scripts/test_evidence_rows.mjs",
+        "scripts/test_evidence_source_cases.mjs",
+        "supabase/experimental/evidence-finding-writer.sql",
+        "supabase/experimental/evidence-manifests.sql",
+        "supabase/experimental/evidence-row-contracts.sql",
+        "supabase/experimental/evidence-source-writer.sql"
+      ],
+      "resolution": "Implementation, SQL and tests match main exactly. Retain newer pinned workflow actions and reviewer setup docs; merge history only."
+    }
   ],
-  "inventory": {
-    "open_pull_requests": 0,
-    "remote_non_main_branches": ["maintenance/storage-adapter-20260912"],
+  "stashes": [
+    {
+      "index": 0,
+      "sha": "588445aa5e7f656a53caf6ae8ac33e0ea86d7735",
+      "changes": [
+        ".agents/JOURNAL.md",
+        ".agents/STATE.md",
+        "app.js",
+        "index.html",
+        "scripts/test_workbench_database.mjs",
+        "scripts/workbench-db-fixture.mjs",
+        "scripts/workbench-fixture.mjs",
+        "styles.css"
+      ],
+      "identical_to_main": [],
+      "untracked": [
+        "scripts/test_reviewer_ui.mjs"
+      ],
+      "resolution": "Recover database/fixture changes and reviewer UI test; adapt obsolete modal selectors to current inline form and preserve current app layout. Restore safe failed-login handling and fix hidden-state CSS exposed by recovered tests."
+    },
+    {
+      "index": 1,
+      "sha": "05e69537792628b89beec4eed85284fd2fea2a8c",
+      "changes": [],
+      "identical_to_main": [],
+      "untracked": [
+        ".agents/handoffs/certwatch-finding-writer-20260913.json",
+        ".agents/handoffs/certwatch-http-20260913.json",
+        ".agents/handoffs/certwatch-lease-20260913.json",
+        ".agents/handoffs/certwatch-source-writer-20260913.json",
+        ".github/workflows/evidence-objects.yml",
+        "lib/storage/evidence-frames.js",
+        "lib/storage/evidence-ingest-writer.js",
+        "lib/storage/evidence-repository.js"
+      ],
+      "resolution": "Storage files already present. The stashed evidence-repository.js is an empty placeholder superseded by the complete 238-line implementation. Retain pinned workflow actions."
+    },
+    {
+      "index": 2,
+      "sha": "6704af0e5f08e9d34826117b0b442680f36d72ea",
+      "changes": [
+        ".agents/STATE.md",
+        ".agents/handoffs/certwatch-source-writer-20260913.json"
+      ],
+      "identical_to_main": [],
+      "untracked": [],
+      "resolution": "Historical handoff updates only; no missing code. Preserve source snapshot locally and record historical verification below without reviving obsolete next-step instructions."
+    },
+    {
+      "index": 3,
+      "sha": "7f7c5609f153de794d57d642ab96536d35cd98de",
+      "changes": [
+        ".agents/JOURNAL.md",
+        ".agents/STATE.md",
+        ".vercelignore"
+      ],
+      "identical_to_main": [],
+      "untracked": [],
+      "resolution": "Recover .postplan/ deployment exclusion once; old state/journal snapshots superseded."
+    },
+    {
+      "index": 4,
+      "sha": "6fe34445b279d48638812d06562f762d24ed1c98",
+      "changes": [
+        ".agents/JOURNAL.md",
+        ".agents/STATE.md",
+        ".vercelignore"
+      ],
+      "identical_to_main": [],
+      "untracked": [],
+      "resolution": "Duplicate .postplan/ exclusion recovered once; old state/journal snapshots superseded."
+    },
+    {
+      "index": 5,
+      "sha": "57f325fe9226ee4bf8e5ff22c25cf6933208eba3",
+      "changes": [
+        ".agents/JOURNAL.md",
+        ".agents/STATE.md",
+        ".vercelignore"
+      ],
+      "identical_to_main": [],
+      "untracked": [],
+      "resolution": "Duplicate .postplan/ exclusion recovered once; old state/journal snapshots superseded."
+    }
+  ],
+  "date": "2026-09-26",
+  "task": "Consolidate outstanding project work onto main",
+  "starting_main": "5cc06eb6353768623f0e6f8a0800f6865628c98a",
+  "status": "consolidated and locally verified",
+  "scope": {
     "local_non_main_branches": 8,
+    "remote_non_main_branches": 1,
     "stashes": 6,
-    "registered_other_worktrees": "five absent/prunable registrations"
+    "open_prs": 0
   },
-  "next_steps": [
-    "Classify branches by ancestry and patch equivalence",
-    "Inspect stash changes and ignored source candidates without exposing secrets",
-    "Integrate outstanding implementation and run affected verification",
-    "Push main and verify remote/local agreement and audit coverage"
-  ]
+  "excluded_local_files": [
+    "Credentials and ignored environment files",
+    "node_modules, build/cache output and local tool state",
+    "Generated .omo evidence/session metadata and plan.html"
+  ],
+  "historical_stash_2_evidence": {
+    "verification": "Previously recorded, not rerun as part of this audit",
+    "source_commit": "5a821ee30a644db3faf5c6815fddf9d347ff45d6",
+    "hosted_run": 34744997556,
+    "nodes": [
+      20,
+      24
+    ],
+    "cases": {
+      "offline": 36,
+      "postgres": 28,
+      "native_rows": 19,
+      "http": 46
+    }
+  },
+  "validation": {
+    "browser_backend": {
+      "passed": 42,
+      "failed": 0,
+      "optional_sql_skipped": 2
+    },
+    "real_postgresql": {
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "fixture_cleanup_verified": true
+    },
+    "core_unit_suite": "passed",
+    "release_data_validation": "passed",
+    "eval_script_syntax": "passed",
+    "workflow_yaml": "parsed successfully",
+    "evaluator_full_corpus": "Not rerun: recovered console progress only; scorer unchanged and core scoring tests passed."
+  },
+  "production_boundaries": [
+    "CT collection remains enabled",
+    "No production SQL changes",
+    "No intel/capture activation",
+    "No paid-plan changes"
+  ],
+  "preserved": [
+    "All original branches and stashes",
+    "Git history",
+    "Newer scoring, PSL and action-pinning fixes"
+  ],
+  "history_merge": "dcfa466",
+  "history_merge_tree_unchanged": true,
+  "all_audited_branch_heads_reachable": true,
+  "checkpoint_commit": "0de1cbd"
 }

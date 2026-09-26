@@ -1,22 +1,31 @@
 # Current state — 26 September 2026
 
-## Main integration in progress
+## Branch consolidation — 2026-09-26
 
-- Owner requested all outstanding project code across branches/files on main.
-- Audited eight local work branches, one non-main remote branch and six stashes.
-  Five local branches are ancestors; storage code matches main byte-for-byte;
-  the docs-only branch is patch-equivalent. Preserve current scoring/PSL fixes
-  while joining the older performance snapshot's history.
-- Recovered reviewer UI tests, stronger database/cleanup tests, fixture auth,
-  evaluation progress and a deployment exclusion in an isolated checkout.
-  Browser tests exposed/fixed hidden-state CSS and failed-login password clearing.
-- Verification: 42 browser/backend checks passed, 2 optional SQL tests skipped;
-  separate real PostgreSQL suite 18/18; core unit and release validation passed.
-  Production data and scheduler settings were not modified.
-- Next: finish reviewed commits, merge branch histories, push main, verify CI
-  and remote/local agreement. Audit: `.agents/handoffs/2026-09-26-main-integration.json`.
+- All eight original local work branches and the remaining remote storage branch
+  are included in the consolidated history. GitHub had no open PRs at audit time.
+  No branch, stash, retained record or user file was deleted.
+- Storage implementation was already identical to main. Joined its histories
+  and the patch-equivalent maintenance docs while retaining pinned CI actions.
+  Recovered evaluator progress from the old performance snapshot; kept current
+  scoring precision, memoization and Public Suffix List parsing corrections.
+- Reviewed all six stashes. Recovered reviewer UI tests, real database replay/
+  concurrency assertions, reliable fixture cleanup, synthetic UI auth and the
+  `.postplan/` deployment exclusion. Obsolete modal UI was adapted to the current
+  inline form; superseded code was not restored over newer implementations.
+- Recovered browser coverage exposed a stray CSS brace and hidden reviewer
+  controls remaining visible. Fixed those, restored failed-login password
+  clearing and submit disabling, and wired recovered tests into CI.
+- Verification: 42 browser/backend checks passed (2 optional SQL checks skipped);
+  separate disposable PostgreSQL suite 18/18, with both containers verified gone;
+  full core unit suite and release-data validation passed. Workflow YAML and
+  evaluator syntax passed. Full corpus evaluation was not rerun for log changes.
+- Audit and per-branch/stash dispositions:
+  `.agents/handoffs/2026-09-26-main-integration.json`.
+- Credentials, dependency/build caches, generated evidence and local tool/session
+  files remain excluded. Production data and collector scheduling are unchanged.
 
-## Reviewer setup completed
+## Reviewer configuration verified before consolidation
 
 - `git pull --ff-only origin main` found the checkout current at `b52c4e5`.
   The reviewer backend/UI and prior workbench fixes are already committed.
