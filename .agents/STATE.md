@@ -1,5 +1,21 @@
 # Current state — 26 September 2026
 
+## Main integration in progress
+
+- Owner requested all outstanding project code across branches/files on main.
+- Audited eight local work branches, one non-main remote branch and six stashes.
+  Five local branches are ancestors; storage code matches main byte-for-byte;
+  the docs-only branch is patch-equivalent. Preserve current scoring/PSL fixes
+  while joining the older performance snapshot's history.
+- Recovered reviewer UI tests, stronger database/cleanup tests, fixture auth,
+  evaluation progress and a deployment exclusion in an isolated checkout.
+  Browser tests exposed/fixed hidden-state CSS and failed-login password clearing.
+- Verification: 42 browser/backend checks passed, 2 optional SQL tests skipped;
+  separate real PostgreSQL suite 18/18; core unit and release validation passed.
+  Production data and scheduler settings were not modified.
+- Next: finish reviewed commits, merge branch histories, push main, verify CI
+  and remote/local agreement. Audit: `.agents/handoffs/2026-09-26-main-integration.json`.
+
 ## Reviewer setup completed
 
 - `git pull --ff-only origin main` found the checkout current at `b52c4e5`.
@@ -24,16 +40,19 @@
 - README and `.env.example` now document reviewer setup. Reviewer UUIDs and
   credentials belong in server configuration, outside committed examples.
 
-## Collection status differs from the previous handoff
+## Collection should remain running
 
 - September 14's recorded directive was to pause collection. Live GitHub state
   on September 26 instead shows CT Ingest enabled with successful scheduled
   runs (checked run `36209950564`). Intel and capture remain disabled.
 - Checked-in Cloudflare config also enables dispatch and a five-minute cron;
   live Cloudflare configuration was not inspected in this continuation.
-- Asked the owner whether to leave CT running or pause it. No collection,
-  scheduler, paid-plan, database migration or retained-record changes made.
-  Do not report collection as paused based on the old handoff.
+- Owner confirmed on September 26 that CT collection must remain running;
+  this supersedes the historical CT pause. Intel/capture activation is separate.
+- Latest three checked CT runs were successful GitHub schedule events at
+  September 25 20:33/23:29 and September 26 01:54 UTC, roughly 2-3 hours
+  apart despite the configured 15-minute schedule. Live Cloudflare dispatch
+  health remains unverified. No scheduler changes made.
 
 ## Next steps and evidence limits
 
@@ -42,7 +61,8 @@
    do not pollute production with a synthetic review for testing.
 2. If the owner no longer has the password, assist account recovery without
    storing or requesting passwords in shared project files.
-3. Resolve the collection-status question with the owner before changing it.
+3. Keep CT running; investigate schedule gaps and live Cloudflare dispatch
+   before claiming reliable 15-minute collection.
 4. The broader workbench plan still has reopened gates in
    `.omo/plans/free-tier-investigation-upgrade.md`; do not claim completion
    of every historical task based on this configuration fix.
