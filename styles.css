@@ -33,7 +33,7 @@ p {
 
 .topbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto auto;
+  grid-template-columns: minmax(220px, 1fr) auto auto auto;
   align-items: center;
   gap: 18px;
   padding: 28px clamp(18px, 4vw, 48px);
@@ -1144,13 +1144,59 @@ button:disabled {
 .btn-sm { padding: 3px 10px; font-size: 12px; }
 .saved-views-msg { color: var(--teal); font-size: 12px; min-width: 80px; }
 
-/* Analyst sign-in (Task 9) */
+/* Analyst sign-in — topbar trigger & modal */
+.reviewer-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .reviewer-auth [hidden] { display: none; }
-.reviewer-auth { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 10px; padding: 6px 2px; border-bottom: 1px solid var(--line); font-size: 13px; }
-.reviewer-signin-form { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.reviewer-signin-form input { height: 32px; padding: 0 8px; font-size: 13px; border: 1px solid var(--line); border-radius: 6px; }
-.reviewer-signin-error { color: var(--red); font-size: 12px; }
-.reviewer-signed-in { display: flex; align-items: center; gap: 8px; color: var(--teal); font-weight: 700; font-size: 12px; }
+.reviewer-signed-in {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #9ddfd5;
+  font-size: 12px;
+  font-weight: 700;
+}
+.reviewer-signin-dialog { max-width: 380px; }
+.reviewer-signin-dialog .dialog-header h2 { font-size: 18px; }
+.reviewer-signin-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 4px;
+}
+.reviewer-signin-form label {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.reviewer-signin-form input {
+  height: 36px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  width: 100%;
+}
+.reviewer-signin-form input:focus {
+  outline: 2px solid var(--teal);
+  outline-offset: 1px;
+  border-color: var(--teal);
+}
+.reviewer-signin-error {
+  color: var(--red);
+  font-size: 12px;
+  min-height: 1em;
+  display: block;
+}
+.reviewer-signin-error:empty { display: none; }
+.reviewer-signin-actions {
+  display: flex;
+  gap: 8px;
+}
 .review-form { display: grid; gap: 10px; margin-top: 8px; }
 .review-form label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
 .review-actions { display: flex; align-items: center; gap: 10px; }

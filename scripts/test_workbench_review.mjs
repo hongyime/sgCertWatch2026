@@ -702,8 +702,9 @@ test("analyst-sign-in-and-review: sign in, edit and save a review, then sign out
 
     // --- Sign-in control is reachable -------------------------------------
     await page.waitForSelector("#reviewer-signin-btn:not([hidden])", { timeout: 8_000 });
+    await page.screenshot({ path: resolve(EVIDENCE_DIR, "modal-closed-1280.png"), fullPage: false });
     await page.click("#reviewer-signin-btn");
-    await page.waitForSelector("#reviewer-signin-form:not([hidden])", { timeout: 5_000 });
+    await page.waitForSelector("#reviewer-signin-dialog[open]", { timeout: 5_000 });
     await page.fill("#reviewer-email", "reviewer@test");
     await page.fill("#reviewer-password", "correct-horse-battery");
 
@@ -713,6 +714,7 @@ test("analyst-sign-in-and-review: sign in, edit and save a review, then sign out
     await page.waitForSelector("#reviewer-signed-in:not([hidden])", { timeout: 8_000 });
     const signedInText = await page.locator("#reviewer-signed-in-label").textContent();
     assert.ok(signedInText.includes("Signed in"), `Expected signed-in indicator, got: "${signedInText}"`);
+    await page.screenshot({ path: resolve(EVIDENCE_DIR, "topbar-signed-in-1280.png"), fullPage: false });
 
     // --- Open a finding's details and edit the review ---------------------
     const firstDetailBtn = page.locator("[data-open-detail]").first();
@@ -741,6 +743,15 @@ test("analyst-sign-in-and-review: sign in, edit and save a review, then sign out
     await page.waitForSelector("#reviewer-signin-btn:not([hidden])", { timeout: 8_000 });
     const signinBtnVisible = await page.locator("#reviewer-signin-btn").isVisible();
     assert.ok(signinBtnVisible, "Sign-in button must reappear after sign-out");
+
+    // 375 px evidence — closed and open states on a mobile viewport
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.screenshot({ path: resolve(EVIDENCE_DIR, "modal-closed-375.png"), fullPage: false });
+    await page.click("#reviewer-signin-btn");
+    await page.waitForSelector("#reviewer-signin-dialog[open]", { timeout: 5_000 });
+    await page.screenshot({ path: resolve(EVIDENCE_DIR, "modal-open-375.png"), fullPage: false });
+    await page.click("#reviewer-signin-close");
+    await page.waitForSelector("#reviewer-signin-dialog", { state: 'hidden', timeout: 5_000 });
 
     await context.close();
   } finally {

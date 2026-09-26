@@ -1375,22 +1375,21 @@ function reviewerSignInErrorMessage(code) {
 function updateReviewerAuthUI() {
   const user = reviewerSession?.currentUser?.();
   const signinBtn = $('reviewer-signin-btn');
-  const signinForm = $('reviewer-signin-form');
+  const signinDialog = $('reviewer-signin-dialog');
   const signedInBox = $('reviewer-signed-in');
   const signedInLabel = $('reviewer-signed-in-label');
   if (user) {
     if (signinBtn) signinBtn.hidden = true;
-    if (signinForm) signinForm.hidden = true;
+    if (signinDialog && signinDialog.open) signinDialog.close();
     if (signedInBox) signedInBox.hidden = false;
-    if (signedInLabel) signedInLabel.textContent = `Signed in as ${user.id.slice(0, 8)}…`;
+    if (signedInLabel) signedInLabel.textContent = `Signed in as ${user.id.slice(0, 8)}\u2026`;
   } else {
     if (signinBtn) signinBtn.hidden = false;
-    if (signinForm) signinForm.hidden = true;
     if (signedInBox) signedInBox.hidden = true;
   }
   // Re-render the desktop table's Review column and any open detail view
-  // now that sign-in state changed. The mobile dialog is modal and blocks
-  // interaction with the sign-in control while open, so it needs no refresh.
+  // now that sign-in state changed. The sign-in dialog is modal and blocks
+  // interaction with the page while open, so no refresh is needed mid-sign-in.
   void renderFindingList();
   if (state.selectedFindingId) {
     const panel = $('detail-panel');
@@ -1402,18 +1401,23 @@ function updateReviewerAuthUI() {
 }
 
 $('reviewer-signin-btn')?.addEventListener('click', () => {
-  $('reviewer-signin-btn').hidden = true;
-  const form = $('reviewer-signin-form');
-  if (form) { form.hidden = false; $('reviewer-email')?.focus(); }
+  const dialog = $('reviewer-signin-dialog');
+  if (dialog) { dialog.showModal(); $('reviewer-email')?.focus(); }
 });
 
 $('reviewer-signin-cancel')?.addEventListener('click', () => {
-  const form = $('reviewer-signin-form');
-  if (form) form.hidden = true;
-  const btn = $('reviewer-signin-btn');
-  if (btn) btn.hidden = false;
+  $('reviewer-signin-dialog')?.close();
+});
+
+$('reviewer-signin-close')?.addEventListener('click', () => {
+  $('reviewer-signin-dialog')?.close();
+});
+
+$('reviewer-signin-dialog')?.addEventListener('close', () => {
   const err = $('reviewer-signin-error');
   if (err) err.textContent = '';
+  const btn = $('reviewer-signin-btn');
+  if (btn && !btn.hidden) btn.focus();
 });
 
 $('reviewer-signin-form')?.addEventListener('submit', async (event) => {
