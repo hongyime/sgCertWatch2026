@@ -84,7 +84,7 @@ The pre-existing automated state block below is preserved, not current evidence.
 ## Auto State
 
 - Updated: 2026-09-26 11:08:23 +08:00
-- Machine: PRAWN-E14
+- Machine: dev-host
 - Harness: claude
 - Event: stop
 - Branch: main
@@ -92,3 +92,7 @@ The pre-existing automated state block below is preserved, not current evidence.
 - Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
+
+## Reviewed workspace maintenance - 2026-09-27
+
+Publish the reviewed portability and privacy maintenance from the current default branch, preserving concurrent upstream work and original workspace changes. Validation is limited to the documented offline fixtures and hosted checks; no live data job or deployment command was executed locally.
