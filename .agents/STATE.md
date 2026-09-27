@@ -83,12 +83,14 @@ The pre-existing automated state block below is preserved, not current evidence.
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-26 11:08:23 +08:00
+- Updated: 2026-09-27 21:38:52 +08:00
 - Machine: PRAWN-E14
 - Harness: claude
 - Event: stop
 - Branch: main
-- HEAD: b52c4e5
-- Dirty files: 0
+- HEAD: 515d4ce
+- Dirty files: 1
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
+
+Machine-specific values in this document use privacy placeholders.
