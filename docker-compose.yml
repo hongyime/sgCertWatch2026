@@ -1,0 +1,44 @@
+# docker-compose.yml — local dev/test fixture database
+#
+# Single PostgreSQL service shared by all test suites that need a real
+# loopback Postgres.  Minimal footprint: 256 MB RAM cap, 0.5 CPU.
+# All fixture databases are created by docker/init-db.sh on first start.
+#
+# Usage:
+#   docker compose up -d          # start (init runs automatically on first start)
+#   docker compose down -v        # stop and remove volume (full teardown)
+#
+# See README.md §Local development database for env vars and test commands.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sgcw_pg
+    restart: "no"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - sgcw_pg_data:/var/lib/postgresql/data
+      - ./docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.10"
+          memory: 64M
+
+volumes:
+  sgcw_pg_data:
+    name: sgcw_pg_data

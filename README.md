@@ -103,6 +103,36 @@ npm run test:intel
 npm run test:reliability
 ```
 
+### Local development database
+
+`docker compose up -d` starts a single `postgres:16-alpine` service on `127.0.0.1:5432`. `docker/init-db.sh` runs once at first start and creates seven fixture databases and the cluster-level roles `anon`, `authenticated` and `service_role` expected by workbench and evidence migrations. The service is capped at 256 MB and 0.5 CPU. Tear down with `docker compose down -v`; that removes the container and the named volume. The init script runs only when the volume is empty: subsequent `docker compose up -d` calls reuse the existing data.
+
+All connection strings require `?sslmode=disable`. Password: `devpassword`.
+
+| Env var | Database | Used by |
+| --- | --- | --- |
+| `EVIDENCE_TEST_DATABASE_URL` | `prawn_evidence_fixture_pg` | `test_evidence_postgres.mjs`, `test_evidence_metadata.mjs` |
+| `EVIDENCE_ROWS_DATABASE_URL` | `prawn_evidence_fixture_rows` | `test_evidence_rows.mjs` |
+| `EVIDENCE_HTTP_DATABASE_URL` | `prawn_evidence_fixture_http` | `test_evidence_http.mjs` |
+| `WORKBENCH_SQL_DATABASE_URL` | `workbench_search_fixture_local` | `test_workbench_search.mjs` |
+| `WORKBENCH_CAPACITY_DATABASE_URL` | `workbench_capacity_fixture_local` | `test_workbench_capacity.mjs` |
+| `WORKBENCH_REVIEW_DATABASE_URL` | `workbench_review_fixture_local` | `test_workbench_review.mjs` |
+| `OUTBOX_TEST_DATABASE_URL` | `notification_outbox_test` | `test_notification_outbox.js`, `test_run_lock_postgres.mjs` |
+| `INDEX_TEST_DATABASE_URL` | `notification_outbox_test` | `test_index_cleanup.py`, `test_source_index_cleanup.py` |
+
+Example workbench runs verified against this stack:
+
+```bash
+WORKBENCH_SQL_DATABASE_URL=postgres://postgres:devpassword@127.0.0.1:5432/workbench_search_fixture_local?sslmode=disable \
+  node --test scripts/test_workbench_search.mjs
+WORKBENCH_REVIEW_DATABASE_URL=postgres://postgres:devpassword@127.0.0.1:5432/workbench_review_fixture_local?sslmode=disable \
+  node --test scripts/test_workbench_review.mjs
+```
+
+`test_evidence_postgres.mjs`, `test_evidence_rows.mjs` and `test_evidence_metadata.mjs` verify `inet_server_addr()` against `['127.0.0.1', '::1']` as a loopback safety guard. Under Docker bridge networking PostgreSQL reports the container's bridge IP, so these checks fail against the compose stack with standard port mapping. Run them against a direct-host PostgreSQL instance or enable Docker Desktop's experimental host networking feature (`network_mode: host`). `test_evidence_http.mjs` additionally requires `EVIDENCE_POSTGREST_BINARY` pointing to a checksum-verified PostgREST 14.5 binary.
+
+`test_notification_outbox.js` bootstraps its own `anon`, `authenticated` and `service_role` roles with bare `CREATE ROLE` statements. The compose stack pre-creates those roles at the cluster level (required by workbench migrations), so the SQL bootstrap fails against this cluster. Run that test against a separate PostgreSQL instance that has no pre-existing roles.
+
 ## Ingestion
 
 CT polling runs on GitHub Actions (`scripts/run-ingest.mjs`), which executes the multi-source
