@@ -365,3 +365,7 @@ Machine-specific values in this document use privacy placeholders.
 - 2026-09-27 20:04:22 +08:00 [dev-host/claude/stop] branch=main head=515d4ce dirty=1
 - 2026-09-27 21:38:52 +08:00 [dev-host/claude/stop] branch=main head=515d4ce dirty=1
 - 2026-09-27 21:38:52 +08:00 [dev-host/claude/stop] branch=main head=515d4ce dirty=1
+
+- 2026-09-28: Deployed sgcertwatch-scheduler (paused, DISPATCH_ENABLED=false) by bypassing a confirmed-unfixable local wrangler/esbuild subprocess hang via manual Cloudflare Workers REST API upload; root-caused the multi-hour CT ingest cadence gap to the Worker never having been deployed at all. Getting a working Cloudflare token took several attempts because the owner kept landing on R2's token-creation UI instead of the account-wide one; the working token also failed the generic /user/tokens/verify check but worked against the real Workers Scripts endpoint. Reconciled a real git divergence between local uncommitted privacy fixes (SECURITY.md email removal, JOURNAL.md hostname anonymization) and a concurrent same-intent commit (b062ead) using a different placeholder name; merged onto origin's dev-host convention, pushed ae547cc. Consolidated all local dev/test Postgres usage into one minimal-footprint docker-compose.yml + docker/init-db.sh (delegated, then independently re-verified: brought stack up, ran a fixture prefix the delegation hadn't demoed, confirmed clean teardown); pushed 3fe3687. Full detail in STATE.md top-of-file entry.
+
+

@@ -1,4 +1,58 @@
-# Current state — 26 September 2026
+# Current state — 28 September 2026
+
+## Cloudflare scheduler deployed (paused) + Docker consolidated — 2026-09-28
+
+- Root-caused the multi-hour CT ingest cadence gaps noted below (Sept 25/26,
+  ~2-3h apart despite the 15-minute schedule): the Cloudflare Worker
+  `sgcertwatch-scheduler` was never actually deployed. `wrangler deploy` and
+  every variant (`--dry-run`, `--no-bundle`, `npx wrangler@latest`, a direct
+  esbuild Node API call) hang indefinitely on this machine — a local
+  Node<->esbuild-native-binary subprocess/IPC issue, not credentials, not
+  network, not Node version (tried two). Confirmed unfixable by retrying.
+- Deployed by bypassing wrangler entirely: manual multipart `PUT` of
+  `worker.mjs`+`core.mjs`+`http.mjs` straight to the Cloudflare Workers REST
+  API, plus separate calls enabling the `workers.dev` subdomain and the
+  `*/5 * * * *` cron trigger. All bindings set (GITHUB_OWNER/REPO/REF,
+  GITHUB_TOKEN via a verified fine-grained PAT, STATUS_TOKEN, SUPABASE_URL +
+  SUPABASE_PUBLISHABLE_KEY for the optional heartbeat, `SCHEDULER` Durable
+  Object). Owner explicitly requested staying in dev/staging for now, so
+  `DISPATCH_ENABLED` is set to `"false"` — the Worker ticks on its cron,
+  updates its own status/heartbeat metrics, but `workflow()` bails out at
+  `dispatch_paused` before ever calling GitHub's dispatch endpoint. Live
+  `/status` verified with zero config errors and `heartbeat:true`. Flip to
+  `"true"` only when the owner is ready for it to actually dispatch scans.
+- Getting a working Cloudflare API token took many attempts: the owner
+  repeatedly landed on R2's token-creation flow instead of the account-wide
+  one (visually similar, both show a `cfat_`/`cfut_`-prefixed value). The
+  token that finally worked also failed the generic `/user/tokens/verify`
+  check (a format quirk, unrelated to R2) but worked fine against the real
+  Workers Scripts endpoint — verify against the actual target endpoint, not
+  a generic check, if this recurs.
+- Reconciled a real git divergence: local uncommitted privacy fixes
+  (removed a real email from `SECURITY.md`; anonymized remaining real
+  machine-hostname references in `JOURNAL.md`) collided with a concurrent
+  `b062ead` commit doing the same anonymization independently, but using a
+  different placeholder name (`dev-host` vs. this session's `dev-host-2.example`).
+  Resolved by keeping origin's `dev-host` convention and appending only the
+  genuinely-new local trailing content; merged and pushed as `ae547cc`.
+- Consolidated all local dev/test Postgres usage (previously ad-hoc
+  `docker run` per test, never a committed stack) into one minimal-footprint
+  `docker-compose.yml` (single `postgres:16-alpine` service, 256MB/0.5CPU
+  cap, named volume, healthcheck) plus `docker/init-db.sh` creating the
+  `anon`/`authenticated`/`service_role` roles and all seven fixture
+  databases the test suites expect by their existing naming-prefix safety
+  guards. Delegated the design/build, then independently re-verified myself:
+  brought the stack up, ran `test_workbench_capacity.mjs` (7/7 pass) against
+  a fixture prefix the delegated work hadn't already demonstrated, tore down
+  cleanly (`docker compose down -v`; confirmed zero `sgcw_pg*` containers or
+  volumes remain). Two known limitations documented in README: the
+  `prawn_evidence_fixture_*` suite's loopback-IP guard rejects Docker's
+  bridge-network IP (needs a direct-host Postgres or `network_mode: host`),
+  and `test_notification_outbox.js`'s bare `CREATE ROLE` bootstrap conflicts
+  with the stack's pre-created cluster roles (needs a separate instance).
+  Pushed as `3fe3687`.
+
+## Branch consolidation — 2026-09-26
 
 ## Branch consolidation — 2026-09-26
 
@@ -60,8 +114,10 @@
   this supersedes the historical CT pause. Intel/capture activation is separate.
 - Latest three checked CT runs were successful GitHub schedule events at
   September 25 20:33/23:29 and September 26 01:54 UTC, roughly 2-3 hours
-  apart despite the configured 15-minute schedule. Live Cloudflare dispatch
-  health remains unverified. No scheduler changes made.
+  apart despite the configured 15-minute schedule. RESOLVED 2026-09-28: see
+  top-of-file entry — the Cloudflare Worker was never deployed; it now is,
+  but with `DISPATCH_ENABLED=false` at the owner's explicit request, so
+  cadence gaps will persist until it's flipped on.
 
 ## Next steps and evidence limits
 
