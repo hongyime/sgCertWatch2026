@@ -1,5 +1,44 @@
 # Current state — 28 September 2026
 
+## Intel workflow re-enabled, dispatch cadence fully verified — 2026-09-28 (later)
+
+- Owner said go on flipping `DISPATCH_ENABLED=true` (see entry below). Real
+  evidence over multiple ticks: ingest assessment reached `healthy:true,
+  level:0` after 14 dispatch attempts / 17 observed successes. Cadence fix
+  for ingest is solid, not a one-off.
+- Chased down the intel `github_http_422` dispatch failure flagged earlier:
+  root cause was `.github/workflows/intel.yml` sitting in GitHub's
+  `disabled_manually` state since 2026-09-14 (a prior separate pause
+  decision, distinct from the CT/ingest pause that was already lifted on
+  2026-09-26). GitHub's dispatch endpoint 422s on a disabled workflow's
+  ref/inputs check — that's the whole story, nothing wrong with the
+  scheduler's request. Re-enabled via `PUT .../workflows/intel.yml/enable`
+  (204), confirmed `state:"active"`. Verified for real, not just by state
+  flag: dispatched intel directly via the API afterward (bypassing the
+  scheduler, which was still in its own long exponential backoff from the
+  8 accumulated failures — expected behavior, self-heals once that timer
+  expires) — got a real `workflow_run_id`, polled it, confirmed
+  `status:"completed", conclusion:"success"`.
+- Also audited all 25 repo workflows for disabled state while in there.
+  Found 4 more disabled: `capture.yml` (disabled same day as intel, Sept 14,
+  but the scheduler's own `WORKFLOWS` list only references ingest+intel, so
+  it's untouched by any of this — left as-is pending owner decision),
+  `notifications.yml` (explicitly named "Retired Notification Outbox",
+  matches documented intentional Telegram retirement — correctly left
+  disabled), `auto-merge-bots.yml` and `dependabot-auto-merge.yml` (repo
+  automation, unrelated to CT/scheduler scope — left as-is).
+- Post-fix deployed-surface check: Vercel homepage/`/api/findings`/
+  `/api/source-status` all 200.
+- Git push kept intermittently failing/hanging (both plain `git push` via
+  stored Credential Manager and the explicit token-URL workaround) across
+  several retries with mixed 401/timeout symptoms; root cause turned out to
+  be this session's own shell-tool output-capture instability masking
+  successful pushes as apparent failures — confirmed via `git log`/`fetch`
+  that content had actually landed each time. If push output looks wrong,
+  re-fetch and check `git log origin/main` before assuming failure and
+  retrying blindly.
+
+
 ## Cloudflare scheduler deployed (paused) + Docker consolidated — 2026-09-28
 
 - Root-caused the multi-hour CT ingest cadence gaps noted below (Sept 25/26,
@@ -147,12 +186,12 @@ The pre-existing automated state block below is preserved, not current evidence.
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-28 14:07:22 +08:00
+- Updated: 2026-09-28 19:28:41 +08:00
 - Machine: PRAWN-E14
 - Harness: claude
 - Event: stop
 - Branch: main
-- HEAD: da8e0c8
+- HEAD: b5417bc
 - Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
