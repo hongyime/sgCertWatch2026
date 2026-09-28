@@ -15,12 +15,20 @@
   `*/5 * * * *` cron trigger. All bindings set (GITHUB_OWNER/REPO/REF,
   GITHUB_TOKEN via a verified fine-grained PAT, STATUS_TOKEN, SUPABASE_URL +
   SUPABASE_PUBLISHABLE_KEY for the optional heartbeat, `SCHEDULER` Durable
-  Object). Owner explicitly requested staying in dev/staging for now, so
-  `DISPATCH_ENABLED` is set to `"false"` — the Worker ticks on its cron,
-  updates its own status/heartbeat metrics, but `workflow()` bails out at
-  `dispatch_paused` before ever calling GitHub's dispatch endpoint. Live
-  `/status` verified with zero config errors and `heartbeat:true`. Flip to
-  `"true"` only when the owner is ready for it to actually dispatch scans.
+  Object). Owner initially requested staying in dev/staging, so
+  `DISPATCH_ENABLED` was first set to `"false"` (paused). Live `/status`
+  verified with zero config errors and `heartbeat:true` while paused.
+  UPDATE 2026-09-28: owner said go — flipped to `"true"`, redeployed, waited
+  a full cron cycle and re-checked `/status` for real evidence (not just the
+  config flag). Confirmed genuinely live: event log shows
+  `{"subject":"ingest","code":"dispatch_accepted"}` against a real GitHub run
+  (`36398290879`) tagged `dispatch:true` (i.e. `workflow_dispatch`, not
+  GitHub's native schedule), observed `status:"in_progress"`. Cadence fix is
+  live end-to-end for ingest. Surfaced separately: intel dispatch is now
+  failing with `github_http_422` (2 attempts, both rejected) — was invisible
+  before since dispatch was paused; likely `intel.yml`'s `workflow_dispatch`
+  inputs/ref mismatch. Not investigated further this session; ingest (the
+  original cadence complaint) is unaffected and confirmed working.
 - Getting a working Cloudflare API token took many attempts: the owner
   repeatedly landed on R2's token-creation flow instead of the account-wide
   one (visually similar, both show a `cfat_`/`cfut_`-prefixed value). The
@@ -139,13 +147,13 @@ The pre-existing automated state block below is preserved, not current evidence.
 <!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-27 21:38:52 +08:00
-- Machine: dev-host
+- Updated: 2026-09-28 14:07:22 +08:00
+- Machine: PRAWN-E14
 - Harness: claude
 - Event: stop
 - Branch: main
-- HEAD: 515d4ce
-- Dirty files: 1
+- HEAD: da8e0c8
+- Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
 
